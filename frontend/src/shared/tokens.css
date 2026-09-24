@@ -1,0 +1,54 @@
+/* Variaveis de design centralizadas. Nenhum valor visual deve ser escrito
+   diretamente em componente; tudo vem daqui. */
+:root {
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+
+  --color-canvas: #f4f3f1;
+  --color-surface: #ffffff;
+  --color-surface-soft: #e9e7e4;
+  --color-ink: #17161a;
+  --color-ink-soft: #3d3b42;
+  --color-muted: #6b6871;
+  --color-on-dark: #f6f4f1;
+  --color-accent: #1f6f5c;
+  --color-accent-strong: #17513f;
+  --color-positive: #2d6e4f;
+  --color-positive-soft: #e2efe7;
+  --color-danger: #a72b39;
+  --color-danger-soft: #f8e5e7;
+  --color-warning: #805b19;
+  --color-warning-soft: #f5ecd8;
+  --color-border: #d6d3ce;
+
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.75rem;
+
+  --line-normal: 1.5;
+  --tracking-wide: 0.12em;
+
+  --space-0: 0;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-page: clamp(1rem, 4vw, 3rem);
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.85rem;
+  --radius-round: 999rem;
+
+  --border-thin: 0.0625rem solid var(--color-border);
+  --shadow-card: 0 0.75rem 2rem rgb(23 22 26 / 8%);
+
+  --touch-target: 2.75rem;
+  --viewport-height: 100dvh;
+  --transition-fast: 160ms ease;
+}

@@ -175,12 +175,19 @@ Em 24/09/2026 foram concluídas a Fase 12 e a Fase 13, com quatro entregáveis n
 
 ### Fase atual
 
-**Fase 14 — aprovação para implementação.** Toda a documentação de arquitetura está
-pronta. O projeto aguarda a resposta do responsável à pergunta:
+**Implementação autorizada em 24/09/2026.** A Fase 14 foi aprovada e o
+desenvolvimento seguiu para `09_ROADMAP_IMPLEMENTACAO.md`.
 
-> Arquitetura aprovada. Posso iniciar a implementação?
+**Sprint 01 — Fundação técnica: concluída.** O repositório deixou de conter apenas
+documentação. Existe aplicação funcional em containers: FastAPI com verificação de
+saúde e prontidão, PostgreSQL com as extensões `btree_gist` e `citext` aplicadas por
+migração, e interface Vue 3 com TypeScript consumindo a API.
 
-Continua não existindo autorização para escrever código.
+Convenção reforçada e aplicada: **uma unidade exportada por arquivo** (ADR-015),
+com raiz de composição em `Container` (ADR-016). O Sprint 01 foi refatorado para
+atender a regra antes de ser fechado.
+
+**Próximo passo:** Sprint 02 — identidade, acesso e auditoria.
 
 ## Estado de aprovação e limite de trabalho
 

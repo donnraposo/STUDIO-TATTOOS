@@ -157,6 +157,64 @@ nomes. Renumerar reescreveria documentos validados e dificultaria rastrear o
 histórico de aprovações.
 **Data:** 24/09/2026.
 
+## ADR-015 — Uma unidade exportada por arquivo
+
+**Decisão:** cada arquivo do projeto expõe exatamente uma unidade própria — uma
+classe, uma função pura ou um tipo. No backend, nenhuma função de nível superior
+convive com uma classe no mesmo arquivo.
+
+**Motivo:** manutenibilidade. O nome do arquivo passa a declarar sua
+responsabilidade, a navegação fica previsível e o histórico do Git mostra
+exatamente o que mudou, sem ruído de alterações não relacionadas no mesmo arquivo.
+
+**Consequência:** mais arquivos e mais imports explícitos. Fábricas e provedores
+que antes ficariam soltos ao lado da classe passam a ser métodos do container de
+composição (ADR-016). A convenção vale desde o primeiro commit de código; o Sprint
+01 foi refatorado para atendê-la antes de avançar.
+
+**Data:** 24/09/2026.
+
+## ADR-016 — Raiz de composição em classe `Container`
+
+**Decisão:** a construção de `Settings`, `Database` e demais dependências de
+infraestrutura fica concentrada na classe `Container`, que também fornece a sessão
+de banco aos casos de uso.
+
+**Motivo:** evita fábricas com estado espalhadas por módulos e cumpre a inversão de
+dependência: os módulos recebem a dependência pronta e não sabem como ela é
+construída. Também torna o teste direto — basta instanciar um `Container` com outra
+configuração, sem manipular cache global.
+
+**Alternativas:** funções `get_*` com `lru_cache` por arquivo, que foi a primeira
+implementação e produzia funções soltas convivendo com classes, ferindo ADR-015;
+biblioteca de injeção de dependência, descartada por acoplar o domínio a um
+framework adicional.
+
+**Consequência:** `Container.instance()` é o ponto único de acesso em produção;
+`Container.reset()` existe para os testes descartarem a instância compartilhada.
+
+**Data:** 24/09/2026.
+
+## ADR-017 — SQLAlchemy síncrono com psycopg 3
+
+**Decisão:** acesso ao banco de forma síncrona, com `psycopg` 3 como driver.
+
+**Motivo:** a lógica transacional deste sistema é a parte mais delicada —
+fechamento semanal, confirmação de pagamento e as restrições de agenda. Código
+síncrono é substancialmente mais simples de escrever e revisar corretamente nesse
+contexto, e os testes dispensam infraestrutura de loop de eventos. Para até quinze
+usuários simultâneos, o ganho de E/S assíncrona não compensa a complexidade.
+
+**Alternativas:** SQLAlchemy assíncrono com `asyncpg`, idiomático em FastAPI e
+melhor sob alta concorrência, porém desproporcional ao porte e mais propenso a erro
+em transações compostas.
+
+**Consequência:** rotas que tocam o banco são declaradas como funções síncronas e o
+FastAPI as executa em pool de threads. Revisável se o volume crescer de forma
+mensurável.
+
+**Data:** 24/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar
