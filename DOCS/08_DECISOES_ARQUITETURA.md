@@ -255,6 +255,29 @@ mensurável.
 
 **Data:** 24/09/2026.
 
+## ADR-019 — Entrega em MVP e Fase 2
+
+**Decisão:** o sistema passa a ser entregue em duas ondas. O MVP cobre o ciclo
+irredutível — login, cliente, agenda com prevenção de conflito, orçamento, sinal,
+sessão paga e repasse semanal — mais uma sprint de implantação. Guests, pós-venda,
+relatórios, PWA, autocadastro e recuperação de senha vão para a Fase 2.
+
+**Motivo:** o estúdio precisa parar de usar planilha o quanto antes. O corte foi
+feito pelo fio condutor do negócio, não por módulo: se qualquer elo do ciclo
+faltar, o controle paralelo continua e o sistema não substitui nada.
+
+**Alternativas:** entregar os onze sprints antes do primeiro uso, descartado por
+adiar demais o valor; MVP apenas demonstrativo, descartado porque o objetivo
+declarado é uso real, e simplificações que não sobrevivem ao uso real gerariam
+retrabalho maior.
+
+**Consequência:** nada é descartado, apenas resequenciado. A sprint M7 de
+implantação passa a integrar o MVP — sem TLS, backup e restauração testada o
+sistema não pode receber dado real. O orçamento entra completo no MVP por decisão
+do responsável, mesmo sendo candidato natural a simplificação.
+
+**Data:** 24/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar

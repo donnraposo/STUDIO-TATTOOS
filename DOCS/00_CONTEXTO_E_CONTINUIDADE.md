@@ -191,17 +191,23 @@ atender a regra antes de ser fechado.
 paleta ouro sobre preto extraída do monograma do estúdio, tokens centralizados em
 `frontend/src/shared/tokens.css`. A logo está em `frontend/public/brand/logo.jpg`.
 
-**Sprint 02 — Identidade, acesso e auditoria: em andamento**, dividida em quatro
-etapas. A etapa 02.1 está concluída: tabelas de identidade, sessão, histórico e
-auditoria criadas, com a trilha comprovadamente append-only.
+**Entrega reorganizada em MVP e Fase 2** (ADR-019). O MVP cobre o ciclo
+irredutível do negócio — login, cliente, agenda com prevenção de conflito,
+orçamento, sinal, sessão paga e repasse semanal — mais implantação. Guests,
+pós-venda, relatórios, PWA, autocadastro e recuperação de senha vão para a Fase 2.
+Nada foi descartado, apenas resequenciado. Objetivo declarado: **uso real no
+estúdio**, não demonstração.
+
+**Sprint M1 — Identidade e acesso: em andamento**, dividida em quatro etapas. A
+etapa M1.1 está concluída: tabelas de identidade, sessão, histórico e auditoria
+criadas, com a trilha comprovadamente append-only.
 
 Duas decisões foram revistas durante a implementação e estão registradas:
 a imutabilidade da auditoria passou de `REVOKE` para gatilho (ADR-012 revisado),
 e os estados passaram a texto com `CHECK` em vez de `ENUM` nativo (ADR-018).
 
-**Próximo passo:** etapa 02.2 — autenticação com Argon2id, sessão por cookie,
-expiração e CSRF. Depende de autorizar a dependência `pwdlib[argon2]`, já prevista
-no ADR-010.
+**Próximo passo:** etapa M1.2 — hash de senha, login, sessão por cookie, expiração
+e CSRF. Pendente de decidir a biblioteca de hash, conforme o ADR-010.
 
 ## Estado de aprovação e limite de trabalho
 

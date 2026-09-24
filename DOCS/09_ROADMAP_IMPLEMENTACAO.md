@@ -1,38 +1,79 @@
 # Roadmap de Implementação
 
-**Status:** Aprovado em 24/09/2026. Implementação autorizada.
+**Status:** Implementação autorizada. Estratégia de MVP definida em 24/09/2026.
 **Última atualização:** 24/09/2026
 
-> Sequência de sprints para construir o sistema. Cada sprint declara objetivo,
-> arquivos, dependências, riscos e resultado esperado. A ordem respeita as
-> dependências reais entre módulos: nada que dependa de agenda vem antes dela.
+> Sequência de sprints para construir o sistema, organizada em **MVP** e **Fase 2**.
+> Cada sprint declara objetivo, arquivos, dependências, riscos e resultado esperado.
+
+## Estratégia
+
+O sistema existe para resolver duas dores concretas: **impedir choque de horário nas
+macas** e **saber quem recebe quanto**. O MVP entrega o ciclo irredutível que permite
+ao estúdio parar de usar planilha:
+
+```text
+login → cliente → agendar maca → sinal €50 → sessão feita e paga → repasse de sexta
+```
+
+Se qualquer elo faltar, o estúdio mantém controle paralelo e o sistema não substitui
+nada. Por isso o corte não foi por módulo, e sim por esse fio condutor.
+
+**Objetivo do MVP: uso real no estúdio.** Isso define o nível de acabamento —
+prevenção de conflito à prova de concorrência, cálculo financeiro correto e
+implantação com backup testado. Não é demonstração.
+
+### Decisões de escopo
+
+| Tema | Decisão | Razão |
+|---|---|---|
+| Guests e taxa semanal | Fase 2 | Encurta o MVP em uma sprint; o guest segue controlado fora do sistema, como hoje |
+| Orçamentos | **Completo no MVP** | Decisão do responsável: fluxo integral com descrição, região, tamanho, referências e aprovação |
+| Pós-venda | Fase 2 | Já é feito fora do sistema hoje |
+| Relatórios e exportação | Fase 2 | O gestor consulta as telas; exportação vem depois |
+| PWA instalável | Fase 2 | O site responsivo já atende no celular |
+| Autocadastro e recuperação de senha | Fase 2 | O gestor cria as contas diretamente |
+
+Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 
 ## Regras de execução
 
-- Uma classe própria do projeto por arquivo, sem exceção.
+- Uma unidade exportada por arquivo, sem exceção (ADR-015).
 - Clean Code e SOLID; regra de negócio fora de rotas, schemas e tarefas do worker.
 - Execução e testes sempre em containers Docker, nunca no host.
-- PostgreSQL real nos testes; SQLite não substitui, por causa de `tstzrange` e `EXCLUDE`.
+- PostgreSQL real nos testes; SQLite não substitui, por causa de `CITEXT`,
+  `tstzrange` e `EXCLUDE`.
 - Documentação atualizada na mesma entrega da mudança.
 - Não avançar de sprint com teste crítico, migração ou verificação falhando.
 
-## Situação das sprints
+## Situação
+
+### MVP
 
 | Sprint | Tema | Situação |
 |---|---|---|
-| 01 | Fundação técnica | **Concluída em 24/09/2026** |
-| 02 | Identidade, acesso e auditoria | **Em andamento** — etapa 02.1 de 4 concluída |
-| 03 | Clientes | Não iniciada |
-| 04 | Agenda e macas | Não iniciada |
-| 05 | Orçamentos e sessões | Não iniciada |
-| 06 | Pagamentos | Não iniciada |
-| 07 | Repasses e fechamento semanal | Não iniciada |
-| 08 | Guests | Não iniciada |
-| 09 | Pós-venda, notificações e worker | Não iniciada |
-| 10 | Painéis, relatórios e exportação | Não iniciada |
-| 11 | PWA, segurança e implantação | Não iniciada |
+| 01 | Fundação técnica | ✅ Concluída em 24/09/2026 |
+| **M1** | Identidade e acesso | 🔄 Em andamento — etapa 1 de 4 |
+| M2 | Clientes | Não iniciada |
+| M3 | ⚠️ Agenda e macas | Não iniciada |
+| M4 | Orçamentos e sessões | Não iniciada |
+| M5 | Pagamentos e sinal | Não iniciada |
+| M6 | Repasses e fechamento semanal | Não iniciada |
+| M7 | Implantação mínima | Não iniciada |
+
+### Fase 2
+
+| Sprint | Tema |
+|---|---|
+| F1 | Guests e taxa semanal |
+| F2 | Pós-venda, notificações e worker |
+| F3 | Painéis, relatórios e exportação |
+| F4 | PWA instalável |
+| F5 | Autocadastro e recuperação de senha |
 
 ---
+
+# MVP
 
 ## Sprint 01 — Fundação técnica
 
@@ -41,67 +82,65 @@ containers, com configuração por ambiente, PostgreSQL com as extensões exigid
 pelo modelo de dados, verificação de saúde e ferramentas de qualidade.
 
 **Arquivos:** `compose.yaml`, `infrastructure/docker`, `backend/app/core`,
-`backend/app/main.py`, `backend/migrations`, `frontend/src/app`, `.env.example`.
+`backend/migrations`, `frontend/src/app`, `.env.example`.
 
 **Dependências:** nenhuma.
 
 **Riscos:** divergência entre desenvolvimento e produção; exposição de segredos;
-ausência das extensões `btree_gist` e `citext`, que bloqueariam a Sprint 04.
-
-**Resultado esperado:** `docker compose up` sobe banco, API e interface; a migração
-inicial habilita as extensões; `/api/v1/health` e `/api/v1/ready` respondem.
+ausência das extensões `btree_gist` e `citext`, que bloqueariam a M3.
 
 ### Evidência de conclusão — 24/09/2026
 
+Commit `e2d3cb2`.
+
 - Três serviços no ar: `postgres` (healthy), `api` e `frontend`.
 - Migração `0001` aplicada; `btree_gist` e `citext` confirmadas em `pg_extension`.
-  Sem elas a Sprint 04 não teria como criar as restrições `EXCLUDE`.
 - Backend: Ruff sem apontamentos, 3 testes aprovados.
 - Frontend: ESLint sem apontamentos, `vue-tsc` sem erro, 3 testes aprovados.
-- `GET /api/v1/health` → 200 `{"status":"ok"}`.
-- `GET /api/v1/ready` → 200 `{"status":"ready","database":"reachable"}`.
-- Interface em `localhost:5173` exibindo Interface, API e Database alcançáveis,
-  confirmando o caminho completo navegador → proxy → API → PostgreSQL.
+- `GET /api/v1/health` → 200; `GET /api/v1/ready` → 200 com banco alcançável.
+- Interface confirmando o caminho navegador → proxy → API → PostgreSQL.
 
-**Refatoração aplicada antes do fechamento:** a primeira versão tinha fábricas
-(`get_settings`, `get_database`, `get_session`) como funções soltas convivendo com
-classes, ferindo a regra de uma unidade por arquivo. Foram substituídas pela raiz
-de composição `Container` (ADR-015 e ADR-016).
+**Refatoração aplicada antes do fechamento:** fábricas soltas substituídas pela
+raiz de composição `Container` (ADR-015 e ADR-016).
 
-## Sprint 02 — Identidade, acesso e auditoria
+**Identidade visual definida:** Urbanist com escala 32/24/20/18/16/14 e paleta ouro
+sobre preto extraída do monograma, em `frontend/src/shared/tokens.css`.
 
-**Objetivo:** conta de usuário, perfis, autocadastro com aprovação, login, logout,
-recuperação de senha, sessões revogáveis e trilha de auditoria imutável.
+## Sprint M1 — Identidade e acesso
 
-**Arquivos:** `modules/identity`, `modules/reporting/audit`, migrações.
+**Objetivo:** contas criadas pelo gestor, login, sessões revogáveis e trilha de
+auditoria imutável. Autocadastro e recuperação de senha ficam para a F5.
+
+**Arquivos:** `modules/identity`, `modules/reporting`, migrações,
+`features/auth` no frontend.
 
 **Dependências:** Sprint 01.
 
 **Riscos:** escalada de privilégio; sessão permanecer válida após bloqueio de conta.
 
-**Resultado esperado:** os quatro perfis autenticam com acesso isolado; bloqueio e
-troca de senha revogam sessões imediatamente; ações administrativas são auditadas.
+**Resultado esperado:** proprietário, gerente e residente autenticam com acesso
+isolado; bloqueio e troca de senha revogam sessões imediatamente; ações
+administrativas são auditadas.
 
 ### Etapas
 
 | Etapa | Escopo | Situação |
 |---|---|---|
-| 02.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
-| 02.2 | Autenticação: hash Argon2id, login, sessão, expiração, CSRF | Não iniciada |
-| 02.3 | Gestão de usuários: autocadastro, aprovação, bloqueio, permissões | Não iniciada |
-| 02.4 | Tela de login, guardas de rota e componentes de formulário | Não iniciada |
+| M1.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
+| M1.2 | Hash de senha, login, sessão, expiração e CSRF | Não iniciada |
+| M1.3 | Gestão de contas pelo gestor e matriz de permissões | Não iniciada |
+| M1.4 | Tela de login, guardas de rota e componentes de formulário | Não iniciada |
 
-### Evidência da etapa 02.1 — 24/09/2026
+### Evidência da etapa M1.1 — 24/09/2026
 
 Commit `549d273`.
 
-- Tabelas criadas: `user_account`, `user_session`, `user_status_history`,
+- Tabelas: `user_account`, `user_session`, `user_status_history`,
   `password_reset_token` e `audit_log`.
 - Migração `0002` aplicada e revertida com sucesso nos dois sentidos.
 - Ruff sem apontamentos; 6 testes aprovados.
 - Suíte passa a usar banco isolado `tattoo_studio_test`, provisionado e migrado
-  pelo `DatabaseProvisioner`. Migrações reais são aplicadas — SQLite não
-  substituiria, pois o projeto depende de `CITEXT`, `tstzrange` e `EXCLUDE`.
+  pelo `DatabaseProvisioner`.
 
 **Imutabilidade da auditoria comprovada.** `UPDATE` e `DELETE` em `audit_log`
 falham mesmo conectado como dono do banco:
@@ -110,37 +149,36 @@ falham mesmo conectado como dono do banco:
 ERROR:  audit_log e append-only: UPDATE nao e permitido (ADR-012)
 ```
 
-### Decisões revistas durante a etapa 02.1
+### Decisões revistas durante a etapa M1.1
 
 | Tema | O que mudou |
 |---|---|
 | Auditoria imutável | `REVOKE` sozinho seria contornável pela role dona da tabela. Substituído por gatilho (ADR-012 revisado). |
 | Estados | Texto com `CHECK` em vez de `ENUM` nativo, para evitar `ALTER TYPE` a cada novo estado (ADR-018). |
 
-### Defeito corrigido durante a etapa 02.1
+### Defeito corrigido durante a etapa M1.1
 
 `migrations/env.py` sobrescrevia a URL do banco incondicionalmente, fazendo a suíte
-de testes migrar o banco de desenvolvimento. Só apareceu ao isolar o banco de teste;
-seguiria como corrupção silenciosa de dados de desenvolvimento nas próximas sprints.
+de testes migrar o banco de desenvolvimento. Só apareceu ao isolar o banco de teste.
 
-## Sprint 03 — Clientes
+## Sprint M2 — Clientes
 
-**Objetivo:** cadastro, alerta de duplicidade, visibilidade por perfil, união de
-cadastros e anonimização.
+**Objetivo:** cadastro com nome e telefone obrigatórios, Instagram opcional, alerta
+de duplicidade, visibilidade por perfil e união de cadastros.
 
-**Arquivos:** `modules/clients`.
+**Arquivos:** `modules/clients`, `features/clients`.
 
-**Dependências:** Sprint 02.
+**Dependências:** M1.
 
 **Riscos:** exposição de ficha completa ao artista indicado, que deve ver apenas
-nome, telefone e Instagram.
+nome, telefone e Instagram (RN-CLI-004).
 
-**Resultado esperado:** RN-CLI-001 a RN-CLI-007 cobertas, com teste negativo de
-visibilidade.
+**Resultado esperado:** RN-CLI-001 a RN-CLI-006 cobertas, com teste negativo de
+visibilidade. A retenção de RN-CLI-007 fica na F3.
 
-## Sprint 04 — Agenda e macas
+## Sprint M3 — Agenda e macas
 
-> Sprint de maior risco técnico do projeto.
+> **Sprint de maior risco técnico do MVP.**
 
 **Objetivo:** macas, horário-base, exceções, solicitações, aprovação, rejeição,
 remarcação, bloqueios e as duas restrições de não sobreposição.
@@ -148,7 +186,7 @@ remarcação, bloqueios e as duas restrições de não sobreposição.
 **Arquivos:** `modules/scheduling`, migração com as restrições `EXCLUDE`,
 `features/scheduling` com a timeline em CSS Grid.
 
-**Dependências:** Sprints 02 e 03.
+**Dependências:** M1 e M2.
 
 **Riscos:** dupla reserva por requisições simultâneas; a timeline própria é o maior
 esforço de frontend do projeto.
@@ -156,14 +194,15 @@ esforço de frontend do projeto.
 **Resultado esperado:** conflito impossível no banco, comprovado por teste com
 transações paralelas reais; modal de conflito sem opção de ignorar.
 
-## Sprint 05 — Orçamentos e sessões
+## Sprint M4 — Orçamentos e sessões
 
-**Objetivo:** orçamento com percentual congelado na aprovação, sessões previstas,
-execução, sessão parcial e conclusão.
+**Objetivo:** orçamento completo com descrição, região do corpo, tamanho, imagens de
+referência, sessões previstas e aprovação pelo gestor. Percentual congelado na
+aprovação. Execução, sessão parcial e conclusão.
 
-**Arquivos:** `modules/quotes`.
+**Arquivos:** `modules/quotes`, `features/quotes`.
 
-**Dependências:** Sprint 04.
+**Dependências:** M3.
 
 **Riscos:** alteração retroativa de percentual; divergência entre valor aprovado e
 valor executado.
@@ -171,91 +210,85 @@ valor executado.
 **Resultado esperado:** ciclo completo entre orçamento, agendamento, sessão e
 conclusão.
 
-## Sprint 06 — Pagamentos
+## Sprint M5 — Pagamentos e sinal
 
-**Objetivo:** sinal de €50, confirmação manual, estados do pagamento, devoluções e
-regras de cancelamento, remarcação e não comparecimento.
+**Objetivo:** sinal de €50, confirmação manual pelo gestor, estados do pagamento,
+devoluções e as regras de cancelamento, remarcação e não comparecimento.
 
-**Arquivos:** `modules/finance/payments`.
+**Arquivos:** `modules/finance/payments`, `features/finance`.
 
-**Dependências:** Sprint 05.
+**Dependências:** M4.
 
 **Riscos:** arredondamento; lançamento apagado em vez de ajustado.
 
 **Resultado esperado:** nenhum pagamento é apagado; correção sempre por ajuste
 vinculado com histórico.
 
-## Sprint 07 — Repasses e fechamento semanal
+## Sprint M6 — Repasses e fechamento semanal
 
 **Objetivo:** cálculo por sessão, fechamento de sexta às 20h `Europe/Dublin`,
 demonstrativo do artista e ajustes negativos de devolução posterior.
 
 **Arquivos:** `modules/finance/payouts`.
 
-**Dependências:** Sprint 06.
+**Dependências:** M5.
 
 **Riscos:** fechamento duplicado; erro na fronteira do horário de verão.
 
 **Resultado esperado:** fechamento reproduzível e auditável, conferido com os
 exemplos de `01_REGRAS_DE_NEGOCIO.md`.
 
-## Sprint 08 — Guests
+## Sprint M7 — Implantação mínima
 
-**Objetivo:** semanas pagas, ativação, acesso derivado, reserva restrita à semana
-paga e regra 50/50 das indicações do estúdio.
+**Objetivo:** colocar o MVP em uso real com segurança proporcional ao dado que ele
+passa a guardar.
 
-**Arquivos:** `modules/guests`.
+**Arquivos:** `compose.production.yaml`, configuração do proxy, runbooks.
 
-**Dependências:** Sprints 04 e 06.
+**Dependências:** M6.
 
-**Riscos:** guest reservando fora da semana paga; perda de acesso antes do fim do
-período contratado.
+**Riscos:** restauração nunca testada; segredo exposto; banco acessível
+publicamente.
 
-**Resultado esperado:** ciclo entre cadastro, pagamento, acesso, renovação e
-inativação funcionando.
+**Resultado esperado:** sistema no ar em VPS com TLS, backup cifrado diário enviado
+para fora do servidor, restauração testada em banco temporário e homologação com
+proprietário e gerente.
 
-## Sprint 09 — Pós-venda, notificações e worker
+> Sem esta sprint o MVP não recebe dado real do estúdio. Ela é o que separa
+> "funciona na minha máquina" de "o estúdio depende disto".
 
-**Objetivo:** pós-venda com vencimento em 15 dias, área com pendentes e atrasados,
-fotos, outbox de e-mail e lista diária das 08h.
+---
 
-**Arquivos:** `modules/aftercare`, `modules/notifications`, container `worker`.
+# Fase 2
 
-**Dependências:** Sprint 05.
+Preservada integralmente. Cada item mantém o detalhamento das regras já aprovadas
+em `01_REGRAS_DE_NEGOCIO.md`.
 
-**Riscos:** falha de e-mail alterando estado de negócio; agendador executando em
-duplicidade.
+## Sprint F1 — Guests e taxa semanal
 
-**Resultado esperado:** e-mail diário entregue; falha registrada sem alterar estado;
-reenvio sem duplicar.
+Semanas pagas de sábado a sexta, ativação pelo gerente, acesso derivado das semanas,
+reserva restrita à semana paga e regra 50/50 das indicações do estúdio.
 
-## Sprint 10 — Painéis, relatórios e exportação
+## Sprint F2 — Pós-venda, notificações e worker
 
-**Objetivo:** painéis por perfil, relatórios com os indicadores definidos,
-comparação de períodos e exportação em PDF e Excel.
+Pós-venda com vencimento em 15 dias, área com pendentes e atrasados, fotos de
+cicatrização, outbox de e-mail e lista diária das 08h.
 
-**Arquivos:** `modules/reporting`, `features/dashboard`.
+## Sprint F3 — Painéis, relatórios e exportação
 
-**Dependências:** Sprints 06 a 09.
+Painéis por perfil, indicadores definidos em `01_REGRAS_DE_NEGOCIO.md` seção 10.4,
+comparação de períodos, exportação em PDF e Excel, e a política de retenção de
+RN-CLI-007.
 
-**Riscos:** relatório não reconciliando com os lançamentos; exposição de faturamento
-a perfil sem permissão.
+## Sprint F4 — PWA instalável
 
-**Resultado esperado:** totais reconciliam com recebimentos, devoluções e repasses;
-exportação preserva os mesmos valores da tela.
+Manifesto e service worker, sem cache de dado autenticado. Web Push permanece fora
+de escopo.
 
-## Sprint 11 — PWA, segurança e implantação
+## Sprint F5 — Autocadastro e recuperação de senha
 
-**Objetivo:** manifesto e service worker, endurecimento de segurança, backup cifrado
-com restauração testada e homologação nos quatro perfis.
-
-**Arquivos:** `frontend/src/pwa`, `compose.production.yaml`, runbooks de operação.
-
-**Dependências:** todas as anteriores.
-
-**Riscos:** cache offline guardando dado autenticado; restauração nunca testada.
-
-**Resultado esperado:** sistema homologado e pronto para implantação controlada.
+Autocadastro de artista com aprovação, rejeição com motivo, reenvio após correção e
+recuperação de senha por link temporário.
 
 ## Critério de avanço
 
