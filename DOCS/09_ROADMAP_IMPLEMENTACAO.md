@@ -21,7 +21,7 @@
 | Sprint | Tema | Situação |
 |---|---|---|
 | 01 | Fundação técnica | **Concluída em 24/09/2026** |
-| 02 | Identidade, acesso e auditoria | Não iniciada |
+| 02 | Identidade, acesso e auditoria | **Em andamento** — etapa 02.1 de 4 concluída |
 | 03 | Clientes | Não iniciada |
 | 04 | Agenda e macas | Não iniciada |
 | 05 | Orçamentos e sessões | Não iniciada |
@@ -81,6 +81,47 @@ recuperação de senha, sessões revogáveis e trilha de auditoria imutável.
 
 **Resultado esperado:** os quatro perfis autenticam com acesso isolado; bloqueio e
 troca de senha revogam sessões imediatamente; ações administrativas são auditadas.
+
+### Etapas
+
+| Etapa | Escopo | Situação |
+|---|---|---|
+| 02.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
+| 02.2 | Autenticação: hash Argon2id, login, sessão, expiração, CSRF | Não iniciada |
+| 02.3 | Gestão de usuários: autocadastro, aprovação, bloqueio, permissões | Não iniciada |
+| 02.4 | Tela de login, guardas de rota e componentes de formulário | Não iniciada |
+
+### Evidência da etapa 02.1 — 24/09/2026
+
+Commit `549d273`.
+
+- Tabelas criadas: `user_account`, `user_session`, `user_status_history`,
+  `password_reset_token` e `audit_log`.
+- Migração `0002` aplicada e revertida com sucesso nos dois sentidos.
+- Ruff sem apontamentos; 6 testes aprovados.
+- Suíte passa a usar banco isolado `tattoo_studio_test`, provisionado e migrado
+  pelo `DatabaseProvisioner`. Migrações reais são aplicadas — SQLite não
+  substituiria, pois o projeto depende de `CITEXT`, `tstzrange` e `EXCLUDE`.
+
+**Imutabilidade da auditoria comprovada.** `UPDATE` e `DELETE` em `audit_log`
+falham mesmo conectado como dono do banco:
+
+```text
+ERROR:  audit_log e append-only: UPDATE nao e permitido (ADR-012)
+```
+
+### Decisões revistas durante a etapa 02.1
+
+| Tema | O que mudou |
+|---|---|
+| Auditoria imutável | `REVOKE` sozinho seria contornável pela role dona da tabela. Substituído por gatilho (ADR-012 revisado). |
+| Estados | Texto com `CHECK` em vez de `ENUM` nativo, para evitar `ALTER TYPE` a cada novo estado (ADR-018). |
+
+### Defeito corrigido durante a etapa 02.1
+
+`migrations/env.py` sobrescrevia a URL do banco incondicionalmente, fazendo a suíte
+de testes migrar o banco de desenvolvimento. Só apareceu ao isolar o banco de teste;
+seguiria como corrupção silenciosa de dados de desenvolvimento nas próximas sprints.
 
 ## Sprint 03 — Clientes
 

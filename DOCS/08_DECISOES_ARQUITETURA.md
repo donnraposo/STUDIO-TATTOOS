@@ -134,12 +134,52 @@ ao usuário. Os testes de concorrência precisam abrir transações paralelas re
 
 ## ADR-012 — Auditoria imutável no nível do banco
 
-**Decisão:** a role da aplicação recebe apenas `INSERT` e `SELECT` em `audit_log`;
-`UPDATE` e `DELETE` são revogados.
-**Motivo:** a regra exige registros que usuários não possam editar nem apagar.
-Depender de a aplicação "não oferecer" a operação não é garantia.
-**Consequência:** correções em auditoria são impossíveis por desenho. Retenção de
-seis anos administrada fora da aplicação.
+> **Revisado em 24/09/2026 durante a implementação da Sprint 02.1.** A decisão
+> original baseava-se apenas em `REVOKE` e não se sustentou na prática. O texto
+> abaixo substitui a versão anterior; o histórico está ao final da seção.
+
+**Decisão:** `audit_log` é append-only por gatilho no banco. Um gatilho
+`BEFORE UPDATE OR DELETE` levanta exceção, e o `REVOKE` de `UPDATE` e `DELETE`
+para `PUBLIC` permanece como camada adicional.
+
+**Motivo:** a regra exige registros que usuários não possam editar nem apagar, e
+depender de a aplicação "não oferecer" a operação não é garantia. O `REVOKE`
+sozinho também não é: no PostgreSQL, a role **dona** da tabela pode conceder o
+privilégio de volta a si mesma, e a aplicação é dona das tabelas que cria. O
+gatilho recusa a operação para qualquer role, inclusive a dona, e só pode ser
+contornado removendo-o explicitamente por DDL — ato que é ele próprio detectável.
+
+**Consequência:** correções em auditoria são impossíveis por desenho. `TRUNCATE`
+continua funcionando, por ser DDL e não disparar gatilhos de linha — é assim que a
+suíte de testes limpa a tabela entre cenários. Retenção de seis anos administrada
+fora da aplicação.
+
+**Verificação:** comprovado por teste automatizado e manualmente conectado como
+dono do banco; ambos recebem `ERROR: audit_log e append-only`.
+
+**Histórico:** versão original de 24/09/2026 previa somente
+`REVOKE UPDATE, DELETE ... FROM <role da aplicação>`. Substituída no mesmo dia, ao
+constatar que o dono da tabela contornaria a restrição.
+
+## ADR-018 — Estados como texto com `CHECK`, não `ENUM` nativo
+
+**Decisão:** perfis, estados de conta, de agendamento, de pagamento e demais
+enumerações são colunas de texto com restrição `CHECK`, e não tipos `ENUM` nativos
+do PostgreSQL.
+
+**Motivo:** as sprints seguintes acrescentam estados a quase todos os módulos. Com
+`ENUM` nativo, cada novo valor exige `ALTER TYPE`, que tem restrições de execução e
+não pode ser revertido de forma simples. Com `CHECK`, passa a ser alteração de
+restrição em uma migração comum.
+
+**Alternativas:** `ENUM` nativo, mais autodescritivo no banco e com validação
+idêntica, porém rígido para evoluir; texto livre sem restrição, descartado por
+perder a garantia no banco.
+
+**Consequência:** a garantia continua no banco, não apenas na aplicação. O nome da
+restrição segue o padrão `ck_<tabela>_<campo>`. O `StrEnum` correspondente em Python
+permanece a fonte dos valores válidos na camada de aplicação.
+
 **Data:** 24/09/2026.
 
 ## ADR-013 — Idioma

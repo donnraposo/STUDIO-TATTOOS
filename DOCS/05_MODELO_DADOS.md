@@ -19,6 +19,10 @@
 5. **Integridade de agenda no banco, não só na aplicação.** As duas regras de não
    sobreposição são restrições do PostgreSQL, imunes a concorrência.
 6. **Percentual congelado na aprovação** do orçamento (RN-REP-006).
+7. **Estados são texto com `CHECK`, não `ENUM` nativo** (ADR-018). A garantia
+   permanece no banco, mas acrescentar um estado nas próximas sprints passa a ser
+   alteração de restrição, sem `ALTER TYPE`. O `StrEnum` em Python é a fonte dos
+   valores válidos na aplicação.
 
 ## 2. Extensões necessárias
 
@@ -336,9 +340,13 @@ repetição.
 `id`, `actor_id`, `action`, `module`, `entity_type`, `entity_id`, `old_values`
 jsonb, `new_values` jsonb, `reason`, `created_at`.
 
-**Imutabilidade real:** a role da aplicação recebe apenas `INSERT` e `SELECT`;
-`UPDATE` e `DELETE` são revogados no banco. Não basta a aplicação "não oferecer"
-edição (RN 10.7).
+**Imutabilidade real:** gatilho `BEFORE UPDATE OR DELETE` levanta exceção para
+qualquer role, inclusive a dona da tabela, somado a `REVOKE` para `PUBLIC`
+(ADR-012). Não basta a aplicação "não oferecer" edição, nem basta o `REVOKE`: o
+dono da tabela poderia conceder o privilégio de volta a si mesmo.
+
+`TRUNCATE` continua funcionando, por ser DDL e não disparar gatilhos de linha — é
+o mecanismo usado pela suíte de testes para limpar a tabela entre cenários.
 
 Retenção de seis anos. Filtros por usuário, ação, módulo e período.
 
@@ -371,7 +379,8 @@ booth        1 ── N booking
 | "Atrasado" derivado no pós-venda | Dispensa job só para trocar rótulo de estado |
 | `artist_percentage` copiado em `quote` e `session` | Congela o percentual da aprovação; mudança de padrão não afeta o passado |
 | Outbox em tabela, sem Redis | Durabilidade sem infraestrutura adicional no porte atual |
-| `audit_log` sem permissão de `UPDATE`/`DELETE` | Imutabilidade garantida pelo banco, não pela boa vontade da aplicação |
+| `audit_log` append-only por gatilho | Imutabilidade garantida pelo banco, resistente inclusive à role dona da tabela |
+| Estados como texto com `CHECK` | Mesma garantia do `ENUM` nativo, sem `ALTER TYPE` a cada novo estado |
 
 ## 14. Pendências deste documento
 

@@ -187,7 +187,21 @@ Convenção reforçada e aplicada: **uma unidade exportada por arquivo** (ADR-01
 com raiz de composição em `Container` (ADR-016). O Sprint 01 foi refatorado para
 atender a regra antes de ser fechado.
 
-**Próximo passo:** Sprint 02 — identidade, acesso e auditoria.
+**Identidade visual definida.** Tipografia Urbanist com a escala 32/24/20/18/16/14,
+paleta ouro sobre preto extraída do monograma do estúdio, tokens centralizados em
+`frontend/src/shared/tokens.css`. A logo está em `frontend/public/brand/logo.jpg`.
+
+**Sprint 02 — Identidade, acesso e auditoria: em andamento**, dividida em quatro
+etapas. A etapa 02.1 está concluída: tabelas de identidade, sessão, histórico e
+auditoria criadas, com a trilha comprovadamente append-only.
+
+Duas decisões foram revistas durante a implementação e estão registradas:
+a imutabilidade da auditoria passou de `REVOKE` para gatilho (ADR-012 revisado),
+e os estados passaram a texto com `CHECK` em vez de `ENUM` nativo (ADR-018).
+
+**Próximo passo:** etapa 02.2 — autenticação com Argon2id, sessão por cookie,
+expiração e CSRF. Depende de autorizar a dependência `pwdlib[argon2]`, já prevista
+no ADR-010.
 
 ## Estado de aprovação e limite de trabalho
 
