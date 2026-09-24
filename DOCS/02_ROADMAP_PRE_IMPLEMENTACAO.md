@@ -28,9 +28,9 @@
 | 9 | Pós-venda e notificações | Concluída |
 | 10 | Painéis, relatórios e auditoria | Concluída |
 | 11 | Requisitos não funcionais | Concluída |
-| 12 | Modelo de dados e arquitetura | Em andamento |
-| 13 | Plano de testes e critérios de aceite | Aguardando conclusão da arquitetura |
-| 14 | Aprovação para implementação | Bloqueada pelas fases anteriores |
+| 12 | Modelo de dados e arquitetura | Concluída |
+| 13 | Plano de testes e critérios de aceite | Concluída |
+| 14 | Aprovação para implementação | **Aguardando decisão do usuário** |
 
 ## 3. Fase 0 — Consolidar decisões existentes
 
@@ -462,17 +462,27 @@ Concluída em alto nível. Parâmetros de implementação serão escolhidos na F
 - A regra de não sobreposição do mesmo artista vale entre macas e considera solicitações pendentes e agendamentos aprovados; pendências de artistas diferentes continuam podendo concorrer pela mesma maca.
 - Ver detalhes, decisões pendentes e riscos em `04_ARQUITETURA_TECNICA.md`.
 
-### Pendências para concluir a Fase 12
+### Entregáveis produzidos em 24/09/2026
 
-- Fechar o modelo de dados e a estrutura de módulos/arquivos.
-- Selecionar camada ORM e migrações, biblioteca de autenticação e controles de sessão.
-- Definir worker/agendador/fila, serviço de e-mail, armazenamento privado e hospedagem.
-- Definir calendário, detalhes de API, segurança operacional, backup e recuperação.
-- Resolver dúvidas não bloqueadoras de experiência, como atualização imediata da caixa interna de notificações.
+- `05_MODELO_DADOS.md` — entidades, relacionamentos e as restrições `EXCLUDE` que
+  garantem as duas regras de não sobreposição no próprio banco.
+- `06_ESTRUTURA_PROJETO.md` — árvore de pastas, nove módulos, camadas internas,
+  contratos de API e topologia de containers.
+- `08_DECISOES_ARQUITETURA.md` — catorze decisões registradas com motivo e
+  alternativas avaliadas.
+
+### Decisões fechadas com o responsável
+
+- Numeração da documentação preservada; complementada de `05` a `08` (ADR-014).
+- Hospedagem em VPS único com Docker Compose (ADR-005).
+- Agenda timeline construída sem biblioteca licenciada (ADR-004).
+- E-mail transacional e armazenamento de arquivos por serviços gerenciados (ADR-006).
 
 ### Situação
 
-Em andamento. O repositório foi inspecionado em modo somente leitura e, nesta etapa, contém documentação em `DOCS`, sem aplicação implementada. A base tecnológica e o fluxo de autenticação/comunicação foram alinhados; as pendências acima ainda precisam ser fechadas.
+Concluída. As pendências remanescentes, listadas em `04_ARQUITETURA_TECNICA.md` §9,
+não bloqueiam a implementação: provedor específico de e-mail, metas de RPO/RTO,
+atualização da caixa de notificações e parâmetros de limite de login.
 
 ## 16. Fase 13 — Preparar testes e critérios de aceite
 
@@ -492,7 +502,10 @@ Em andamento. O repositório foi inspecionado em modo somente leitura e, nesta e
 
 ### Situação
 
-Aguardando conclusão da Fase 12.
+Concluída em 24/09/2026. Entregue em `07_PLANO_TESTES.md`, cobrindo testes
+unitários, integração, concorrência, matriz de permissões, cenários financeiros,
+segurança, pós-venda, ponta a ponta, desempenho, recuperação e critérios de
+homologação.
 
 ### Critério de saída
 

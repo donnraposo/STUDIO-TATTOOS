@@ -120,18 +120,34 @@ Topologia lógica prevista:
 
 Docker será usado nos ambientes de desenvolvimento, teste e execução. A forma de hospedagem, proxy/TLS, armazenamento persistente em produção, gestão de segredos e cópias de segurança ainda será definida. O mecanismo de fila/agendamento não está escolhido; a proposta é usar uma fila durável/outbox para não perder envios quando um container reiniciar.
 
-## 9. Decisões ainda pendentes na Fase 12
+## 9. Decisões fechadas em 24/09/2026
 
-- Biblioteca de autenticação e implementação detalhada das sessões; `pwdlib`/Argon2id é candidato para hash.
-- Camada de acesso a dados e migrações; SQLAlchemy 2 + Alembic é proposta, ainda não aprovada.
-- Worker, agendador, fila/outbox e política de repetição.
-- Provedor de e-mail e provedor de armazenamento privado para fotos e comprovantes.
-- Hospedagem de produção, proxy/TLS, gestão de segredos e metas de recuperação (RPO/RTO).
-- Modelo de dados completo, cardinalidades e ciclo de vida dos registros.
-- Estrutura de módulos/arquivos e contratos finais da API.
-- Componente de calendário, incluindo avaliação de recursos licenciados e custo.
-- Comportamento imediato da caixa interna de notificações (atualização periódica ou entrega em tempo real).
-- Controles técnicos complementares, parâmetros de login e procedimentos de atualização/backup.
+As pendências desta seção foram resolvidas. O registro formal, com motivo e
+alternativas avaliadas, está em `08_DECISOES_ARQUITETURA.md`.
+
+| Pendência | Decisão | ADR |
+|---|---|---|
+| Biblioteca de autenticação e hash | `pwdlib` com Argon2id; sessões próprias no servidor | ADR-010 |
+| Camada de dados e migrações | SQLAlchemy 2 + Alembic | ADR-009 |
+| Worker, agendador e fila | Outbox em tabela, worker em container separado, sem Redis/Celery | ADR-007, ADR-008 |
+| E-mail e armazenamento | Serviços gerenciados: transacional para e-mail, compatível com S3 para arquivos | ADR-006 |
+| Hospedagem, proxy e TLS | VPS único com Docker Compose e Caddy com TLS automático | ADR-005 |
+| Modelo de dados | Completo em `05_MODELO_DADOS.md` | ADR-011 |
+| Estrutura de módulos e API | Completa em `06_ESTRUTURA_PROJETO.md` | — |
+| Componente de calendário | Timeline própria em CSS Grid, sem licença paga | ADR-004 |
+| Integridade da agenda | Restrições `EXCLUDE` no PostgreSQL | ADR-011 |
+| Auditoria imutável | `UPDATE` e `DELETE` revogados na role da aplicação | ADR-012 |
+
+### Pendências remanescentes, não bloqueantes
+
+- Escolha do provedor específico de e-mail entre os candidatos; a integração fica
+  isolada atrás de um adaptador e pode ser trocada sem afetar casos de uso.
+- Metas de RPO e RTO: proposta inicial de backup diário cifrado enviado para fora
+  do servidor, com perda máxima aceitável de 24 horas e recuperação em até 4 horas.
+  Depende de confirmação do responsável.
+- Comportamento da caixa interna de notificações: proposta de atualização periódica
+  por consulta, sem canal em tempo real na primeira versão.
+- Parâmetros finais de limite de tentativas de login.
 
 ## 10. Riscos e respostas arquiteturais
 

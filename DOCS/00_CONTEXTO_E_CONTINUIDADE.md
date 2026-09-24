@@ -143,20 +143,44 @@ O escopo desta versão é **um único estúdio**. Não projetar agora uma plataf
 | `00_CONTEXTO_E_CONTINUIDADE.md` | Este resumo para a próxima IA e ponto de retomada. |
 | `01_REGRAS_DE_NEGOCIO.md` | Regras detalhadas e fontes oficiais de proteção de dados na Irlanda. |
 | `02_ROADMAP_PRE_IMPLEMENTACAO.md` | Fases, dependências, riscos, critérios e situação atual. |
-| `03_REQUISITOS_NAO_FUNCIONAIS.md` | Requisitos técnicos aprovados em alto nível e detalhes pendentes de arquitetura. |
-| `04_ARQUITETURA_TECNICA.md` | Decisões técnicas alinhadas, visão da solução, segurança, PWA, notificações, riscos e pendências da arquitetura. |
+| `03_REQUISITOS_NAO_FUNCIONAIS.md` | Requisitos técnicos aprovados em alto nível. |
+| `04_ARQUITETURA_TECNICA.md` | Visão da solução, segurança, PWA, notificações e riscos. |
+| `05_MODELO_DADOS.md` | Entidades, relacionamentos e restrições de integridade. |
+| `06_ESTRUTURA_PROJETO.md` | Pastas, módulos, camadas, contratos de API e containers. |
+| `07_PLANO_TESTES.md` | Cenários de teste e critérios de aceite. |
+| `08_DECISOES_ARQUITETURA.md` | Catorze decisões registradas com motivo e alternativas. |
 
 ## Onde paramos
 
 ### Concluído
 
-Fases 0 a 11 do roadmap estão concluídas em nível funcional: contexto do estúdio, perfis/acesso, clientes/privacidade, agenda, orçamentos/sessões, pagamentos, repasses, guests, pós-venda, painéis, relatórios, auditoria e requisitos não funcionais.
+**Fases 0 a 13 do roadmap estão concluídas.** As fases 0 a 11 fecharam o desenho
+funcional: contexto do estúdio, perfis e acesso, clientes e privacidade, agenda,
+orçamentos e sessões, pagamentos, repasses, guests, pós-venda, painéis, relatórios,
+auditoria e requisitos não funcionais.
+
+Em 24/09/2026 foram concluídas a Fase 12 e a Fase 13, com quatro entregáveis novos
+(`05` a `08`) e as decisões pendentes de arquitetura fechadas.
+
+### Decisões tomadas em 24/09/2026
+
+- Numeração da documentação preservada e complementada (ADR-014).
+- Hospedagem em VPS único com Docker Compose e Caddy (ADR-005).
+- Agenda timeline própria em CSS Grid, sem licença paga (ADR-004).
+- E-mail transacional e armazenamento de arquivos gerenciados (ADR-006).
+- SQLAlchemy 2 com Alembic (ADR-009) e Argon2id via `pwdlib` (ADR-010).
+- Outbox em tabela com worker separado, sem Redis ou Celery (ADR-007, ADR-008).
+- Integridade da agenda garantida por restrições `EXCLUDE` no PostgreSQL (ADR-011).
+- Auditoria imutável por revogação de permissão no banco (ADR-012).
 
 ### Fase atual
 
-Fase 12 — modelo de dados e arquitetura está em andamento. A inspeção do repositório confirmou que há documentação em `DOCS`, sem aplicação implementada. A base tecnológica e o fluxo de comunicação/autenticação foram alinhados e estão registrados em `04_ARQUITETURA_TECNICA.md`. Próximo: fechar bibliotecas e serviços pendentes, modelo de dados, módulos e estrutura de projeto.
+**Fase 14 — aprovação para implementação.** Toda a documentação de arquitetura está
+pronta. O projeto aguarda a resposta do responsável à pergunta:
 
-Depois produzir o plano de testes e critérios de aceite (Fase 13) e apresentar a proposta completa para aprovação final (Fase 14).
+> Arquitetura aprovada. Posso iniciar a implementação?
+
+Continua não existindo autorização para escrever código.
 
 ## Estado de aprovação e limite de trabalho
 
@@ -168,4 +192,21 @@ Depois produzir o plano de testes e critérios de aceite (Fase 13) e apresentar 
 
 ## Orientação para a próxima IA
 
-Leia este arquivo, as regras, os requisitos não funcionais, o roadmap e a arquitetura técnica antes de responder. Não repita perguntas já resolvidas. Continue pela Fase 12, fechando o modelo de dados, as bibliotecas/serviços pendentes e a estrutura de projeto. Depois prepare testes e critérios de aceite na Fase 13 e conclua a proposta para aprovação final na Fase 14. Atualize a documentação quando uma decisão for aprovada. Não escreva código antes da aprovação final.
+Leia este arquivo e depois os documentos `01` a `08` conforme a necessidade. **Não
+varra o repositório nem repita perguntas já resolvidas** — a documentação é mantida
+atualizada justamente para evitar isso.
+
+O desenho está completo. Se a implementação ainda não tiver sido aprovada, o único
+passo pendente é obter a aprovação da Fase 14. Se tiver sido aprovada, siga o plano
+de implementação por etapas, respeitando:
+
+- uma classe própria do projeto por arquivo, sem exceção;
+- Clean Code e SOLID, com regras de negócio fora de rotas, schemas e tarefas;
+- reutilização dos módulos e variáveis já definidos, criando o novo sempre alinhado
+  ao padrão vigente;
+- execução sempre em containers Docker, nunca no host;
+- PostgreSQL real nos testes, nunca SQLite, por causa de `tstzrange` e `EXCLUDE`;
+- atualização da documentação na mesma entrega da mudança.
+
+Nunca alterar arquitetura já registrada sem explicar o impacto, apresentar
+alternativa e obter aprovação explícita.
