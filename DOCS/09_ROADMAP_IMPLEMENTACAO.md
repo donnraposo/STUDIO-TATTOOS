@@ -50,16 +50,24 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 
 ### MVP
 
-| Sprint | Tema | Situação |
-|---|---|---|
-| 01 | Fundação técnica | ✅ Concluída em 24/09/2026 |
-| **M1** | Identidade e acesso | 🔄 Em andamento — etapa 1 de 4 |
-| M2 | Clientes | Não iniciada |
-| M3 | ⚠️ Agenda e macas | Não iniciada |
-| M4 | Orçamentos e sessões | Não iniciada |
-| M5 | Pagamentos e sinal | Não iniciada |
-| M6 | Repasses e fechamento semanal | Não iniciada |
-| M7 | Implantação mínima | Não iniciada |
+**Estratégia de execução: backend completo primeiro, interface depois** (ADR-020).
+
+| Sprint | Tema | Camada | Situação |
+|---|---|---|---|
+| 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
+| **M1** | Identidade e acesso | Backend | 🔄 Em andamento — etapa 1 de 3 |
+| M2 | Clientes | Backend | Não iniciada |
+| M3 | ⚠️ Agenda e macas | Backend | Não iniciada |
+| M4 | Orçamentos e sessões | Backend | Não iniciada |
+| M5 | Pagamentos e sinal | Backend | Não iniciada |
+| M6 | Repasses e fechamento semanal | Backend | Não iniciada |
+| M7 | Interface completa do MVP | Frontend | Não iniciada |
+| M8 | Implantação mínima | Infra | Não iniciada |
+
+**Ponto de validação sem interface.** Enquanto o frontend não existe, o contrato
+publicado em `/api/v1/docs` é o meio de exercitar cada módulo e conferir as regras
+de negócio. Ao fim de cada sprint de backend, o responsável consegue executar o
+fluxo por ali.
 
 ### Fase 2
 
@@ -127,9 +135,11 @@ administrativas são auditadas.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | M1.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
-| M1.2 | Hash de senha, login, sessão, expiração e CSRF | Não iniciada |
+| M1.2 | Hash de senha, login, sessão, expiração e CSRF | Em andamento |
 | M1.3 | Gestão de contas pelo gestor e matriz de permissões | Não iniciada |
-| M1.4 | Tela de login, guardas de rota e componentes de formulário | Não iniciada |
+
+A tela de login e os guardas de rota migraram para a sprint M7, junto com o
+restante da interface.
 
 ### Evidência da etapa M1.1 — 24/09/2026
 
@@ -238,7 +248,25 @@ demonstrativo do artista e ajustes negativos de devolução posterior.
 **Resultado esperado:** fechamento reproduzível e auditável, conferido com os
 exemplos de `01_REGRAS_DE_NEGOCIO.md`.
 
-## Sprint M7 — Implantação mínima
+## Sprint M7 — Interface completa do MVP
+
+**Objetivo:** construir todas as telas do MVP sobre a API já pronta e testada —
+login, clientes, agenda com a timeline de macas, orçamentos, pagamentos e repasses.
+
+**Arquivos:** `frontend/src/features/*`, componentes compartilhados em
+`frontend/src/shared/components`.
+
+**Dependências:** M1 a M6.
+
+**Riscos:** concentrar todo o esforço de interface em uma sprint torna a estimativa
+menos confiável; mal-entendidos de regra aparecem tarde, já com o backend pronto. A
+validação pelo `/api/v1/docs` ao fim de cada sprint de backend existe para reduzir
+esse risco.
+
+**Resultado esperado:** os três perfis operam o ciclo completo pela interface, em
+desktop e celular, sobre os tokens e componentes já definidos.
+
+## Sprint M8 — Implantação mínima
 
 **Objetivo:** colocar o MVP em uso real com segurança proporcional ao dado que ele
 passa a guardar.

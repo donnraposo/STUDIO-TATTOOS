@@ -2,6 +2,7 @@ from fastapi import FastAPI
 
 from app.core.container import Container
 from app.modules.health.api.health_router import HealthRouter
+from app.modules.identity.api.auth_router import AuthRouter
 
 
 class Application:
@@ -26,4 +27,5 @@ class Application:
     def _routers(self) -> list:
         return [
             HealthRouter(self._container).build(),
+            AuthRouter(self._container).build(),
         ]

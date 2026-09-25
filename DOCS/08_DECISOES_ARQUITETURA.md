@@ -278,6 +278,27 @@ do responsável, mesmo sendo candidato natural a simplificação.
 
 **Data:** 24/09/2026.
 
+## ADR-020 — Backend completo antes da interface
+
+**Decisão:** as sprints M1 a M6 entregam apenas backend. Toda a interface do MVP é
+construída na sprint M7, sobre a API já pronta e testada.
+
+**Motivo:** decisão do responsável. Evita alternância de contexto entre Python e
+Vue a cada sprint e permite consolidar as regras de negócio antes de desenhar as
+telas sobre elas.
+
+**Alternativas:** entrega vertical por sprint, com API e tela juntas, que daria
+retorno visual contínuo; fatia fina ponta a ponta, que daria algo demonstrável
+muito rápido ao custo de retrabalho.
+
+**Consequência e mitigação:** o responsável fica sem interface por várias sprints,
+então mal-entendidos de regra podem aparecer tarde, já com o backend pronto. Para
+reduzir isso, o contrato publicado em `/api/v1/docs` passa a ser o ponto de
+validação ao fim de cada sprint de backend, permitindo executar o fluxo real sem
+tela. A tela de login, antes prevista na M1, foi realocada para a M7.
+
+**Data:** 25/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar
