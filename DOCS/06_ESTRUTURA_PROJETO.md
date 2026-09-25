@@ -91,14 +91,43 @@ SQLAlchemy nem HTTP.
 
 ### 2.3 Convenções obrigatórias
 
-- **Uma classe própria do projeto por arquivo.** Nunca mais de uma.
-- Nome do arquivo corresponde à responsabilidade da classe.
+- **Uma unidade exportada por arquivo** (ADR-015). Uma classe, uma função pura ou
+  um tipo. No backend, nenhuma função de nível superior convive com uma classe no
+  mesmo arquivo — fábricas e provedores viram métodos do `Container`.
+- Nome do arquivo corresponde à responsabilidade da unidade.
 - Sem regra de negócio em rotas, schemas Pydantic ou tarefas do worker.
 - Módulos não importam detalhes internos uns dos outros; a comunicação passa por
   casos de uso e contratos.
 - O caso de uso delimita a transação.
 - `__init__.py` não esconde dependências com reexportação extensa.
 - Migrações são artefatos gerados pelo Alembic e seguem a convenção da ferramenta.
+
+### 2.4 Raiz de composição
+
+A classe `Container` (ADR-016) concentra a construção das dependências de
+infraestrutura. Roteadores e casos de uso a recebem pronta; nenhum deles sabe como
+`Settings` ou `Database` são instanciados.
+
+```text
+backend/app/
+├── main.py                     entrada ASGI — sem lógica própria
+├── application.py              class Application — monta o FastAPI
+├── core/
+│   ├── settings.py             class Settings
+│   ├── database.py             class Database
+│   └── container.py            class Container — raiz de composição
+└── modules/
+    └── health/api/
+        └── health_router.py    class HealthRouter
+```
+
+**Roteadores são classes.** Cada módulo expõe uma classe `XRouter` com um método
+`build()` que devolve o `APIRouter`. Os manipuladores são métodos dessa classe, o
+que mantém uma unidade por arquivo e dá ao roteador acesso ao container sem
+variáveis globais.
+
+Em testes, `Container(settings=...)` permite trocar a configuração sem tocar em
+cache global; `Container.reset()` descarta a instância compartilhada.
 
 ## 3. Frontend — organização por funcionalidade
 

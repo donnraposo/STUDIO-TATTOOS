@@ -175,12 +175,39 @@ Em 24/09/2026 foram concluídas a Fase 12 e a Fase 13, com quatro entregáveis n
 
 ### Fase atual
 
-**Fase 14 — aprovação para implementação.** Toda a documentação de arquitetura está
-pronta. O projeto aguarda a resposta do responsável à pergunta:
+**Implementação autorizada em 24/09/2026.** A Fase 14 foi aprovada e o
+desenvolvimento seguiu para `09_ROADMAP_IMPLEMENTACAO.md`.
 
-> Arquitetura aprovada. Posso iniciar a implementação?
+**Sprint 01 — Fundação técnica: concluída.** O repositório deixou de conter apenas
+documentação. Existe aplicação funcional em containers: FastAPI com verificação de
+saúde e prontidão, PostgreSQL com as extensões `btree_gist` e `citext` aplicadas por
+migração, e interface Vue 3 com TypeScript consumindo a API.
 
-Continua não existindo autorização para escrever código.
+Convenção reforçada e aplicada: **uma unidade exportada por arquivo** (ADR-015),
+com raiz de composição em `Container` (ADR-016). O Sprint 01 foi refatorado para
+atender a regra antes de ser fechado.
+
+**Identidade visual definida.** Tipografia Urbanist com a escala 32/24/20/18/16/14,
+paleta ouro sobre preto extraída do monograma do estúdio, tokens centralizados em
+`frontend/src/shared/tokens.css`. A logo está em `frontend/public/brand/logo.jpg`.
+
+**Entrega reorganizada em MVP e Fase 2** (ADR-019). O MVP cobre o ciclo
+irredutível do negócio — login, cliente, agenda com prevenção de conflito,
+orçamento, sinal, sessão paga e repasse semanal — mais implantação. Guests,
+pós-venda, relatórios, PWA, autocadastro e recuperação de senha vão para a Fase 2.
+Nada foi descartado, apenas resequenciado. Objetivo declarado: **uso real no
+estúdio**, não demonstração.
+
+**Sprint M1 — Identidade e acesso: em andamento**, dividida em quatro etapas. A
+etapa M1.1 está concluída: tabelas de identidade, sessão, histórico e auditoria
+criadas, com a trilha comprovadamente append-only.
+
+Duas decisões foram revistas durante a implementação e estão registradas:
+a imutabilidade da auditoria passou de `REVOKE` para gatilho (ADR-012 revisado),
+e os estados passaram a texto com `CHECK` em vez de `ENUM` nativo (ADR-018).
+
+**Próximo passo:** etapa M1.2 — hash de senha, login, sessão por cookie, expiração
+e CSRF. Pendente de decidir a biblioteca de hash, conforme o ADR-010.
 
 ## Estado de aprovação e limite de trabalho
 

@@ -1,0 +1,78 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: var(--space-0);
+  background: var(--color-canvas);
+  color: var(--color-on-light);
+  font-family: var(--font-sans);
+  font-size: var(--text-label-2);
+  font-weight: var(--weight-regular);
+  line-height: var(--line-normal);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: var(--space-0);
+  font-weight: var(--weight-medium);
+}
+
+p {
+  font-weight: var(--weight-regular);
+}
+
+h1 {
+  font-size: var(--text-heading-1);
+  line-height: var(--line-tight);
+}
+
+h2 {
+  font-size: var(--text-heading-2);
+  line-height: var(--line-tight);
+}
+
+h3 {
+  font-size: var(--text-heading-3);
+}
+
+button,
+input,
+select,
+textarea,
+a {
+  font: inherit;
+}
+
+button {
+  min-height: var(--touch-target);
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
