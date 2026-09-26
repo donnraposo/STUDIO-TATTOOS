@@ -6,15 +6,15 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2 e M3.
-**Em andamento:** M4 — orçamentos e sessões; etapa M4.1 concluída, M4.2 é a próxima.
+**Em andamento:** M4 — orçamentos e sessões; M4.1 e M4.2 concluídas, M4.3 é a próxima.
 **Progresso do MVP:** 4 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `reporting` (só auditoria), `quotes` (só modelo) |
+| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` |
-| Testes | 104 aprovados, em PostgreSQL real |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`, `/quotes/*` |
+| Testes | 119 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Quatro oitavos em número de sprints, porém menos
@@ -104,7 +104,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — etapa 1 de 3 |
+| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — 2 de 4 etapas |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7 | Interface completa do MVP | Frontend | Não iniciada |
@@ -440,8 +440,14 @@ conferir cada regra antes da seguinte.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | M4.1 | Tabelas `quote`, `quote_reference_image` e `tattoo_session`; migração `0005`; `booking.session_id` | ✅ Concluída em 26/09/2026 |
-| M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | ⬅️ Próxima |
-| M4.3 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | Não iniciada |
+| M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | ✅ Concluída em 27/09/2026 |
+| M4.3 | Imagens de referência: armazenamento compatível com S3, upload e acesso temporário | ⬅️ Próxima |
+| M4.4 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | Não iniciada |
+
+As imagens de referência ganharam etapa própria ao se confirmar o que a decisão de
+escopo já indicava: elas trazem a primeira dependência de infraestrutura externa do
+projeto, e misturar isso com o ciclo de aprovação juntaria dois assuntos sem relação
+numa entrega só.
 
 **Decisões de escopo tomadas em 26/09/2026:**
 
@@ -450,6 +456,53 @@ conferir cada regra antes da seguinte.
 | Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006) |
 | Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
 | Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
+
+### Evidência da etapa M4.2 — 27/09/2026
+
+- Endpoints: `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`
+  e `/reject`.
+- Ruff sem apontamentos; **119 testes aprovados**, sendo 15 novos do ciclo do
+  orçamento.
+
+**A regra que estrutura a etapa:** residente propõe, gestor decide — a mesma
+assimetria da agenda, com uma diferença que não existe lá. **O guest não acessa
+orçamento** (RN-ORC-001), e como o guest tatua, a política confere o **perfil**, não
+se a pessoa atua como artista. Qualquer verificação por `actor.tattoos` o deixaria
+passar.
+
+| Regra | Como é garantida |
+|---|---|
+| Percentual congelado na aprovação | 70% para cliente próprio, 50% para indicação (RN-REP-001 e RN-REP-002), gravados no orçamento. Restrição do banco recusa aprovado sem percentual |
+| Gestor corrige o percentual do atendimento | Campo opcional na aprovação (RN-CLI-003). A auditoria guarda o aplicado **e** o padrão da origem, para que um acordo fora do padrão seja rastreável |
+| Editar aprovado volta a pendente | E **apaga o percentual congelado**, a data e o responsável (RN-ORC-003) |
+| Recusa exige motivo | Texto livre com `min_length`, para que campo vazio não satisfaça a exigência |
+| Residente edita só o próprio e só pendente | `QuotePolicy.can_edit`. Editar o que já foi aprovado derrubaria a aprovação sozinho |
+
+**O cenário que mais importa está coberto por teste:** editar um orçamento aprovado
+limpa o percentual. As duas regras separadas parecem inofensivas; juntas, um
+percentual sobrevivente num orçamento pendente permitiria à próxima aprovação passar
+sem regravá-lo, aplicando o acordo antigo a um valor novo.
+
+**Decisões de projeto da etapa:**
+
+- **`QuoteDetails`, um objeto de valor com os campos editáveis.** A primeira versão
+  passava os oito campos soltos: `CreateQuote.execute` com dez parâmetros,
+  `UpdateQuote.execute` com onze, a mesma lista repetida em dois schemas e duas
+  rotas. Acrescentar um campo ao orçamento significava editar seis lugares, com a
+  chance de esquecer o caminho menos usado. Agora criar e editar recebem
+  `details`, e `QuoteRequest` herda de `QuoteFieldsRequest` acrescentando apenas
+  cliente e artista.
+- **A edição não aceita `client_id` nem `artist_id`.** Reatribuir um orçamento a
+  outro cliente ou artista não é edição; numa tela de correção de valores, isso
+  moveria histórico de atendimento sem deixar claro que foi o que aconteceu.
+- **Aparar texto é do schema, não do caso de uso.** `strip_whitespace` no
+  `QuoteFieldsRequest` em vez de `.strip()` espalhado: limpar espaço do que foi
+  digitado é assunto da borda, não da regra de negócio.
+- **Aprovar e rejeitar são ações próprias, não um `PUT` mudando `status`.** A
+  aprovação congela percentual e registra quem decidiu; não é editar um campo.
+
+**Ponto ainda aberto:** o motivo de rejeição segue como texto livre, conforme
+registrado na M4.1. Se o estúdio quiser lista fechada, é `CHECK` em migração nova.
 
 ### Evidência da etapa M4.1 — 26/09/2026
 

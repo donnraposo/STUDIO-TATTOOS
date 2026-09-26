@@ -6,12 +6,12 @@
 > Define a árvore de diretórios, a responsabilidade de cada pasta, as convenções de
 > código e os contratos de API.
 >
-> **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling` e a
-> tabela de auditoria de `reporting`. O módulo `quotes` existe com `domain/` e
-> `infrastructure/models/` apenas — a etapa M4.1 entregou o modelo e a migração, e
-> os casos de uso e rotas entram na M4.2. Os contratos da seção 4 descrevem o
-> destino final da API; hoje existem `/health`, `/ready`, `/auth/*`, `/users/*`,
-> `/clients/*`, `/booths` e `/bookings/*`.
+> **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling`,
+> `quotes` e a tabela de auditoria de `reporting`. Em `quotes`, a M4.2 entregou o
+> ciclo do orçamento; as sessões e as imagens de referência entram nas etapas
+> seguintes. Os contratos da seção 4 descrevem o destino final da API; hoje existem
+> `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`
+> e `/quotes/*`.
 
 ## 1. Árvore geral
 
@@ -193,7 +193,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /booths`, `POST /schedule-exceptions` |
 | Agenda | `GET /bookings`, `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
-| Orçamentos | `GET/POST /quotes`, `POST /quotes/{id}/approve`, `/reject` |
+| Orçamentos | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Sessões | `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
 | Pagamentos | `GET/POST /payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |

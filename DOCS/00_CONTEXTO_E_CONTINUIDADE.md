@@ -258,8 +258,22 @@ a sessão de banco do SQLAlchemy e com `user_session`; e `origin` e
 momento do repasse, porque o orçamento pode ser reaprovado com outro percentual e o
 que já foi executado precisa continuar valendo o que valia.
 
-**Próximo passo:** etapa M4.2 — ciclo do orçamento: criar, editar, aprovar e
-rejeitar, com o percentual congelado na aprovação (RN-REP-006).
+**A etapa M4.2 entregou o ciclo do orçamento.** Criar, editar, aprovar e rejeitar,
+em `/quotes/*`. O percentual é congelado na aprovação, com 70% para cliente próprio
+e 50% para indicação do estúdio, e o gestor pode corrigir o percentual deste
+atendimento — a correção fica na auditoria junto do padrão que teria sido aplicado.
+
+Duas regras que só existem juntas: editar um orçamento aprovado o devolve a
+pendente **e apaga o percentual congelado**. Um percentual sobrevivente num
+orçamento pendente pareceria inofensivo e permitiria à próxima aprovação passar sem
+regravá-lo, aplicando o acordo antigo a um valor novo. Há teste para isso.
+
+O guest não acessa orçamentos (RN-ORC-001), e a política confere o **perfil**, não
+se a pessoa tatua: o guest tatua, então qualquer verificação por "atua como artista"
+o deixaria passar. **119 testes aprovados.**
+
+**Próximo passo:** etapa M4.3 — imagens de referência, com armazenamento compatível
+com S3 atrás de adaptador (ADR-006).
 
 ## Estado de aprovação e limite de trabalho
 
