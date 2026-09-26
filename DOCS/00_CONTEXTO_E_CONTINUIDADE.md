@@ -1,9 +1,13 @@
 # Contexto do Projeto e Continuidade para Próxima IA
 
-**Última atualização:** 23/09/2026  
+**Última atualização:** 26/09/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** descoberta e validação funcional em andamento; nenhuma implementação de software foi autorizada.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2 e M3 concluídas; a M4 — orçamentos e sessões — está em execução. O desenho funcional está fechado desde 24/09/2026.
+
+> **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
+> sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),
+> que é a fonte em caso de divergência.
 
 ## Leia primeiro
 
@@ -220,7 +224,7 @@ duplicidade, visibilidade em três níveis e união preservando histórico. Os t
 níveis da RN-CLI-004 estão cobertos por teste, incluindo o artista indicado que vê
 apenas nome, telefone e Instagram.
 
-**Sprint M3 — Agenda e macas: em andamento**, etapa 1 de 3.
+**Sprint M3 — Agenda e macas: concluída em 26/09/2026**, nas três etapas.
 
 **A etapa M3.1 retirou o maior risco técnico do projeto.** As duas restrições
 `EXCLUDE` estão no banco e comprovadas por oito testes, incluindo uma corrida com
@@ -244,11 +248,20 @@ aprovação (RN-REP-006).
 
 ## Estado de aprovação e limite de trabalho
 
-- O usuário pediu documentação completa em Markdown dentro da pasta `DOCS`.
-- O usuário pediu explicitamente para documentar as decisões técnicas alinhadas; alterações realizadas permanecem restritas à documentação.
-- Essa autorização cobre documentação e análise. **Não existe autorização para escrever código, instalar dependências ou implementar o sistema.**
-- Não começar implementação ao concluir arquitetura sem perguntar e aguardar aprovação explícita.
-- A aprovação final esperada é uma resposta clara à pergunta: “Arquitetura aprovada. Posso iniciar a implementação?”
+**A implementação foi autorizada em 24/09/2026.** A pergunta "Arquitetura aprovada.
+Posso iniciar a implementação?" foi respondida e a Fase 14 abriu o desenvolvimento.
+Escrever código deixou de ser proibido.
+
+O que continua valendo, sprint após sprint:
+
+- **Aprovação é por sprint e por etapa, não geral.** Discutir não é autorizar;
+  planejar não é autorizar. Antes de aprovação explícita não se altera arquivo,
+  banco ou dependência. As palavras que liberam estão em `CLAUDE.md`, seção 2.
+- **Dependência nova exige autorização própria**, caso a caso. `pwdlib` foi
+  autorizada assim (ADR-010).
+- Não assumir requisito. Dúvida crítica se pergunta antes de propor solução.
+- Arquitetura já registrada não muda sem explicar o impacto, apresentar
+  alternativa e obter aprovação.
 
 ## Orientação para a próxima IA
 

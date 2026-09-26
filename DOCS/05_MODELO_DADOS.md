@@ -140,7 +140,7 @@ Uma exceção prevalece sobre `studio_hours` na data afetada.
 | `booth_id` | uuid FK NOT NULL | |
 | `period` | tstzrange NOT NULL | Início e fim; sem blocos fixos |
 | `status` | enum NOT NULL | `REQUESTED`, `APPROVED`, `REJECTED`, `DONE`, `CANCELLED`, `NO_SHOW` |
-| `session_id` | uuid FK NULL | Liga à sessão do orçamento |
+| `session_id` | uuid FK NULL | Liga à sessão do orçamento. Acrescentado na migração `0005`, quando a tabela `session` passou a existir |
 | `requested_at` | timestamptz NOT NULL | Ordena solicitações concorrentes |
 | `decided_at` / `decided_by` | | |
 | `rejection_reason` | enum NULL | `SLOT_TAKEN`, `STUDIO_CLOSED`, `RESCHEDULED` |
@@ -178,10 +178,13 @@ conflito exigido por RN-AGE-007, que não permite ignorar o conflito.
 Rejeitados e cancelados saem das cláusulas `WHERE` e deixam de ocupar a agenda,
 preservando o registro histórico (RN-AGE-014).
 
-### `booking_history`
+### Histórico de estado do agendamento
 
-`id`, `booking_id`, `from_status`, `to_status`, `reason`, `note`, `actor_id`,
-`created_at`. Registra aprovação, rejeição, remarcação, transferência e cancelamento.
+**Não existe tabela `booking_history`.** O histórico de aprovação, rejeição,
+remarcação e cancelamento fica no `audit_log`, que já é append-only por gatilho e já
+guarda ator, ação, valores antigo e novo na mesma transação da operação. Uma segunda
+tabela gravando a mesma transição criaria duas fontes para a mesma verdade, com o
+risco de divergirem (ADR-023).
 
 ## 6. Orçamentos e sessões
 

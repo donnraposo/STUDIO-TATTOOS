@@ -6,21 +6,34 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2 e M3.
-**Próxima:** M4 — orçamentos e sessões.
+**Em andamento:** M4 — orçamentos e sessões, etapa 1 de 3.
 **Progresso do MVP:** 4 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity`, `clients`, `reporting` (só auditoria) |
+| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` |
 | Testes | 93 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
-> **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
-> isso em esforço: as duas maiores — M3, com a agenda, e M7, com toda a interface —
-> ainda não começaram. Nenhuma regra do domínio de negócio foi implementada: não há
-> cliente, agendamento, orçamento nem dinheiro no sistema.
+> **Leitura honesta do avanço.** Quatro oitavos em número de sprints, porém menos
+> que isso em esforço: a M7, com toda a interface, é a maior do MVP e ainda não
+> começou. O backend já cobre identidade, clientes e agenda — inclusive a prevenção
+> de conflito, que era o risco técnico central. **Falta todo o dinheiro:** orçamento,
+> sinal, pagamento e repasse. Enquanto essa metade não existir, o estúdio continua
+> com controle paralelo, porque o fio condutor do MVP não fecha.
+
+### Pendências de costura entre sprints
+
+Casos de uso já entregues que dependem de um módulo futuro. Cada ponto está marcado
+no código e **precisa ser fechado na sprint indicada** — sem esta lista, a sprint
+seguinte fecha sem saber tudo o que tinha de fechar.
+
+| Ponto no código | O que falta | Fecha em |
+|---|---|---|
+| `ApproveBooking._deposit_is_confirmed` | Consultar o sinal confirmado; hoje devolve verdadeiro fixo (RN-AGE-005) | M5 |
+| `CancelBooking`, `RescheduleBooking` | Destino do sinal em cancelamento, não comparecimento e remarcação fora de 24h; hoje só o estado é gravado | M5 |
 
 ### Riscos abertos
 
@@ -91,7 +104,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| **M4** | Orçamentos e sessões | Backend | ⬅️ Próxima |
+| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — etapa 1 de 3 |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7 | Interface completa do MVP | Frontend | Não iniciada |
@@ -412,10 +425,31 @@ aprovação. Execução, sessão parcial e conclusão.
 **Dependências:** M3.
 
 **Riscos:** alteração retroativa de percentual; divergência entre valor aprovado e
-valor executado.
+valor executado; as imagens de referência trazem armazenamento de objetos, que é a
+primeira dependência de infraestrutura externa do projeto.
 
 **Resultado esperado:** ciclo completo entre orçamento, agendamento, sessão e
 conclusão.
+
+### Etapas
+
+Dividida como a M3, pelo mesmo motivo: a sprint acumula modelo, ciclo de aprovação,
+execução de sessão e upload de arquivo. Entregar em bloco único tira a chance de
+conferir cada regra antes da seguinte.
+
+| Etapa | Escopo | Situação |
+|---|---|---|
+| M4.1 | Tabelas `quote`, `quote_reference_image` e `session`; migração `0005`; `booking.session_id` | ⬅️ Em andamento |
+| M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | Não iniciada |
+| M4.3 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | Não iniciada |
+
+**Decisões de escopo tomadas em 26/09/2026:**
+
+| Tema | Decisão |
+|---|---|
+| Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006) |
+| Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
+| Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
 
 ## Sprint M5 — Pagamentos e sinal
 

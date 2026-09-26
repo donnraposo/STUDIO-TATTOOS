@@ -341,6 +341,30 @@ não leem o cookie diretamente.
 
 **Data:** 26/09/2026.
 
+## ADR-023 — `audit_log` é o histórico de estado, sem tabela paralela
+
+**Decisão:** não criar `booking_history`. As transições de estado do agendamento —
+aprovação, rejeição, remarcação, cancelamento e não comparecimento — ficam no
+`audit_log`, gravadas na mesma transação da operação. O mesmo vale para os demais
+módulos: nenhuma entidade ganha tabela própria de histórico de estado.
+
+**Motivo:** o `audit_log` já é append-only por gatilho (ADR-012) e já guarda ator,
+ação, módulo, entidade e os valores antigo e novo. Uma tabela paralela repetiria a
+mesma informação sem a garantia de imutabilidade, e bastaria um caso de uso esquecer
+de gravar nela para as duas fontes divergirem — com a pergunta insolúvel de qual
+delas está certa. O modelo de dados previa `booking_history` de quando a auditoria
+ainda seria por `REVOKE`; com o gatilho, a tabela perdeu a razão de existir.
+
+**Alternativa considerada:** manter `booking_history` para simplificar a consulta do
+histórico de um agendamento. Recusada: é um índice sobre o `audit_log`, não uma
+segunda fonte, e pode ser resolvida por consulta filtrando `entity_type = 'booking'`.
+
+**Consequência:** a tela de histórico do agendamento lê o `audit_log` filtrado por
+entidade. Se o volume exigir, entra índice em `(entity_type, entity_id)` — decisão de
+desempenho, não de modelagem. `05_MODELO_DADOS.md` deixou de descrever a tabela.
+
+**Data:** 26/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar
