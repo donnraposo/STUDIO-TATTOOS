@@ -8,7 +8,7 @@
 >
 > **Módulos já implementados:** `health`, `identity` e a tabela de auditoria de
 > `reporting`. Os demais seguem o roadmap. Os contratos da seção 4 descrevem o
-> destino final da API; hoje existem apenas `/health`, `/ready` e `/auth/*`.
+> destino final da API; hoje existem `/health`, `/ready`, `/auth/*` e `/users/*`.
 
 ## 1. Árvore geral
 

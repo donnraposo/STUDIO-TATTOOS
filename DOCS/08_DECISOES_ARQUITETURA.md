@@ -299,6 +299,37 @@ tela. A tela de login, antes prevista na M1, foi realocada para a M7.
 
 **Data:** 25/09/2026.
 
+## ADR-021 — Erro de domínio traduzido em um único lugar
+
+**Decisão:** casos de uso levantam `PermissionDeniedError` ou `BusinessRuleError`,
+sem conhecer HTTP. A conversão em resposta acontece em `ErrorHandlers`, registrado
+na aplicação: `PermissionDeniedError` vira 403 e `BusinessRuleError` vira 422.
+
+**Motivo:** a primeira implementação repetia `try/except` em cada rota. Com dezenas
+de endpoints pela frente, bastaria esquecer um bloco para uma exceção de domínio
+escapar como 500 e vazar detalhe interno na resposta. Centralizar também mantém o
+domínio livre de códigos de status.
+
+**Consequência:** um erro novo de domínio precisa ser mapeado em `ErrorHandlers`,
+senão vira 500. Rotas ficam sem tratamento de erro, apenas compondo casos de uso.
+
+**Data:** 26/09/2026.
+
+## ADR-022 — Autenticação de requisição em peça única
+
+**Decisão:** `SessionAuthenticator` resolve a identidade a partir do cookie e é
+usado por todos os roteadores. Nenhum módulo reimplementa a leitura de sessão.
+
+**Motivo:** autorização duplicada por rota é a origem clássica de brechas — basta
+uma cópia divergir para um endpoint aceitar sessão expirada ou de conta bloqueada.
+A peça única garante que a reconferência do estado da conta a cada requisição, que
+sustenta a RN 2.5, valha em todo lugar.
+
+**Consequência:** módulos novos recebem o `Container` e instanciam o autenticador;
+não leem o cookie diretamente.
+
+**Data:** 26/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar

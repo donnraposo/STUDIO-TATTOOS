@@ -198,16 +198,26 @@ pós-venda, relatórios, PWA, autocadastro e recuperação de senha vão para a 
 Nada foi descartado, apenas resequenciado. Objetivo declarado: **uso real no
 estúdio**, não demonstração.
 
-**Sprint M1 — Identidade e acesso: em andamento**, dividida em quatro etapas. A
-etapa M1.1 está concluída: tabelas de identidade, sessão, histórico e auditoria
-criadas, com a trilha comprovadamente append-only.
+**Sprint M1 — Identidade e acesso: concluída em 26/09/2026.** Entrega:
 
-Duas decisões foram revistas durante a implementação e estão registradas:
-a imutabilidade da auditoria passou de `REVOKE` para gatilho (ADR-012 revisado),
-e os estados passaram a texto com `CHECK` em vez de `ENUM` nativo (ADR-018).
+- Tabelas de identidade, sessão, histórico de estado e auditoria append-only.
+- Autenticação com Argon2id, sessão no servidor com cookie `HttpOnly`, dupla
+  expiração (60 minutos de inatividade, 12 horas absolutas) e CSRF por duplo envio.
+- Gestão de contas pelo gestor, com a matriz de permissões da RN 2 aplicada e
+  auditada.
 
-**Próximo passo:** etapa M1.2 — hash de senha, login, sessão por cookie, expiração
-e CSRF. Pendente de decidir a biblioteca de hash, conforme o ADR-010.
+Endpoints disponíveis: `/health`, `/ready`, `/auth/login`, `/auth/logout`,
+`/auth/me`, `GET /users`, `POST /users`, `POST /users/{id}/block` e
+`POST /users/{id}/unblock`. **51 testes aprovados.**
+
+Decisões revistas ou tomadas durante a implementação, todas registradas:
+imutabilidade da auditoria por gatilho em vez de `REVOKE` (ADR-012 revisado);
+estados como texto com `CHECK` em vez de `ENUM` nativo (ADR-018); backend completo
+antes da interface (ADR-020); tradução central de erro de domínio (ADR-021).
+
+**Próximo passo:** sprint M2 — clientes. A regra mais delicada é RN-CLI-004: o
+artista indicado vê apenas nome, telefone e Instagram do cliente de outro artista,
+nunca a ficha completa nem o histórico.
 
 ## Estado de aprovação e limite de trabalho
 
