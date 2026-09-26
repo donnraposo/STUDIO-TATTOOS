@@ -5,16 +5,16 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01 e as etapas M1.1 e M1.2.
-**Em andamento:** sprint M1, na etapa M1.3.
+**Concluído:** sprint 01 e sprint M1 completa.
+**Próxima:** sprint M2 — clientes.
 **Progresso do MVP:** 2 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity`, `reporting` (só auditoria) |
+| Módulos com código | `health`, `identity` (completo), `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria |
-| Endpoints | `/health`, `/ready`, `/auth/login`, `/auth/logout`, `/auth/me` |
-| Testes | 21 aprovados, em PostgreSQL real |
+| Endpoints | `/health`, `/ready`, `/auth/*` e `/users/*` |
+| Testes | 51 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
@@ -88,8 +88,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | Sprint | Tema | Camada | Situação |
 |---|---|---|---|
 | 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
-| **M1** | Identidade e acesso | Backend | 🔄 Em andamento — etapas 1 e 2 de 3 |
-| M2 | Clientes | Backend | Não iniciada |
+| M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
+| **M2** | Clientes | Backend | ⬅️ Próxima |
 | M3 | ⚠️ Agenda e macas | Backend | Não iniciada |
 | M4 | Orçamentos e sessões | Backend | Não iniciada |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
@@ -169,7 +169,42 @@ administrativas são auditadas.
 |---|---|---|
 | M1.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
 | M1.2 | Hash de senha, login, sessão, expiração e CSRF | ✅ Concluída em 25/09/2026 |
-| M1.3 | Gestão de contas pelo gestor e matriz de permissões | Não iniciada |
+| M1.3 | Gestão de contas pelo gestor e matriz de permissões | ✅ Concluída em 26/09/2026 |
+
+### Evidência da etapa M1.3 — 26/09/2026
+
+- Endpoints: `GET /users`, `POST /users`, `POST /users/{id}/block`,
+  `POST /users/{id}/unblock`.
+- Ruff sem apontamentos; **51 testes aprovados**.
+- Auditoria das ações administrativas gravada na mesma transação da operação.
+
+**Matriz de permissões, coberta por teste em `AccountManagementPolicy`:**
+
+| Ator | Cria | Bloqueia | Lista |
+|---|---|---|---|
+| Proprietário | Qualquer perfil | Qualquer conta | Sim |
+| Gerente | Residente e guest | Residente e guest | Sim |
+| Residente e guest | Não | Não | Não |
+
+**Três garantias que o teste comprova:**
+
+1. **O último proprietário ativo não pode ser bloqueado** (RN 2.5). A contagem usa
+   `SELECT ... FOR UPDATE` para que dois bloqueios simultâneos não leiam "dois
+   proprietários ativos" ao mesmo tempo e removam ambos.
+2. **Bloquear encerra as sessões na mesma transação.** Se o commit falhar, a conta
+   continua ativa e as sessões também — nunca fica um estado pela metade.
+3. **Conta criada por gestor já nasce ativa** (RN 2.6); `PENDING_APPROVAL` pertence
+   ao autocadastro, que está na Fase 2.
+
+**Decisões tomadas durante a etapa:**
+
+- Tradução de erro de domínio centralizada em `ErrorHandlers`, registrada na
+  aplicação. Sem isso, cada rota repetiria `try/except` para converter os mesmos
+  erros, e bastaria esquecer um para vazar detalhe interno em uma resposta 500.
+- `SessionAuthenticator` extraído do `AuthRouter` para que todo módulo autentique
+  da mesma forma. Autorização duplicada por rota é como brechas aparecem.
+- `StatusHistoryRepository` criado ao perceber que o caso de uso acessava o atributo
+  privado `_session` do repositório de contas, quebrando o encapsulamento.
 
 A tela de login e os guardas de rota migraram para a sprint M7, junto com o
 restante da interface.

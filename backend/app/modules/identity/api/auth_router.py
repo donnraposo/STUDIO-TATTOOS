@@ -6,7 +6,7 @@ from app.core.container import Container
 from app.core.csrf_guard import CsrfGuard
 from app.modules.identity.api.current_user_response import CurrentUserResponse
 from app.modules.identity.api.login_request import LoginRequest
-from app.modules.identity.domain.authenticated_user import AuthenticatedUser
+from app.modules.identity.api.session_authenticator import SessionAuthenticator
 
 
 class AuthRouter:
@@ -19,6 +19,7 @@ class AuthRouter:
     def __init__(self, container: Container) -> None:
         self._container = container
         self._settings = container.settings
+        self._authenticator = SessionAuthenticator(container)
 
     def build(self) -> APIRouter:
         router = APIRouter(prefix="/auth", tags=["auth"])
@@ -51,7 +52,7 @@ class AuthRouter:
 
     def logout(self, request: Request, response: Response) -> dict[str, str]:
         self._container.csrf_guard.validate(request)
-        session_id = self._read_session_id(request)
+        session_id = self._authenticator.read_session_id(request)
 
         if session_id is not None:
             with self._container.database.session() as session:
@@ -61,33 +62,7 @@ class AuthRouter:
         return {"status": "signed out"}
 
     def current_user(self, request: Request) -> CurrentUserResponse:
-        user = self._require_user(request)
-        return CurrentUserResponse.from_domain(user)
-
-    def _require_user(self, request: Request) -> AuthenticatedUser:
-        session_id = self._read_session_id(request)
-        if session_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated."
-            )
-
-        with self._container.database.session() as session:
-            user = self._container.identity.resolve_session(session).execute(session_id)
-
-        if user is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated."
-            )
-        return user
-
-    def _read_session_id(self, request: Request) -> uuid.UUID | None:
-        raw = request.cookies.get(self._settings.session_cookie_name)
-        if not raw:
-            return None
-        try:
-            return uuid.UUID(raw)
-        except ValueError:
-            return None
+        return CurrentUserResponse.from_domain(self._authenticator.require_user(request))
 
     def _attach_cookies(self, response: Response, session_id: uuid.UUID) -> None:
         secure = self._settings.cookies_require_https
