@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.csrf_guard import CsrfGuard
 from app.core.database import Database
 from app.core.settings import Settings
+from app.modules.clients.clients_factory import ClientsFactory
 from app.modules.identity.identity_factory import IdentityFactory
 
 
@@ -26,6 +27,7 @@ class Container:
             header_name=self._settings.csrf_header_name,
         )
         self._identity = IdentityFactory(self._settings)
+        self._clients = ClientsFactory()
 
     @classmethod
     def instance(cls) -> "Container":
@@ -53,6 +55,10 @@ class Container:
     @property
     def identity(self) -> IdentityFactory:
         return self._identity
+
+    @property
+    def clients(self) -> ClientsFactory:
+        return self._clients
 
     def open_session(self) -> Iterator[Session]:
         with self._database.session() as session:

@@ -7,6 +7,7 @@ from app.core.orm_base import OrmBase
 from app.core.settings import Settings
 
 # Importados para que os modelos se registrem no metadata antes do autogenerate.
+from app.modules.clients.infrastructure.models.client import Client  # noqa: F401
 from app.modules.identity.infrastructure.models.password_reset_token import (  # noqa: F401
     PasswordResetToken,
 )

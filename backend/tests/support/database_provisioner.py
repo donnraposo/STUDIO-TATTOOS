@@ -40,6 +40,7 @@ class DatabaseProvisioner:
         engine = create_engine(self._settings.database_url)
         tables = (
             "audit_log",
+            "client",
             "password_reset_token",
             "user_status_history",
             "user_session",

@@ -5,16 +5,16 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01 e sprint M1 completa.
-**Próxima:** sprint M2 — clientes.
-**Progresso do MVP:** 2 de 8 sprints.
+**Concluído:** sprint 01, M1 e M2.
+**Próxima:** sprint M3 — agenda e macas.
+**Progresso do MVP:** 3 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity` (completo), `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria |
-| Endpoints | `/health`, `/ready`, `/auth/*` e `/users/*` |
-| Testes | 51 aprovados, em PostgreSQL real |
+| Módulos com código | `health`, `identity`, `clients`, `reporting` (só auditoria) |
+| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*` e `/clients/*` |
+| Testes | 69 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
@@ -89,8 +89,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 |---|---|---|---|
 | 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
-| **M2** | Clientes | Backend | ⬅️ Próxima |
-| M3 | ⚠️ Agenda e macas | Backend | Não iniciada |
+| M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
+| **M3** | ⚠️ Agenda e macas | Backend | ⬅️ Próxima |
 | M4 | Orçamentos e sessões | Backend | Não iniciada |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
@@ -280,6 +280,36 @@ nome, telefone e Instagram (RN-CLI-004).
 
 **Resultado esperado:** RN-CLI-001 a RN-CLI-006 cobertas, com teste negativo de
 visibilidade. A retenção de RN-CLI-007 fica na F3.
+
+### Evidência — 26/09/2026
+
+- Endpoints: `GET /clients`, `POST /clients`, `GET /clients/{id}`,
+  `PUT /clients/{id}`, `POST /clients/merge`.
+- Migração `0003`; Ruff sem apontamentos; **69 testes aprovados**.
+
+**Os três níveis de visibilidade da RN-CLI-004, cobertos por teste:**
+
+| Quem | Vê |
+|---|---|
+| Proprietário e gerente | Ficha completa de qualquer cliente |
+| Artista que cadastrou | Ficha completa |
+| Artista indicado pelo estúdio | **Apenas nome, telefone e Instagram** |
+
+O terceiro caso não devolve 403: devolve menos campos. O artista indicado precisa
+dos dados para atender, mas não do histórico. A restrição está no **formato da
+resposta** (`ClientContactResponse`), não em um filtro na rota — assim não há como
+esquecer de omitir um campo.
+
+**Duas decisões de modelagem:**
+
+- **Duplicidade alerta, nunca bloqueia** (RN-CLI-005). Duas pessoas podem
+  legitimamente compartilhar um telefone, e travar o cadastro atrapalharia o
+  atendimento. O aviso volta junto com o cliente já criado.
+- **União não apaga o duplicado** (RN-CLI-006). Ele recebe `merged_into_id`
+  apontando para o sobrevivente. Apagar quebraria agendamentos, sessões e
+  pagamentos já ligados a ele, e a regra proíbe excluir cliente com histórico.
+  As consultas ignoram registros já unidos, então a duplicidade some das listas
+  sem perder o vínculo.
 
 ## Sprint M3 — Agenda e macas
 

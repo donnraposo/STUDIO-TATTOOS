@@ -2,6 +2,7 @@ from fastapi import APIRouter, FastAPI
 
 from app.core.container import Container
 from app.core.error_handlers import ErrorHandlers
+from app.modules.clients.api.client_router import ClientRouter
 from app.modules.health.api.health_router import HealthRouter
 from app.modules.identity.api.account_router import AccountRouter
 from app.modules.identity.api.auth_router import AuthRouter
@@ -32,4 +33,5 @@ class Application:
             HealthRouter(self._container).build(),
             AuthRouter(self._container).build(),
             AccountRouter(self._container).build(),
+            ClientRouter(self._container).build(),
         ]

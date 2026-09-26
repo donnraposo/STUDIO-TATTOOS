@@ -215,9 +215,15 @@ imutabilidade da auditoria por gatilho em vez de `REVOKE` (ADR-012 revisado);
 estados como texto com `CHECK` em vez de `ENUM` nativo (ADR-018); backend completo
 antes da interface (ADR-020); tradução central de erro de domínio (ADR-021).
 
-**Próximo passo:** sprint M2 — clientes. A regra mais delicada é RN-CLI-004: o
-artista indicado vê apenas nome, telefone e Instagram do cliente de outro artista,
-nunca a ficha completa nem o histórico.
+**Sprint M2 — Clientes: concluída em 26/09/2026.** Cadastro, alerta de
+duplicidade, visibilidade em três níveis e união preservando histórico. Os três
+níveis da RN-CLI-004 estão cobertos por teste, incluindo o artista indicado que vê
+apenas nome, telefone e Instagram.
+
+**Próximo passo:** sprint M3 — agenda e macas. É a de maior risco técnico do
+projeto: as duas restrições `EXCLUDE` com semânticas diferentes (a maca só é
+bloqueada por agendamento aprovado; o artista é bloqueado também por pendência) e a
+timeline própria em CSS Grid, que virá na M7.
 
 ## Estado de aprovação e limite de trabalho
 
