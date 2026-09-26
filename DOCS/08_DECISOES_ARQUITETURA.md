@@ -130,6 +130,17 @@ PostgreSQL, não apenas validação na aplicação.
 simultâneas que consultam a agenda ao mesmo tempo e ambas encontram o horário livre.
 **Consequência:** a aplicação captura a violação da restrição e devolve o conflito
 ao usuário. Os testes de concorrência precisam abrir transações paralelas reais.
+
+**Situação: implementada e comprovada em 26/09/2026** (migração `0004`, etapa M3.1).
+Oito cenários cobertos, entre eles a corrida com duas transações paralelas em que a
+segunda começa antes do commit da primeira. Os testes escrevem SQL direto, sem
+passar por casos de uso: o que se verifica é a garantia do banco, não a lógica da
+aplicação.
+
+**Armadilha registrada:** em `text()` do SQLAlchemy, `:period::tstzrange` falha
+porque o parser lê `:period:` como marcador de parâmetro. Usar
+`CAST(:period AS tstzrange)`.
+
 **Data:** 24/09/2026.
 
 ## ADR-012 — Auditoria imutável no nível do banco

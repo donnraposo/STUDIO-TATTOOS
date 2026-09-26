@@ -220,10 +220,19 @@ duplicidade, visibilidade em três níveis e união preservando histórico. Os t
 níveis da RN-CLI-004 estão cobertos por teste, incluindo o artista indicado que vê
 apenas nome, telefone e Instagram.
 
-**Próximo passo:** sprint M3 — agenda e macas. É a de maior risco técnico do
-projeto: as duas restrições `EXCLUDE` com semânticas diferentes (a maca só é
-bloqueada por agendamento aprovado; o artista é bloqueado também por pendência) e a
-timeline própria em CSS Grid, que virá na M7.
+**Sprint M3 — Agenda e macas: em andamento**, etapa 1 de 3.
+
+**A etapa M3.1 retirou o maior risco técnico do projeto.** As duas restrições
+`EXCLUDE` estão no banco e comprovadas por oito testes, incluindo uma corrida com
+duas transações paralelas reais. A maca só é bloqueada por agendamento aprovado;
+o artista é bloqueado também por pendência, inclusive entre macas diferentes.
+
+A partir daqui, conflito de agenda é impossível por construção: nem a aplicação
+nem uma consulta manual conseguem gravar sobreposição.
+
+**Próximo passo:** etapa M3.2 — casos de uso de solicitar, aprovar e rejeitar,
+agora sobre uma fundação que não pode ser burlada. Depois a M3.3, com remarcação,
+cancelamento e bloqueios de maca e horário.
 
 ## Estado de aprovação e limite de trabalho
 

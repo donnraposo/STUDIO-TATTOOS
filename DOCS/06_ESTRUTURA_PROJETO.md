@@ -6,9 +6,10 @@
 > Define a árvore de diretórios, a responsabilidade de cada pasta, as convenções de
 > código e os contratos de API.
 >
-> **Módulos já implementados:** `health`, `identity` e a tabela de auditoria de
-> `reporting`. Os demais seguem o roadmap. Os contratos da seção 4 descrevem o
-> destino final da API; hoje existem `/health`, `/ready`, `/auth/*` e `/users/*`.
+> **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling`
+> (modelo e restrições; casos de uso pendentes) e a tabela de auditoria de
+> `reporting`. Os contratos da seção 4 descrevem o destino final da API; hoje
+> existem `/health`, `/ready`, `/auth/*`, `/users/*` e `/clients/*`.
 
 ## 1. Árvore geral
 
