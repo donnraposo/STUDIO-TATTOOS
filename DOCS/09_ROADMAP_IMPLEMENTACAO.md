@@ -55,7 +55,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | Sprint | Tema | Camada | Situação |
 |---|---|---|---|
 | 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
-| **M1** | Identidade e acesso | Backend | 🔄 Em andamento — etapa 1 de 3 |
+| **M1** | Identidade e acesso | Backend | 🔄 Em andamento — etapas 1 e 2 de 3 |
 | M2 | Clientes | Backend | Não iniciada |
 | M3 | ⚠️ Agenda e macas | Backend | Não iniciada |
 | M4 | Orçamentos e sessões | Backend | Não iniciada |
@@ -135,7 +135,7 @@ administrativas são auditadas.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | M1.1 | Modelo de dados, migração e auditoria imutável | ✅ Concluída em 24/09/2026 |
-| M1.2 | Hash de senha, login, sessão, expiração e CSRF | Em andamento |
+| M1.2 | Hash de senha, login, sessão, expiração e CSRF | ✅ Concluída em 25/09/2026 |
 | M1.3 | Gestão de contas pelo gestor e matriz de permissões | Não iniciada |
 
 A tela de login e os guardas de rota migraram para a sprint M7, junto com o
@@ -158,6 +158,33 @@ falham mesmo conectado como dono do banco:
 ```text
 ERROR:  audit_log e append-only: UPDATE nao e permitido (ADR-012)
 ```
+
+### Evidência da etapa M1.2 — 25/09/2026
+
+Commit `dced4f5`.
+
+- Endpoints: `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
+- Argon2id via `pwdlib`, dependência autorizada pelo responsável (ADR-010).
+- Sessão no servidor com cookie `HttpOnly`, dupla expiração e CSRF por duplo envio.
+- Ruff sem apontamentos; 21 testes aprovados em três execuções consecutivas.
+
+**Três garantias de segurança cobertas por teste:**
+
+| Garantia | Como é obtida |
+|---|---|
+| Login não revela se um e-mail existe | Verificação de hash descartável quando a conta não é encontrada, para que o tempo de resposta não denuncie a diferença |
+| Bloqueio derruba o acesso na hora (RN 2.5) | A conta é reconferida a cada requisição, não apenas no login |
+| CSRF | Duplo envio de cookie com comparação em tempo constante; o cookie de sessão é `HttpOnly` e o token CSRF precisa voltar no cabeçalho |
+
+**Decisões tomadas durante a etapa:**
+
+- Uma fábrica por módulo (`IdentityFactory`) em vez de concentrar tudo no
+  `Container`, que viraria um objeto-deus com nove módulos previstos.
+- `EmailStr` do Pydantic descartado: exigiria a dependência `email-validator`
+  apenas para validar formato no login, onde isso não acrescenta segurança.
+
+**Defeito corrigido nos próprios testes:** o helper de login não verificava a
+pré-condição, produzindo falha instável com mensagem enganosa duas linhas adiante.
 
 ### Decisões revistas durante a etapa M1.1
 
