@@ -17,6 +17,8 @@ from app.modules.identity.infrastructure.models.user_status_history import (  # 
     UserStatusHistory,
 )
 from app.modules.reporting.infrastructure.models.audit_log import AuditLog  # noqa: F401
+from app.modules.scheduling.infrastructure.models.booking import Booking  # noqa: F401
+from app.modules.scheduling.infrastructure.models.booth import Booth  # noqa: F401
 
 config = context.config
 

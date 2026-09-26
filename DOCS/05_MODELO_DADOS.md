@@ -14,10 +14,12 @@
 | `user_account`, `user_session`, `user_status_history`, `password_reset_token` | `0002` | M1.1 |
 | `audit_log` (append-only por gatilho) | `0002` | M1.1 |
 | `client` | `0003` | M2 |
+| `booth`, `booking` com as duas restrições `EXCLUDE` | `0004` | M3.1 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
-`EXCLUDE` da agenda, descritas na seção 5.1, entram na sprint M3.
+`EXCLUDE` da agenda, descritas na seção 5.1, **já estão no banco e comprovadas por
+teste de concorrência** desde 26/09/2026.
 
 ## 1. Princípios
 

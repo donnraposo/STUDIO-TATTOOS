@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**69 testes aprovados** no backend, executados em container contra PostgreSQL real
+**77 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
 | Área | Situação |
@@ -17,7 +17,7 @@ no banco isolado `tattoo_studio_test`.
 | Auditoria append-only | Coberta, inclusive como role dona da tabela |
 | Autenticação e sessão | Coberta: credencial inválida, e-mail inexistente indistinguível, conta bloqueada, conta pendente, `HttpOnly`, expiração por inatividade e absoluta |
 | CSRF | Coberta: sem cabeçalho, com token divergente e com token correto |
-| **Concorrência de agenda** | **Pendente — sprint M3.** É o conjunto mais importante da seção 4 |
+| **Concorrência de agenda** | ✅ **Coberta.** Inclui corrida com duas transações paralelas reais |
 | Permissões de gestão de contas | Coberta: matriz completa dos quatro perfis, mais o caso do último proprietário ativo |
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |

@@ -6,15 +6,15 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1 e M2.
-**Próxima:** sprint M3 — agenda e macas.
+**Em andamento:** M3 — agenda e macas, etapa 1 de 3.
 **Progresso do MVP:** 3 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes |
+| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*` e `/clients/*` |
-| Testes | 69 aprovados, em PostgreSQL real |
+| Testes | 77 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
@@ -26,7 +26,7 @@
 
 | Risco | Situação |
 |---|---|
-| As restrições `EXCLUDE` são a hipótese técnica central do projeto | **Ainda não escritas.** Só serão provadas na M3 |
+| As restrições `EXCLUDE` são a hipótese técnica central do projeto | ✅ **Risco retirado em 26/09/2026.** Escritas e provadas com transações paralelas reais |
 | Toda a interface concentrada na M7 | Bloco grande e sem validação incremental. Mitigar exercitando `/api/v1/docs` ao fim de cada sprint de backend |
 
 ### Retomar o ambiente
@@ -90,7 +90,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
-| **M3** | ⚠️ Agenda e macas | Backend | ⬅️ Próxima |
+| **M3** | ⚠️ Agenda e macas | Backend | 🔄 Em andamento — etapa 1 de 3 |
 | M4 | Orçamentos e sessões | Backend | Não iniciada |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
@@ -328,6 +328,47 @@ esforço de frontend do projeto.
 
 **Resultado esperado:** conflito impossível no banco, comprovado por teste com
 transações paralelas reais; modal de conflito sem opção de ignorar.
+
+### Etapas
+
+| Etapa | Escopo | Situação |
+|---|---|---|
+| M3.1 | Modelo, migração e as duas restrições `EXCLUDE` | ✅ Concluída em 26/09/2026 |
+| M3.2 | Casos de uso: solicitar, aprovar e rejeitar | Não iniciada |
+| M3.3 | Remarcação, cancelamento, bloqueios de maca e horário | Não iniciada |
+
+### Evidência da etapa M3.1 — 26/09/2026
+
+**O maior risco técnico do projeto foi retirado.** As duas restrições estão no
+banco e comprovadas por 8 testes, entre eles a corrida com transações paralelas.
+
+```sql
+-- Maca: apenas aprovado bloqueia (RN-AGE-004, RN-AGE-007)
+EXCLUDE USING gist (booth_id WITH =, period WITH &&) WHERE (status = 'APPROVED')
+
+-- Artista: pendente e aprovado bloqueiam, mesmo entre macas (RN-AGE-014)
+EXCLUDE USING gist (artist_id WITH =, period WITH &&)
+WHERE (status IN ('REQUESTED', 'APPROVED'))
+```
+
+| Cenário coberto | Resultado |
+|---|---|
+| Dois aprovados sobrepostos na mesma maca | Recusado |
+| Pendentes de artistas diferentes na mesma maca | **Permitido** — concorrem até a decisão |
+| Mesmo artista sobreposto em macas diferentes | Recusado |
+| Pendente já ocupa a agenda do próprio artista | Recusado o segundo |
+| Recusado e cancelado | Liberam a agenda, preservando histórico |
+| Agendamentos adjacentes, sem intervalo | Permitidos (RN-AGE-001) |
+| Intervalo vazio | Recusado |
+| **Duas transações paralelas reais** | **Apenas uma vence** |
+
+Os testes escrevem SQL direto, sem passar por casos de uso: o que se verifica é a
+garantia do banco. Se a aplicação inteira fosse reescrita, as regras continuariam
+valendo.
+
+**Detalhe de implementação:** em `text()` do SQLAlchemy, `:period::tstzrange` não
+funciona — o parser lê `:period:` como marcador de parâmetro. A forma correta é
+`CAST(:period AS tstzrange)`.
 
 ## Sprint M4 — Orçamentos e sessões
 
