@@ -1,10 +1,24 @@
 # Plano de Testes e Critérios de Aceite
 
-**Status:** Proposta para aprovação — nenhum teste foi escrito.
-**Última atualização:** 24/09/2026
+**Status:** Aprovado. Execução em andamento junto com as sprints.
+**Última atualização:** 26/09/2026
 
 > Corresponde à Fase 13 de `02_ROADMAP_PRE_IMPLEMENTACAO.md`. Cada regra crítica
 > tem ao menos um cenário de sucesso e um de exceção.
+
+## 0. Cobertura atual
+
+**21 testes aprovados** no backend, executados em container contra PostgreSQL real
+no banco isolado `tattoo_studio_test`.
+
+| Área | Situação |
+|---|---|
+| Saúde e prontidão | Coberta |
+| Auditoria append-only | Coberta, inclusive como role dona da tabela |
+| Autenticação e sessão | Coberta: credencial inválida, e-mail inexistente indistinguível, conta bloqueada, conta pendente, `HttpOnly`, expiração por inatividade e absoluta |
+| CSRF | Coberta: sem cabeçalho, com token divergente e com token correto |
+| **Concorrência de agenda** | **Pendente — sprint M3.** É o conjunto mais importante da seção 4 |
+| Financeiro, permissões por perfil, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
 
 ## 1. Estratégia
 

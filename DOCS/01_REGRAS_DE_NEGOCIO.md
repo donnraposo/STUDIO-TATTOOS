@@ -1,7 +1,7 @@
 # Regras de Negócio — Gestão do Estúdio de Tatuagem
 
-**Status:** Em elaboração  
-**Última atualização:** 23/09/2026
+**Status:** Aprovado. Sem pontos funcionais pendentes.  
+**Última atualização:** 26/09/2026
 
 ## 1. Objetivo e escopo
 

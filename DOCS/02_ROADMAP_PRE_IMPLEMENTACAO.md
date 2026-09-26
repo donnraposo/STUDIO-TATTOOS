@@ -1,7 +1,9 @@
 # Roadmap de Descoberta e Validação Pré-Implementação
 
-**Status:** Em andamento  
-**Última atualização:** 23/09/2026  
+**Status:** Concluído. As catorze fases foram encerradas e a implementação foi
+autorizada em 24/09/2026; o andamento da construção fica em
+`09_ROADMAP_IMPLEMENTACAO.md`.  
+**Última atualização:** 26/09/2026  
 **Objetivo:** eliminar lacunas funcionais, financeiras e operacionais antes da arquitetura definitiva e do início do desenvolvimento.
 
 ## 1. Princípios do processo
@@ -30,7 +32,7 @@
 | 11 | Requisitos não funcionais | Concluída |
 | 12 | Modelo de dados e arquitetura | Concluída |
 | 13 | Plano de testes e critérios de aceite | Concluída |
-| 14 | Aprovação para implementação | **Aguardando decisão do usuário** |
+| 14 | Aprovação para implementação | **Aprovada em 24/09/2026** |
 
 ## 3. Fase 0 — Consolidar decisões existentes
 

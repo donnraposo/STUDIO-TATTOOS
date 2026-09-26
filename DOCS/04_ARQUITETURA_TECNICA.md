@@ -1,10 +1,12 @@
 # Arquitetura Técnica — Proposta em Validação
 
-**Status:** Decisões-base alinhadas; arquitetura detalhada ainda em andamento.  
-**Última atualização:** 23/09/2026  
+**Status:** Arquitetura aprovada e em implementação.  
+**Última atualização:** 26/09/2026  
 **Escopo:** primeira versão do sistema interno do estúdio em Cork City.
 
-> Este documento registra decisões e propostas arquiteturais, não autoriza a implementação. Nenhum código ou estrutura de aplicação foi criado.
+> Este documento descreve a arquitetura da solução. A implementação foi autorizada
+> em 24/09/2026 e está em andamento; o progresso por sprint fica em
+> `09_ROADMAP_IMPLEMENTACAO.md`.
 
 ## 1. Objetivo e limites
 

@@ -1,10 +1,14 @@
 # Estrutura do Projeto
 
-**Status:** Proposta para aprovação — nenhuma pasta ou arquivo de aplicação foi criado.
-**Última atualização:** 24/09/2026
+**Status:** Aprovado e em uso. Estrutura criada na sprint 01.
+**Última atualização:** 26/09/2026
 
 > Define a árvore de diretórios, a responsabilidade de cada pasta, as convenções de
-> código e os contratos de API. Não autoriza implementação.
+> código e os contratos de API.
+>
+> **Módulos já implementados:** `health`, `identity` e a tabela de auditoria de
+> `reporting`. Os demais seguem o roadmap. Os contratos da seção 4 descrevem o
+> destino final da API; hoje existem apenas `/health`, `/ready` e `/auth/*`.
 
 ## 1. Árvore geral
 

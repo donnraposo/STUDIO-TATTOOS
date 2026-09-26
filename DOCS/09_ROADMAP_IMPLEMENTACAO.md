@@ -1,7 +1,40 @@
 # Roadmap de Implementação
 
 **Status:** Implementação autorizada. Estratégia de MVP definida em 24/09/2026.
-**Última atualização:** 24/09/2026
+**Última atualização:** 26/09/2026
+
+## Onde o projeto está agora
+
+**Concluído:** sprint 01 e as etapas M1.1 e M1.2.
+**Em andamento:** sprint M1, na etapa M1.3.
+**Progresso do MVP:** 2 de 8 sprints.
+
+| O que existe | Detalhe |
+|---|---|
+| Módulos com código | `health`, `identity`, `reporting` (só auditoria) |
+| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria |
+| Endpoints | `/health`, `/ready`, `/auth/login`, `/auth/logout`, `/auth/me` |
+| Testes | 21 aprovados, em PostgreSQL real |
+| Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
+
+> **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
+> isso em esforço: as duas maiores — M3, com a agenda, e M7, com toda a interface —
+> ainda não começaram. Nenhuma regra do domínio de negócio foi implementada: não há
+> cliente, agendamento, orçamento nem dinheiro no sistema.
+
+### Riscos abertos
+
+| Risco | Situação |
+|---|---|
+| As restrições `EXCLUDE` são a hipótese técnica central do projeto | **Ainda não escritas.** Só serão provadas na M3 |
+| Toda a interface concentrada na M7 | Bloco grande e sem validação incremental. Mitigar exercitando `/api/v1/docs` ao fim de cada sprint de backend |
+
+### Retomar o ambiente
+
+```bash
+docker compose up -d
+docker compose exec api alembic upgrade head
+```
 
 > Sequência de sprints para construir o sistema, organizada em **MVP** e **Fase 2**.
 > Cada sprint declara objetivo, arquivos, dependências, riscos e resultado esperado.

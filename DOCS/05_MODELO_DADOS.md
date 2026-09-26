@@ -1,11 +1,22 @@
 # Modelo de Dados
 
-**Status:** Proposta para aprovação — nenhuma migração foi criada.
-**Última atualização:** 24/09/2026
+**Status:** Aprovado. Implementação parcial — ver quadro abaixo.
+**Última atualização:** 26/09/2026
 **Banco:** PostgreSQL
 
 > Este documento traduz as regras de `01_REGRAS_DE_NEGOCIO.md` em entidades,
-> relacionamentos e restrições. Ele não autoriza implementação.
+> relacionamentos e restrições.
+
+## 0. O que já existe no banco
+
+| Tabela | Migração | Sprint |
+|---|---|---|
+| `user_account`, `user_session`, `user_status_history`, `password_reset_token` | `0002` | M1.1 |
+| `audit_log` (append-only por gatilho) | `0002` | M1.1 |
+| Extensões `btree_gist` e `citext` | `0001` | 01 |
+
+As demais tabelas descritas neste documento ainda não foram criadas. As restrições
+`EXCLUDE` da agenda, descritas na seção 5.1, entram na sprint M3.
 
 ## 1. Princípios
 

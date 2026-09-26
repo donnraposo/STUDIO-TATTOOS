@@ -134,7 +134,7 @@ ao usuário. Os testes de concorrência precisam abrir transações paralelas re
 
 ## ADR-012 — Auditoria imutável no nível do banco
 
-> **Revisado em 24/09/2026 durante a implementação da Sprint 02.1.** A decisão
+> **Revisado em 24/09/2026 durante a implementação da sprint M1.1.** A decisão
 > original baseava-se apenas em `REVOKE` e não se sustentou na prática. O texto
 > abaixo substitui a versão anterior; o histórico está ao final da seção.
 
