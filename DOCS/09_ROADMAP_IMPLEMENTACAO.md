@@ -5,16 +5,16 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1 e M2.
-**Em andamento:** M3 — agenda e macas, etapa 1 de 3.
-**Progresso do MVP:** 3 de 8 sprints.
+**Concluído:** sprint 01, M1, M2 e M3.
+**Próxima:** M4 — orçamentos e sessões.
+**Progresso do MVP:** 4 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*` e `/clients/*` |
-| Testes | 77 aprovados, em PostgreSQL real |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` |
+| Testes | 93 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Dois oitavos em número de sprints, porém menos que
@@ -90,8 +90,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | 01 | Fundação técnica | Ambas | ✅ Concluída em 24/09/2026 |
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
-| **M3** | ⚠️ Agenda e macas | Backend | 🔄 Em andamento — etapa 1 de 3 |
-| M4 | Orçamentos e sessões | Backend | Não iniciada |
+| M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
+| **M4** | Orçamentos e sessões | Backend | ⬅️ Próxima |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7 | Interface completa do MVP | Frontend | Não iniciada |
@@ -334,8 +334,39 @@ transações paralelas reais; modal de conflito sem opção de ignorar.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | M3.1 | Modelo, migração e as duas restrições `EXCLUDE` | ✅ Concluída em 26/09/2026 |
-| M3.2 | Casos de uso: solicitar, aprovar e rejeitar | Não iniciada |
-| M3.3 | Remarcação, cancelamento, bloqueios de maca e horário | Não iniciada |
+| M3.2 | Casos de uso: solicitar, aprovar e rejeitar | ✅ Concluída em 26/09/2026 |
+| M3.3 | Remarcação, cancelamento e macas | ✅ Concluída em 26/09/2026 |
+
+> Horário-base e bloqueio de horário excepcional (RN-AGE-011) ficaram fora: são
+> configuração operacional e não bloqueiam o ciclo do MVP. Entram na F3.
+
+### Evidência das etapas M3.2 e M3.3 — 26/09/2026
+
+- Endpoints: `GET/POST /booths`, `GET/POST /bookings`, e as ações
+  `/approve`, `/reject`, `/cancel` e `/reschedule` sobre `/bookings/{id}`.
+- Ruff sem apontamentos; **93 testes aprovados**, sendo 24 de agenda.
+
+**A assimetria que estrutura o módulo:** residente e guest **solicitam**;
+proprietário e gerente **decidem**. O gestor pode criar já aprovado (RN-AGE-005).
+
+| Regra | Como é garantida |
+|---|---|
+| Conflito de maca ou artista | Restrição do banco; o repositório traduz a violação em `409` com o agendamento conflitante, alimentando o modal da RN-AGE-007 |
+| Recusa exige motivo previsto | Lista fechada validada no schema (RN-AGE-006) |
+| Artista não cancela, solicita | `SchedulingPolicy.can_decide` restrito ao gestor (RN-AGE-008) |
+| Recusado e cancelado liberam a agenda | Saem da cláusula `WHERE` das restrições (RN-AGE-014) |
+| Não comparecimento é estado próprio | `NO_SHOW`, separado de `CANCELLED` (RN-AGE-010) |
+
+**Decisão de projeto:** `RequestBooking` **não** verifica conflito antes de gravar.
+Conferir e depois gravar reabriria exatamente a janela de corrida que o ADR-011
+fecha. Quem decide é a restrição, no momento da gravação.
+
+**Dependência declarada:** a RN-AGE-005 exige sinal confirmado para aprovar, e o
+módulo de pagamentos é a sprint M5. A costura está pronta em
+`ApproveBooking._deposit_is_confirmed`, que hoje devolve verdadeiro. Travar agora
+impediria qualquer uso da agenda. O mesmo vale para o destino do sinal em
+cancelamento, não comparecimento e remarcação fora de 24h: o estado fica
+registrado aqui, e o efeito financeiro é executado na M5.
 
 ### Evidência da etapa M3.1 — 26/09/2026
 

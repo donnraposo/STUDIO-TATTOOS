@@ -7,6 +7,7 @@ from app.core.database import Database
 from app.core.settings import Settings
 from app.modules.clients.clients_factory import ClientsFactory
 from app.modules.identity.identity_factory import IdentityFactory
+from app.modules.scheduling.scheduling_factory import SchedulingFactory
 
 
 class Container:
@@ -28,6 +29,7 @@ class Container:
         )
         self._identity = IdentityFactory(self._settings)
         self._clients = ClientsFactory()
+        self._scheduling = SchedulingFactory()
 
     @classmethod
     def instance(cls) -> "Container":
@@ -59,6 +61,10 @@ class Container:
     @property
     def clients(self) -> ClientsFactory:
         return self._clients
+
+    @property
+    def scheduling(self) -> SchedulingFactory:
+        return self._scheduling
 
     def open_session(self) -> Iterator[Session]:
         with self._database.session() as session:

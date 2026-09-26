@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
+from app.shared.errors.booking_conflict_error import BookingConflictError
 from app.shared.errors.business_rule_error import BusinessRuleError
 from app.shared.errors.permission_denied_error import PermissionDeniedError
 
@@ -14,6 +15,7 @@ class ErrorHandlers:
     _STATUS_BY_ERROR = {
         PermissionDeniedError: status.HTTP_403_FORBIDDEN,
         BusinessRuleError: status.HTTP_422_UNPROCESSABLE_CONTENT,
+        BookingConflictError: status.HTTP_409_CONFLICT,
     }
 
     def register(self, app: FastAPI) -> None:

@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**77 testes aprovados** no backend, executados em container contra PostgreSQL real
+**93 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
 | Área | Situação |
@@ -19,6 +19,7 @@ no banco isolado `tattoo_studio_test`.
 | CSRF | Coberta: sem cabeçalho, com token divergente e com token correto |
 | **Concorrência de agenda** | ✅ **Coberta.** Inclui corrida com duas transações paralelas reais |
 | Permissões de gestão de contas | Coberta: matriz completa dos quatro perfis, mais o caso do último proprietário ativo |
+| Fluxo de agenda | Coberta: solicitar, aprovar, rejeitar, cancelar, não comparecer, remarcar, com conflito devolvendo 409 |
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
 

@@ -230,9 +230,17 @@ o artista é bloqueado também por pendência, inclusive entre macas diferentes.
 A partir daqui, conflito de agenda é impossível por construção: nem a aplicação
 nem uma consulta manual conseguem gravar sobreposição.
 
-**Próximo passo:** etapa M3.2 — casos de uso de solicitar, aprovar e rejeitar,
-agora sobre uma fundação que não pode ser burlada. Depois a M3.3, com remarcação,
-cancelamento e bloqueios de maca e horário.
+As etapas M3.2 e M3.3 completaram o ciclo: solicitar, aprovar, rejeitar,
+cancelar, marcar não comparecimento e remarcar, além da gestão de macas.
+Conflito volta como `409` com o agendamento existente, alimentando o modal da
+RN-AGE-007.
+
+**Dependência declarada:** o portão do sinal na aprovação (RN-AGE-005) e o destino
+financeiro de cancelamento, não comparecimento e remarcação fora de 24h dependem do
+módulo de pagamentos. A costura está em `ApproveBooking._deposit_is_confirmed`.
+
+**Próximo passo:** sprint M4 — orçamentos e sessões, com o percentual congelado na
+aprovação (RN-REP-006).
 
 ## Estado de aprovação e limite de trabalho
 

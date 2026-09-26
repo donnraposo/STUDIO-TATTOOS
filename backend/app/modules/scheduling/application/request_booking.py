@@ -1,0 +1,99 @@
+import uuid
+from datetime import UTC, datetime
+
+from app.modules.identity.domain.authenticated_user import AuthenticatedUser
+from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
+from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
+from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
+from app.modules.scheduling.infrastructure.booth_repository import BoothRepository
+from app.modules.scheduling.infrastructure.models.booking import Booking
+from app.shared.errors.business_rule_error import BusinessRuleError
+from app.shared.errors.permission_denied_error import PermissionDeniedError
+
+
+class RequestBooking:
+    """Cria um agendamento.
+
+    Residente e guest sempre criam em `REQUESTED`; o gestor pode criar já em
+    `APPROVED` (RN-AGE-005). A diferença importa para as restrições do banco:
+    pendente não bloqueia a maca para outros artistas, aprovado bloqueia.
+
+    Nenhuma verificação de conflito acontece aqui de propósito — quem decide é a
+    restrição `EXCLUDE`, no momento da gravação. Conferir antes e gravar depois
+    abriria a janela de corrida que o ADR-011 fecha."""
+
+    def __init__(
+        self,
+        bookings: BookingRepository,
+        booths: BoothRepository,
+        policy: SchedulingPolicy,
+        audit: AuditRecorder,
+    ) -> None:
+        self._bookings = bookings
+        self._booths = booths
+        self._policy = policy
+        self._audit = audit
+
+    def execute(
+        self,
+        actor: AuthenticatedUser,
+        client_id: uuid.UUID,
+        booth_id: uuid.UUID,
+        starts_at: datetime,
+        ends_at: datetime,
+        artist_id: uuid.UUID | None = None,
+        approve_immediately: bool = False,
+    ) -> Booking:
+        if not self._policy.can_request(actor):
+            raise PermissionDeniedError("You cannot create bookings.")
+
+        if ends_at <= starts_at:
+            raise BusinessRuleError("The end time must be after the start time.")
+
+        booth = self._booths.find_by_id(booth_id)
+        if booth is None or not booth.active:
+            raise BusinessRuleError("Booth not found or inactive.")
+
+        target_artist = self._resolve_artist(actor, artist_id)
+        status = self._resolve_status(actor, approve_immediately)
+
+        booking = Booking(
+            client_id=client_id,
+            artist_id=target_artist,
+            booth_id=booth_id,
+            period=self._bookings.build_period(starts_at, ends_at),
+            status=status,
+            decided_at=datetime.now(UTC) if status == BookingStatus.APPROVED else None,
+            decided_by=actor.id if status == BookingStatus.APPROVED else None,
+        )
+        self._bookings.persist(booking)
+
+        self._audit.record(
+            actor_id=actor.id,
+            action="BOOKING_CREATED",
+            module="scheduling",
+            entity_type="booking",
+            entity_id=str(booking.id),
+            new_values={"status": str(status), "booth_id": str(booth_id)},
+        )
+        return booking
+
+    def _resolve_artist(
+        self, actor: AuthenticatedUser, artist_id: uuid.UUID | None
+    ) -> uuid.UUID:
+        """O artista agenda para si; o gestor agenda para qualquer um."""
+        if artist_id is None:
+            return actor.id
+        if artist_id != actor.id and not actor.is_staff:
+            raise PermissionDeniedError("You cannot book on behalf of another artist.")
+        return artist_id
+
+    def _resolve_status(
+        self, actor: AuthenticatedUser, approve_immediately: bool
+    ) -> BookingStatus:
+        if approve_immediately:
+            if not self._policy.can_create_already_approved(actor):
+                raise PermissionDeniedError("You cannot create an approved booking.")
+            return BookingStatus.APPROVED
+        return BookingStatus.REQUESTED
