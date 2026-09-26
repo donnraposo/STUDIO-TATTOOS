@@ -16,6 +16,13 @@ from app.modules.identity.infrastructure.models.user_session import UserSession 
 from app.modules.identity.infrastructure.models.user_status_history import (  # noqa: F401
     UserStatusHistory,
 )
+from app.modules.quotes.infrastructure.models.quote import Quote  # noqa: F401
+from app.modules.quotes.infrastructure.models.quote_reference_image import (  # noqa: F401
+    QuoteReferenceImage,
+)
+from app.modules.quotes.infrastructure.models.tattoo_session import (  # noqa: F401
+    TattooSession,
+)
 from app.modules.reporting.infrastructure.models.audit_log import AuditLog  # noqa: F401
 from app.modules.scheduling.infrastructure.models.booking import Booking  # noqa: F401
 from app.modules.scheduling.infrastructure.models.booth import Booth  # noqa: F401

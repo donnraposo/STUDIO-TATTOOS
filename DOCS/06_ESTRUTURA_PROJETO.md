@@ -7,8 +7,10 @@
 > código e os contratos de API.
 >
 > **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling` e a
-> tabela de auditoria de `reporting`. Os contratos da seção 4 descrevem o destino
-> final da API; hoje existem `/health`, `/ready`, `/auth/*`, `/users/*`,
+> tabela de auditoria de `reporting`. O módulo `quotes` existe com `domain/` e
+> `infrastructure/models/` apenas — a etapa M4.1 entregou o modelo e a migração, e
+> os casos de uso e rotas entram na M4.2. Os contratos da seção 4 descrevem o
+> destino final da API; hoje existem `/health`, `/ready`, `/auth/*`, `/users/*`,
 > `/clients/*`, `/booths` e `/bookings/*`.
 
 ## 1. Árvore geral

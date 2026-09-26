@@ -15,6 +15,7 @@
 | `audit_log` (append-only por gatilho) | `0002` | M1.1 |
 | `client` | `0003` | M2 |
 | `booth`, `booking` com as duas restrições `EXCLUDE` | `0004` | M3.1 |
+| `quote`, `quote_reference_image`, `tattoo_session` e `booking.session_id` | `0005` | M4.1 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -203,18 +204,42 @@ risco de divergirem (ADR-023).
 | `notes` | text | |
 | `status` | enum NOT NULL | `PENDING`, `APPROVED`, `REJECTED` |
 | `artist_percentage` | numeric(5,2) NULL | **Congelado na aprovação** (RN-REP-006) |
+| `created_by` | uuid FK NOT NULL | Quem criou; residente, gerente ou proprietário (RN-ORC-001) |
 | `approved_at` / `approved_by` | | |
-| `rejection_reason` / `rejection_note` | | |
+| `rejection_reason` / `rejection_note` | text NULL | Motivo é texto livre: a RN-ORC-003 exige motivo e não define lista fechada, diferente da rejeição de agendamento |
 
 Alterar um orçamento aprovado devolve `status` para `PENDING` e exige nova
 aprovação (RN-ORC-003).
 
+**Restrições que o banco garante** (migração `0005`):
+
+| Restrição | Garante |
+|---|---|
+| `ck_quote_approved_freezes_percentage` | Orçamento `APPROVED` não existe sem `artist_percentage`, `approved_at` e `approved_by`. Aprovar e congelar o percentual são o mesmo ato (RN-REP-006) |
+| `ck_quote_rejected_needs_reason` | Orçamento `REJECTED` não existe sem motivo (RN-ORC-003) |
+| `ck_quote_percentage_range` | Percentual entre 0 exclusivo e 100 |
+| Valores positivos | `total_value`, `planned_value_per_session`, `planned_sessions` e `estimated_duration_minutes` |
+
+`total_value` **não** é obrigado a ser igual a `planned_sessions ×
+planned_value_per_session`: sessões de um mesmo trabalho podem ter valores
+diferentes, e travar a soma impediria o caso legítimo.
+
 ### `quote_reference_image`
 
-`id`, `quote_id`, `object_key`, `uploaded_by`, `uploaded_at`.
-Somente a chave privada do objeto; nunca URL pública.
+`id`, `quote_id`, `object_key`, `content_type`, `byte_size`, `uploaded_by`,
+`uploaded_at`. Somente a chave privada do objeto; nunca URL pública — a
+referência fica associada ao nome do cliente, e um endereço público permanente
+seria exposição de dado pessoal. `object_key` é único. `content_type` e
+`byte_size` são gravados no upload para que listar um orçamento não precise
+consultar o armazenamento uma vez por imagem.
 
-### `session`
+### `tattoo_session`
+
+> **A tabela se chama `tattoo_session`, não `session`.** Renomeada na
+> implementação, conforme a pendência da seção 14 deste documento: `Session` já é
+> a sessão de banco do SQLAlchemy, importada em todo repositório, e `user_session`
+> é a sessão de login. Três coisas com o mesmo nome é confusão garantida na
+> leitura. A classe é `TattooSession`.
 
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -222,6 +247,7 @@ Somente a chave privada do objeto; nunca URL pública.
 | `quote_id` | uuid FK NOT NULL | |
 | `sequence_number` | int NOT NULL | Ordem dentro do orçamento |
 | `status` | enum NOT NULL | `SCHEDULED`, `DONE`, `PARTIALLY_DONE`, `PAID_OFF`, `CANCELLED`, `NO_SHOW` |
+| `origin` | enum NOT NULL | Cópia do orçamento na aprovação, pelo mesmo motivo do percentual |
 | `planned_value` | numeric(12,2) | |
 | `charged_value` | numeric(12,2) NULL | Valor efetivo, pode diferir em sessão parcial |
 | `performed_at` | timestamptz NULL | Data real, base do vencimento do pós-venda |
@@ -229,11 +255,30 @@ Somente a chave privada do objeto; nunca URL pública.
 | `confirmed_by` / `confirmed_at` | | Gestor confirma recebimento |
 | `artist_percentage` | numeric(5,2) | Cópia do orçamento no momento da aprovação |
 
-`UNIQUE (quote_id, sequence_number)`.
-
 **Conclusão:** só entra em repasse quando realizada **e** integralmente quitada
 (RN-ORC-005). Sessão parcial gera repasse apenas sobre o valor recebido
 (RN-ORC-006).
+
+**Restrições que o banco garante** (migração `0005`):
+
+| Restrição | Garante |
+|---|---|
+| `uq_tattoo_session_sequence` | `UNIQUE (quote_id, sequence_number)`. Duas sessões número 1 tornariam ambígua a ordem que liga cada sinal de €50 à sua sessão |
+| `ck_tattoo_session_partial_requires_charged` | `PARTIALLY_DONE` não existe sem `charged_value`: é sobre ele que o repasse parcial é calculado (RN-ORC-006) |
+| `ck_tattoo_session_performed_requires_date` | `DONE`, `PARTIALLY_DONE` e `PAID_OFF` exigem `performed_at`, de onde sai o vencimento do pós-venda (RN-POS-001) |
+| `ck_tattoo_session_paid_off_requires_confirmation` | `PAID_OFF` exige `charged_value`, `confirmed_at` e `confirmed_by`: quitada é decisão do gestor, não do artista (RN-ORC-005) |
+
+### Ligação com a agenda
+
+`booking.session_id` aponta para a sessão e é nulo enquanto o horário não
+pertence a um trabalho orçado — é o caso de toda a agenda entregue na M3.
+
+Uma sessão tem **no máximo um agendamento vivo**, garantido pelo índice parcial
+`uq_booking_live_session` sobre `booking (session_id)` com
+`WHERE session_id IS NOT NULL AND status IN ('REQUESTED', 'APPROVED')`.
+Cancelado e recusado saem da conta, pelo mesmo critério das restrições `EXCLUDE`
+da seção 5.1 (RN-AGE-014): remarcar depois de cancelar continua possível,
+executar a mesma sessão duas vezes em horários diferentes não.
 
 ## 7. Financeiro
 
@@ -401,6 +446,8 @@ booth        1 ── N booking
 
 ## 14. Pendências deste documento
 
-- Validar os nomes finais de tabelas e colunas na revisão de implementação.
+- Validar os nomes finais de tabelas e colunas na revisão de implementação. Um caso
+  já resolvido: `session` virou `tattoo_session` na M4.1, por colisão com a sessão
+  de banco do SQLAlchemy e com `user_session`.
 - Definir índices adicionais depois de conhecer os relatórios mais usados.
 - Confirmar política de retenção da tabela `user_session`.

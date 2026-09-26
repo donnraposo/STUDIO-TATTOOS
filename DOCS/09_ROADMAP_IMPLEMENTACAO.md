@@ -6,15 +6,15 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2 e M3.
-**Em andamento:** M4 — orçamentos e sessões, etapa 1 de 3.
+**Em andamento:** M4 — orçamentos e sessões; etapa M4.1 concluída, M4.2 é a próxima.
 **Progresso do MVP:** 4 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda |
+| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `reporting` (só auditoria), `quotes` (só modelo) |
+| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` |
-| Testes | 93 aprovados, em PostgreSQL real |
+| Testes | 104 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Quatro oitavos em número de sprints, porém menos
@@ -439,8 +439,8 @@ conferir cada regra antes da seguinte.
 
 | Etapa | Escopo | Situação |
 |---|---|---|
-| M4.1 | Tabelas `quote`, `quote_reference_image` e `session`; migração `0005`; `booking.session_id` | ⬅️ Em andamento |
-| M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | Não iniciada |
+| M4.1 | Tabelas `quote`, `quote_reference_image` e `tattoo_session`; migração `0005`; `booking.session_id` | ✅ Concluída em 26/09/2026 |
+| M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | ⬅️ Próxima |
 | M4.3 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | Não iniciada |
 
 **Decisões de escopo tomadas em 26/09/2026:**
@@ -450,6 +450,44 @@ conferir cada regra antes da seguinte.
 | Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006) |
 | Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
 | Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
+
+### Evidência da etapa M4.1 — 26/09/2026
+
+- Migração `0005`: `quote`, `quote_reference_image`, `tattoo_session` e a coluna
+  `booking.session_id`. Aplicada, revertida e reaplicada com sucesso.
+- Ruff sem apontamentos; **104 testes aprovados**, sendo 11 novos de restrição.
+
+**A regra que o banco passou a garantir, e não só a aplicação:**
+
+| Restrição | O erro que ela impede |
+|---|---|
+| `ck_quote_approved_freezes_percentage` | Orçamento aprovado sem percentual congelado. Sem a restrição, bastaria um caminho de aprovação esquecer de gravar `artist_percentage` para que o repasse fosse calculado meses depois com o percentual vigente na data do cálculo, sobre um trabalho acordado sob outro percentual (RN-REP-006) |
+| `ck_tattoo_session_partial_requires_charged` | Sessão parcial sem valor cobrado, que não tem sobre o que calcular repasse (RN-ORC-006) |
+| `ck_tattoo_session_paid_off_requires_confirmation` | Sessão quitada sem confirmação do gestor, ou seja, trabalho não pago entrando no repasse de sexta (RN-ORC-005) |
+| `ck_tattoo_session_performed_requires_date` | Sessão realizada sem data real, que deixaria o pós-venda sem vencimento (RN-POS-001) |
+| `uq_tattoo_session_sequence` | Duas sessões número 1 no mesmo orçamento, tornando ambígua a ordem que liga cada sinal de €50 à sua sessão |
+| `uq_booking_live_session` | Dois agendamentos vivos para a mesma sessão, isto é, a mesma sessão executada duas vezes |
+
+**Duas decisões tomadas durante a etapa:**
+
+- **A tabela se chama `tattoo_session`, não `session`.** `Session` já é a sessão de
+  banco do SQLAlchemy, importada em todo repositório, e `user_session` é a sessão de
+  login. O nome final de tabela estava explicitamente reservado para a revisão de
+  implementação na seção 14 do modelo de dados.
+- **`origin` e `artist_percentage` são copiados do orçamento para a sessão**, em vez
+  de lidos do orçamento na hora do repasse. O orçamento pode voltar a pendente e ser
+  reaprovado com outro percentual; o que já foi executado continua valendo o que
+  valia. Uma consulta ao orçamento no momento do cálculo reescreveria o passado.
+
+**O índice da sessão é parcial de propósito.** Cancelado e recusado saem da cláusula
+`WHERE`, como nas restrições `EXCLUDE` da `0004`: remarcar depois de cancelar
+continua possível. Há teste para o caso oposto — dois agendamentos sem sessão ligada
+convivem, porque o índice só vale quando `session_id` não é nulo, e é isso que
+mantém funcionando toda a agenda entregue na M3.
+
+**Ponto a confirmar na M4.2:** o motivo de rejeição do orçamento ficou como texto
+livre. A RN-ORC-003 exige motivo, mas não define lista fechada, diferente da
+RN-AGE-006 na agenda. Se o estúdio quiser lista fechada, é `CHECK` na `0006`.
 
 ## Sprint M5 — Pagamentos e sinal
 

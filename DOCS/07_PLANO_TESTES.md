@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**93 testes aprovados** no backend, executados em container contra PostgreSQL real
+**104 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
 | Área | Situação |
@@ -21,6 +21,7 @@ no banco isolado `tattoo_studio_test`.
 | Permissões de gestão de contas | Coberta: matriz completa dos quatro perfis, mais o caso do último proprietário ativo |
 | Fluxo de agenda | Coberta: solicitar, aprovar, rejeitar, cancelar, não comparecer, remarcar, com conflito devolvendo 409 |
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
+| **Integridade de orçamento e sessão** | Coberta por 11 testes de restrição na migração `0005`: aprovado sem percentual congelado, rejeitado sem motivo, sequência duplicada, parcial sem valor cobrado, realizada sem data real, quitada sem confirmação do gestor e dois agendamentos vivos na mesma sessão |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
 
 ## 1. Estratégia

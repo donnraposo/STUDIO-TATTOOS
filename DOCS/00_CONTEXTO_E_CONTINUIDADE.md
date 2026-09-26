@@ -243,8 +243,23 @@ RN-AGE-007.
 financeiro de cancelamento, não comparecimento e remarcação fora de 24h dependem do
 módulo de pagamentos. A costura está em `ApproveBooking._deposit_is_confirmed`.
 
-**Próximo passo:** sprint M4 — orçamentos e sessões, com o percentual congelado na
-aprovação (RN-REP-006).
+**Sprint M4 — Orçamentos e sessões: em andamento**, etapa 1 de 3.
+
+**A etapa M4.1 entregou o modelo.** Migração `0005` com `quote`,
+`quote_reference_image`, `tattoo_session` e a coluna `booking.session_id`. O
+percentual congelado da RN-REP-006 deixou de depender da aplicação: o banco recusa
+orçamento aprovado sem percentual gravado, do mesmo modo que recusa sessão parcial
+sem valor cobrado e sessão quitada sem confirmação do gestor. **104 testes
+aprovados.**
+
+Duas decisões da etapa: a tabela é `tattoo_session`, não `session`, por colisão com
+a sessão de banco do SQLAlchemy e com `user_session`; e `origin` e
+`artist_percentage` são copiados do orçamento para a sessão, nunca lidos de volta no
+momento do repasse, porque o orçamento pode ser reaprovado com outro percentual e o
+que já foi executado precisa continuar valendo o que valia.
+
+**Próximo passo:** etapa M4.2 — ciclo do orçamento: criar, editar, aprovar e
+rejeitar, com o percentual congelado na aprovação (RN-REP-006).
 
 ## Estado de aprovação e limite de trabalho
 
