@@ -38,7 +38,10 @@ O escopo desta versão é **um único estúdio**. Não projetar agora uma plataf
 
 - Backend: Python com FastAPI.
 - Banco de dados: PostgreSQL.
-- Execução: componentes containerizados com Docker.
+- Execução: componentes containerizados com Docker. **Desenvolvimento e produção não
+  sobem o mesmo conjunto** — em produção o frontend compilado é servido pelo Caddy e
+  não tem container próprio. A contagem e as decisões abertas estão na seção 8 de
+  `04_ARQUITETURA_TECNICA.md` e na sprint M8 do roadmap.
 - Frontend: Vue 3, TypeScript e Vite.
 - Primeira versão: sistema web responsivo e instalável como PWA; não será um aplicativo nativo separado.
 - Interface na raiz do domínio e API sob `/api/v1`, pelo mesmo domínio.

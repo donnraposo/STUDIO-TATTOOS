@@ -453,7 +453,7 @@ numa entrega só.
 
 | Tema | Decisão |
 |---|---|
-| Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006) |
+| Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006). O MinIO acrescentado ao `compose.yaml` é de **desenvolvimento**; o provedor de produção é decisão da M8, e o adaptador existe para que a troca não alcance caso de uso |
 | Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
 | Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
 
@@ -570,6 +570,26 @@ demonstrativo do artista e ajustes negativos de devolução posterior.
 **Resultado esperado:** fechamento reproduzível e auditável, conferido com os
 exemplos de `01_REGRAS_DE_NEGOCIO.md`.
 
+### Decisão a tomar nesta sprint: agendador ou cálculo sob demanda
+
+A RN-REP-004 diz que **"o sistema calculará os repasses depois do fechamento"** das
+20h de sexta. Cálculo agendado precisa de agendador, e o worker está planejado para a
+Fase 2 (ADR-008). Duas saídas, com efeito direto em quantos containers a implantação
+da M8 precisa hospedar:
+
+| Caminho | Containers | Observação |
+|---|---|---|
+| Worker mínimo já na M6 | +1 em produção | A Fase 2 reaproveita o container para o outbox e a lista diária das 08h |
+| Cálculo sob demanda | nenhum a mais | A semana encerra às 20h por regra de data; o cálculo acontece quando alguém abre a tela de repasses daquela semana |
+
+**Recomendação registrada:** cálculo sob demanda no MVP. O resultado é idêntico —
+ninguém consulta repasse às 20h de sexta — e evita subir infraestrutura que só a
+Fase 2 realmente exige. **Ainda não decidido pelo responsável.**
+
+Seja qual for o caminho, o risco de fechamento duplicado continua sendo resolvido no
+banco, por unicidade da semana fechada, e não pela garantia de que só existe um
+processo executando.
+
 ## Sprint M7 — Interface completa do MVP
 
 **Objetivo:** construir todas as telas do MVP sobre a API já pronta e testada —
@@ -606,6 +626,47 @@ proprietário e gerente.
 
 > Sem esta sprint o MVP não recebe dado real do estúdio. Ela é o que separa
 > "funciona na minha máquina" de "o estúdio depende disto".
+
+### O que vai ao ar: contagem de containers
+
+A topologia detalhada está na seção 8 de `04_ARQUITETURA_TECNICA.md`. O resumo que
+esta sprint precisa:
+
+| Container | Papel |
+|---|---|
+| `caddy` | TLS automático, proxy de `/api/v1` e **entrega do frontend compilado** |
+| `api` | FastAPI |
+| `postgres` | Banco com volume persistente |
+
+**Três no cenário mínimo.** O container `frontend` do `compose.yaml` **não vai para
+produção**: o Vue é compilado em arquivos estáticos que o Caddy serve. Quem montar o
+`compose.production.yaml` copiando o de desenvolvimento vai subir um servidor de
+desenvolvimento em produção — é o erro previsível aqui.
+
+### Três decisões abertas que mudam a contagem
+
+| Decisão | Opções | Recomendação registrada |
+|---|---|---|
+| Armazenamento de arquivos | Provedor gerenciado compatível com S3 (0 containers) ou MinIO no próprio VPS (1 container) | **Gerenciado.** Os arquivos sobrevivem à perda do VPS, e o adaptador do ADR-006 existe justamente para trocar sem tocar em caso de uso. O MinIO da M4.3 é de desenvolvimento |
+| Worker/agendador | Necessário no MVP apenas se o fechamento da M6 for agendado | **Cálculo sob demanda**, conforme a seção da M6. Decisão do responsável |
+| Rotina de backup | Container próprio (1) ou `cron` no host chamando `pg_dump` (0) | Nenhuma preferência registrada. As duas atendem ao requisito, que é cópia cifrada diária **fora do servidor** com restauração testada |
+
+**Se o armazenamento for auto-hospedado, o backup passa a ter dois alvos**, não um: o
+banco e os arquivos. Uma cópia que leva só o `pg_dump` deixaria as fotos de
+cicatrização e os comprovantes para trás, e a perda apareceria justamente no dia em
+que o servidor se fosse.
+
+Ao fim da Fase 2 a contagem vai a **4 a 6 containers**, quando o worker deixa de ser
+opcional por causa da lista diária das 08h e do outbox (ADR-007, ADR-008).
+
+### Pendências de produção que não são contagem de container
+
+- **Gestão de segredos.** Hoje há `.env` não versionado em desenvolvimento; produção
+  precisa de definição própria. Não decidido.
+- **RPO e RTO.** Proposta em `04_ARQUITETURA_TECNICA.md`: perda máxima de 24 horas e
+  recuperação em até 4 horas. Aguarda confirmação do responsável.
+- **Retenção de cópias por 30 dias e teste de restauração trimestral**, já aprovados
+  em `03_REQUISITOS_NAO_FUNCIONAIS.md` seção 4.
 
 ---
 
