@@ -9,6 +9,8 @@ from app.modules.clients.clients_factory import ClientsFactory
 from app.modules.identity.identity_factory import IdentityFactory
 from app.modules.quotes.quotes_factory import QuotesFactory
 from app.modules.scheduling.scheduling_factory import SchedulingFactory
+from app.shared.storage.filesystem_object_storage import FilesystemObjectStorage
+from app.shared.storage.object_storage import ObjectStorage
 
 
 class Container:
@@ -31,7 +33,8 @@ class Container:
         self._identity = IdentityFactory(self._settings)
         self._clients = ClientsFactory()
         self._scheduling = SchedulingFactory()
-        self._quotes = QuotesFactory()
+        self._storage: ObjectStorage = FilesystemObjectStorage(self._settings.storage_root)
+        self._quotes = QuotesFactory(settings=self._settings, storage=self._storage)
 
     @classmethod
     def instance(cls) -> "Container":
@@ -71,6 +74,11 @@ class Container:
     @property
     def quotes(self) -> QuotesFactory:
         return self._quotes
+
+    @property
+    def storage(self) -> ObjectStorage:
+        """Exposto para que a suíte confira o armazenamento sem recriar o cliente."""
+        return self._storage
 
     def open_session(self) -> Iterator[Session]:
         with self._database.session() as session:

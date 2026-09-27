@@ -6,15 +6,16 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2 e M3.
-**Em andamento:** M4 — orçamentos e sessões; M4.1 e M4.2 concluídas, M4.3 é a próxima.
+**Em andamento:** M4 — orçamentos e sessões; M4.1 a M4.3 concluídas, M4.4 é a próxima.
 **Progresso do MVP:** 4 de 8 sprints.
 
 | O que existe | Detalhe |
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`, `/quotes/*` |
-| Testes | 119 aprovados, em PostgreSQL real |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`, `/quotes/*` incluindo as imagens de referência |
+| Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
+| Testes | 139 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** Quatro oitavos em número de sprints, porém menos
@@ -104,7 +105,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — 2 de 4 etapas |
+| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — 3 de 4 etapas |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7 | Interface completa do MVP | Frontend | Não iniciada |
@@ -441,8 +442,8 @@ conferir cada regra antes da seguinte.
 |---|---|---|
 | M4.1 | Tabelas `quote`, `quote_reference_image` e `tattoo_session`; migração `0005`; `booking.session_id` | ✅ Concluída em 26/09/2026 |
 | M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | ✅ Concluída em 27/09/2026 |
-| M4.3 | Imagens de referência: armazenamento compatível com S3, upload e acesso temporário | ⬅️ Próxima |
-| M4.4 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | Não iniciada |
+| M4.3 | Imagens de referência: armazenamento privado, upload e leitura autenticada | ✅ Concluída em 27/09/2026 |
+| M4.4 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | ⬅️ Próxima |
 
 As imagens de referência ganharam etapa própria ao se confirmar o que a decisão de
 escopo já indicava: elas trazem a primeira dependência de infraestrutura externa do
@@ -453,9 +454,64 @@ numa entrega só.
 
 | Tema | Decisão |
 |---|---|
-| Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Exige armazenamento compatível com S3 (ADR-006). O MinIO acrescentado ao `compose.yaml` é de **desenvolvimento**; o provedor de produção é decisão da M8, e o adaptador existe para que a troca não alcance caso de uso |
+| Imagens de referência (RN-ORC-004) | **Upload completo nesta sprint**, não apenas a tabela. Decisão revista durante a M4.3: o armazenamento é volume nomeado atrás da porta `ObjectStorage`, sem container novo, porque a imagem do MinIO deixou de ser distribuída livremente (ADR-024). O provedor gerenciado do ADR-006 segue como destino de produção, na M8 |
+| Limites das imagens | 10 MB por arquivo, JPEG/PNG/WebP, até 10 por orçamento. Em `Settings`, ajustáveis por ambiente |
+| Remoção de imagem | Incluída, embora a RN-ORC-004 não a mencione: anexar o arquivo errado é banal. Apaga o arquivo de verdade, não só desvincula, porque imagem é dado pessoal (RN-CLI-007) |
 | Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
 | Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
+
+### Evidência da etapa M4.3 — 27/09/2026
+
+- Endpoints: `GET/POST /quotes/{id}/reference-images`,
+  `DELETE /quotes/{id}/reference-images/{image_id}` e
+  `GET /quotes/{id}/reference-images/{image_id}/content`.
+- Ruff sem apontamentos; **139 testes aprovados**, sendo 20 novos: 12 das imagens
+  pela API e 8 do adaptador de armazenamento.
+- **Nenhum container novo no ambiente.**
+
+**A imagem do MinIO deixou de ser distribuída livremente**, e a decisão de escopo
+desta sprint foi revista por isso: o armazenamento passou a ser um diretório em
+volume nomeado, atrás da porta `ObjectStorage` (ADR-024). O destino de produção
+continua sendo provedor gerenciado compatível com S3, retomado na M8.
+
+**A troca melhorou a segurança em vez de piorar.** Sem S3 não há URL assinada, e a
+imagem passou a ser entregue por rota autenticada: **não existe endereço capaz de
+devolver a foto sem o cookie de sessão.** Um link assinado funciona sozinho até
+expirar, e basta vazar num histórico de navegador ou num encaminhamento. A resposta
+vai com `Cache-Control: private, no-store`.
+
+| Garantia | Como é obtida |
+|---|---|
+| Imagem segue a visibilidade do orçamento | `QuotePolicy.can_see` no caso de uso de leitura; artista de fora recebe 403, não a foto |
+| Imagem de um orçamento não sai por outro | A leitura confere que a imagem pertence ao orçamento da rota. Sem isso, o controle estaria no orçamento da URL e o dado viria de outro lugar |
+| Limites de tipo, tamanho e quantidade | `ReferenceImagePolicy`, com 10 MB, JPEG/PNG/WebP e 10 por orçamento vindos de `Settings` — são operacionais, o estúdio muda sem nova versão |
+| Chave do objeto nunca sai na resposta | `ReferenceImageResponse` não tem o campo; o que sai é o caminho autenticado |
+| Nome do arquivo enviado não entra na chave | A chave é sorteada. O nome vem do cliente e pode trazer caminho, acento ou o nome da pessoa retratada |
+| Chave não escapa da raiz do armazenamento | `FilesystemObjectStorage` recusa `..` e caminho absoluto, com teste para os três formatos |
+
+**A ordem entre banco e arquivo é deliberada e inversa nas duas operações.** Anexar
+grava o arquivo antes da linha; remover apaga a linha antes do arquivo. As duas
+seguem a mesma regra: **o banco nunca deve apontar para um arquivo que não existe.**
+A sobra possível é sempre arquivo órfão, que é lixo invisível, nunca linha órfã, que
+aparece na tela como imagem quebrada. Fica uma janela estreita na remoção, se o commit
+falhar depois de o arquivo já ter sido apagado; está registrada no próprio caso de uso
+em vez de disfarçada.
+
+**Anexar não devolve o orçamento a pendente**, e há teste para isso. A RN-ORC-003
+trata de alterar o orçamento, e imagem de referência não é termo do acordo. Reabrir
+uma aprovação porque alguém acrescentou uma foto puniria o cuidado de documentar
+melhor o trabalho. A permissão, ainda assim, é a de editar: num orçamento aprovado,
+só o gestor anexa.
+
+**Gravação atômica.** O arquivo é escrito em temporário e movido com `os.replace`.
+Escrever direto no destino deixaria um arquivo truncado se o processo morresse no
+meio, e o banco apontaria para uma imagem pela metade — pior do que imagem ausente,
+porque parece existir.
+
+**A suíte não ganhou dependência de serviço.** Cada teste recebe uma raiz de
+armazenamento própria, em diretório temporário, montada no `conftest`. Sem isso, um
+arquivo gravado por um teste ficaria visível para os seguintes e o teste do limite de
+quantidade passaria ou falharia conforme a ordem de execução.
 
 ### Evidência da etapa M4.2 — 27/09/2026
 
@@ -647,14 +703,15 @@ desenvolvimento em produção — é o erro previsível aqui.
 
 | Decisão | Opções | Recomendação registrada |
 |---|---|---|
-| Armazenamento de arquivos | Provedor gerenciado compatível com S3 (0 containers) ou MinIO no próprio VPS (1 container) | **Gerenciado.** Os arquivos sobrevivem à perda do VPS, e o adaptador do ADR-006 existe justamente para trocar sem tocar em caso de uso. O MinIO da M4.3 é de desenvolvimento |
+| Armazenamento de arquivos | Manter o volume local do ADR-024 ou trocar por provedor gerenciado compatível com S3 | **Gerenciado**, se o custo couber: os arquivos passam a sobreviver à perda do VPS e a cópia de segurança volta a ter um alvo só. A porta `ObjectStorage` existe para que a troca não alcance caso de uso nenhum. **Nenhuma das duas opções acrescenta container** |
 | Worker/agendador | Necessário no MVP apenas se o fechamento da M6 for agendado | **Cálculo sob demanda**, conforme a seção da M6. Decisão do responsável |
 | Rotina de backup | Container próprio (1) ou `cron` no host chamando `pg_dump` (0) | Nenhuma preferência registrada. As duas atendem ao requisito, que é cópia cifrada diária **fora do servidor** com restauração testada |
 
-**Se o armazenamento for auto-hospedado, o backup passa a ter dois alvos**, não um: o
-banco e os arquivos. Uma cópia que leva só o `pg_dump` deixaria as fotos de
-cicatrização e os comprovantes para trás, e a perda apareceria justamente no dia em
-que o servidor se fosse.
+**Enquanto o armazenamento for o volume local, o backup tem dois alvos**, não um: o
+banco e o diretório de arquivos. Uma cópia que leva só o `pg_dump` deixaria as
+referências dos orçamentos, as fotos de cicatrização e os comprovantes para trás, e a
+perda apareceria justamente no dia em que o servidor se fosse. **O teste de
+restauração precisa cobrir os dois alvos**, não só o banco.
 
 Ao fim da Fase 2 a contagem vai a **4 a 6 containers**, quando o worker deixa de ser
 opcional por causa da lista diária das 08h e do outbox (ADR-007, ADR-008).

@@ -233,6 +233,19 @@ seria exposição de dado pessoal. `object_key` é único. `content_type` e
 `byte_size` são gravados no upload para que listar um orçamento não precise
 consultar o armazenamento uma vez por imagem.
 
+**A chave é sorteada, no formato `quotes/{quote_id}/{uuid}.{ext}`** (ADR-024). O nome
+do arquivo enviado não entra nela: vem do cliente e pode trazer caminho, acento ou o
+nome da pessoa retratada.
+
+**`content_type` é a fonte usada para responder a imagem**, não o conteúdo do
+arquivo. É o valor que foi validado contra a lista de tipos aceitos no upload;
+deduzir o tipo dos bytes na hora de responder permitiria servir como imagem algo que
+entrou por outro caminho.
+
+A tabela guarda a referência, e o arquivo vive no armazenamento descrito pelo
+ADR-024. **A cópia de segurança precisa levar os dois** — uma que leve só o
+`pg_dump` restauraria linhas apontando para arquivos inexistentes.
+
 ### `tattoo_session`
 
 > **A tabela se chama `tattoo_session`, não `session`.** Renomeada na

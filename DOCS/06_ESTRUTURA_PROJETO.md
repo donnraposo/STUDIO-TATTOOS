@@ -8,10 +8,15 @@
 >
 > **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling`,
 > `quotes` e a tabela de auditoria de `reporting`. Em `quotes`, a M4.2 entregou o
-> ciclo do orçamento; as sessões e as imagens de referência entram nas etapas
-> seguintes. Os contratos da seção 4 descrevem o destino final da API; hoje existem
-> `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`
-> e `/quotes/*`.
+> ciclo do orçamento e a M4.3 as imagens de referência; as sessões entram na M4.4. Os
+> contratos da seção 4 descrevem o destino final da API; hoje existem `/health`,
+> `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` e
+> `/quotes/*`.
+>
+> **Peça compartilhada nova:** `app/shared/storage/` guarda a porta `ObjectStorage` e
+> a implementação em sistema de arquivos (ADR-024). Fica em `shared/` porque
+> pós-venda e pagamentos vão usá-la; dentro de `quotes/` obrigaria os outros módulos
+> a importar o módulo de orçamentos.
 
 ## 1. Árvore geral
 
@@ -194,6 +199,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Macas | `GET/POST /booths`, `POST /schedule-exceptions` |
 | Agenda | `GET /bookings`, `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
 | Orçamentos | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
+| Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
 | Sessões | `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
 | Pagamentos | `GET/POST /payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |

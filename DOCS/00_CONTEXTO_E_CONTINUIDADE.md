@@ -275,8 +275,31 @@ O guest não acessa orçamentos (RN-ORC-001), e a política confere o **perfil**
 se a pessoa tatua: o guest tatua, então qualquer verificação por "atua como artista"
 o deixaria passar. **119 testes aprovados.**
 
-**Próximo passo:** etapa M4.3 — imagens de referência, com armazenamento compatível
-com S3 atrás de adaptador (ADR-006).
+**A etapa M4.3 entregou as imagens de referência**, e com uma decisão revista: a
+imagem do MinIO deixou de ser distribuída livremente, e o armazenamento passou a ser
+um diretório em volume nomeado atrás da porta `ObjectStorage`, **sem container novo**
+(ADR-024). O provedor gerenciado compatível com S3 do ADR-006 segue como destino de
+produção, retomado na M8.
+
+A troca melhorou a segurança. Sem S3 não há URL assinada: a imagem é entregue por
+`GET /quotes/{id}/reference-images/{id}/content`, que confere a sessão como qualquer
+rota. **Nenhum endereço devolve a foto sem o cookie do usuário.** **139 testes
+aprovados.**
+
+Duas coisas para quem continuar o trabalho:
+
+- **A cópia de segurança passou a ter dois alvos**, o banco e o diretório de
+  arquivos. Está registrado na M8, junto da exigência de o teste de restauração
+  cobrir os dois.
+- **A ordem entre banco e arquivo é inversa nas duas operações**, de propósito:
+  anexar grava o arquivo antes da linha, remover apaga a linha antes do arquivo. A
+  regra é que o banco nunca aponte para arquivo inexistente, então a sobra possível é
+  sempre arquivo órfão — lixo invisível — e nunca imagem quebrada na tela.
+
+**Próximo passo:** etapa M4.4 — sessões: gerar a partir do orçamento aprovado, marcar
+realizada, sessão parcial e confirmação de recebimento pelo gestor. A conclusão
+depende de pagamento confirmado, que é a M5, e entra na lista de pendências de
+costura do roadmap.
 
 ## Estado de aprovação e limite de trabalho
 

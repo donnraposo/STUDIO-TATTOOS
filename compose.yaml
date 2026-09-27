@@ -32,6 +32,9 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      # Arquivos enviados ficam em volume nomeado, nao no sistema de arquivos da
+      # imagem: recriar o container ou reconstruir a imagem nao pode perde-los.
+      - object_storage:/var/lib/tattoo-studio/objects
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,4 +56,5 @@ services:
 
 volumes:
   postgres_data:
+  object_storage:
   frontend_node_modules:

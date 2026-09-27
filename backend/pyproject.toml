@@ -11,6 +11,8 @@ dependencies = [
     "alembic>=1.14",
     "pydantic-settings>=2.6",
     "pwdlib[argon2]>=0.2",
+    # Recebimento de multipart/form-data; sem ela o FastAPI nao aceita upload.
+    "python-multipart>=0.0.20",
 ]
 
 [project.optional-dependencies]

@@ -121,11 +121,11 @@ desenvolvimento e não é em produção.
 | Container | Papel |
 |---|---|
 | `postgres` | Banco. O banco isolado `tattoo_studio_test` da suíte vive aqui dentro; **não é um container à parte** |
-| `api` | FastAPI com recarga automática, código montado por volume |
+| `api` | FastAPI com recarga automática, código montado por volume. Os arquivos enviados ficam no volume nomeado `object_storage` |
 | `frontend` | Servidor de desenvolvimento do Vite, com recarga automática |
-| `minio` | Armazenamento compatível com S3 para exercitar o upload de imagens; entra na etapa M4.3 |
 
-Três containers hoje; quatro a partir da M4.3.
+**Três containers, e a M4.3 não acrescentou nenhum.** O armazenamento de arquivos é
+um diretório em volume nomeado, não um serviço (ADR-024).
 
 ### Produção
 
@@ -144,12 +144,13 @@ simples (seção 3).
 
 | Container | Existe se | Consequência da escolha |
 |---|---|---|
-| Armazenamento de arquivos | O provedor compatível com S3 for auto-hospedado em vez de gerenciado (ADR-006) | Gerenciado: zero containers e os arquivos sobrevivem à perda do VPS. Auto-hospedado: um container, e as fotos morrem com o servidor se o backup não as levar junto do banco |
+| Armazenamento de arquivos | A M8 trocar o volume local por provedor gerenciado compatível com S3 (ADR-006, ADR-024) | **Nenhum container em qualquer caso.** Com volume local, as fotos moram no VPS e a cópia de segurança tem dois alvos. Com provedor gerenciado, os arquivos sobrevivem à perda do VPS e a cópia volta a ter um alvo |
 | Worker/agendador | O fechamento semanal da RN-REP-004 for calculado por agendamento, e não sob demanda | Ver a sprint M6 em `09_ROADMAP_IMPLEMENTACAO.md`. Na Fase 2 o worker passa a ser obrigatório de qualquer forma, pela lista diária das 08h e pelo outbox (ADR-007, ADR-008) |
 | Backup | A rotina de cópia for containerizada em vez de `cron` no host chamando `pg_dump` | Nenhuma das duas formas dispensa o requisito da M8: cópia cifrada diária saindo do servidor, com restauração testada |
 
-Somando: **3 em produção no mínimo, 4 no cenário provável, e 4 a 6 ao fim da Fase 2**,
-quando o worker deixa de ser opcional.
+Somando: **3 em produção no mínimo, 4 no cenário provável, e 4 a 5 ao fim da Fase 2**,
+quando o worker deixa de ser opcional. O armazenamento de arquivos saiu da conta:
+desde o ADR-024 ele é volume ou serviço externo, nunca container próprio.
 
 Docker é usado em desenvolvimento, teste e execução. Hospedagem, proxy e TLS estão
 decididos em ADR-005; fila e agendamento, em ADR-007 e ADR-008; e-mail e

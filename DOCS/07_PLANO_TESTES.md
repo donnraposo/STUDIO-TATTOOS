@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**119 testes aprovados** no backend, executados em container contra PostgreSQL real
+**139 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
 | Área | Situação |
@@ -23,6 +23,8 @@ no banco isolado `tattoo_studio_test`.
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | **Integridade de orçamento e sessão** | Coberta por 11 testes de restrição na migração `0005`: aprovado sem percentual congelado, rejeitado sem motivo, sequência duplicada, parcial sem valor cobrado, realizada sem data real, quitada sem confirmação do gestor e dois agendamentos vivos na mesma sessão |
 | **Ciclo do orçamento** | Coberta: guest sem acesso, residente não aprova, percentual congelado em 70 e em 50 conforme a origem, correção de percentual pelo gestor registrada na auditoria, edição de aprovado voltando a pendente e limpando o percentual, recusa sem motivo, reaprovação bloqueada e visibilidade entre artistas |
+| **Imagens de referência** | Coberta: leitura sem sessão devolvendo 401, artista de fora recebendo 403 em listar, ler e anexar, imagem de um orçamento não saindo por outro, tipo não aceito, arquivo acima de 10 MB, arquivo vazio, limite de 10 por orçamento, anexar não reabrindo aprovação, residente sem anexar em aprovado e remoção apagando o arquivo |
+| **Armazenamento em sistema de arquivos** | Coberta no adaptador: ida e volta dos bytes, criação da árvore de diretórios, sobrescrita sem deixar o temporário, leitura de chave ausente como erro de domínio, remoção repetida sem erro e chave tentando escapar da raiz nos três formatos |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
 
 ## 1. Estratégia

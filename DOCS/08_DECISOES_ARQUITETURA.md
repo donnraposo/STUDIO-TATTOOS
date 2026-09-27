@@ -78,6 +78,11 @@ de provedor sem alterar casos de uso. O provedor final será confirmado na
 implementação.
 **Data:** 24/09/2026.
 
+> **Revisto em 27/09/2026 pelo ADR-024**, na parte de armazenamento. O destino de
+> produção continua sendo armazenamento privado compatível com S3; o MVP usa o
+> sistema de arquivos atrás da mesma porta, porque a imagem do MinIO deixou de ser
+> distribuída livremente. A decisão sobre e-mail segue intacta.
+
 ## ADR-007 — Outbox em tabela, sem Redis nem Celery
 
 **Decisão:** notificações e e-mails gravados em tabela de outbox, consumidos por um
@@ -364,6 +369,46 @@ entidade. Se o volume exigir, entra índice em `(entity_type, entity_id)` — de
 desempenho, não de modelagem. `05_MODELO_DADOS.md` deixou de descrever a tabela.
 
 **Data:** 26/09/2026.
+
+## ADR-024 — Armazenamento em sistema de arquivos no MVP, atrás da porta `ObjectStorage`
+
+**Decisão:** o MVP grava os arquivos enviados em um diretório dentro de volume
+nomeado do Docker, por meio de `FilesystemObjectStorage`. A abstração
+`ObjectStorage` fica em `app/shared/storage/`, e nenhum caso de uso conhece a
+implementação. O armazenamento compatível com S3 do ADR-006 permanece como destino
+de produção, a ser retomado na M8.
+
+**Motivo:** a etapa M4.3 precisava de um serviço compatível com S3 em
+desenvolvimento e **a imagem do MinIO deixou de ser baixável sem autenticação**,
+tanto a oficial quanto a da Bitnami. As alternativas disponíveis eram dublês que não
+validam credencial, o que anularia o ganho de exercitar o adaptador, ou trariam um
+container grande. Somado ao pedido de não acrescentar container ao ambiente, o
+sistema de arquivos passou a ser a opção proporcional: zero serviço novo, e a
+gravação em volume nomeado já atende à exigência do ADR-006 de o arquivo não
+depender do sistema de arquivos efêmero da imagem.
+
+**Alternativa considerada e recusada: guardar os bytes no PostgreSQL.** Teria a
+vantagem real de um único alvo de cópia de segurança, já que o `pg_dump` levaria as
+imagens. Recusada pelo efeito no tempo de recuperação: as metas propostas são perda
+máxima de 24 horas e recuperação em até 4 horas, e um dump carregando gigabytes de
+foto — o pós-venda da Fase 2 multiplica o volume — torna tanto a cópia diária
+quanto o teste de restauração trimestral progressivamente mais pesados. Trinta
+cópias retidas de vários gigabytes também é custo de armazenamento externo.
+
+**Consequência de segurança, que melhorou o desenho:** sem S3 não há URL assinada.
+A imagem passou a ser entregue por `GET /quotes/{id}/reference-images/{id}/content`,
+que confere a sessão como qualquer outra rota. **Não existe nenhum endereço capaz de
+devolver a foto sem o cookie do usuário** — um link assinado, ao contrário, funciona
+sozinho até expirar e basta vazar num histórico ou num encaminhamento. A resposta vai
+com `Cache-Control: private, no-store`, para que proxy e navegador não guardem dado
+pessoal onde a expiração da sessão não alcança.
+
+**Consequência operacional, registrada na M8:** a cópia de segurança passa a ter
+**dois alvos**, o banco e o diretório de arquivos. Uma rotina que leve apenas o
+`pg_dump` deixaria as imagens para trás, e a falta apareceria só na restauração. O
+teste de restauração precisa cobrir os dois.
+
+**Data:** 27/09/2026.
 
 ## Processo de alteração
 
