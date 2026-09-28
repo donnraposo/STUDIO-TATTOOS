@@ -76,6 +76,47 @@ for f in $(find backend/app -name "*.py" ! -name "__init__.py"); do
 done
 ```
 
+### Frontend — mesmas exigências, aplicadas ao Vue
+
+Detalhamento e motivo de cada regra em `DOCS/10_ROADMAP_FRONTEND.md`.
+
+**Componentização — três camadas, e a fronteira entre elas é rígida:**
+
+| Camada | Pasta | Conhece domínio | Fala com a API |
+|---|---|---|---|
+| Base | `shared/components` | Não | Não |
+| Apresentação de domínio | `features/<x>/components` | Sim | **Não** |
+| Tela | `features/<x>/*View.vue` | Sim | **Sim, só ela** |
+
+- **Componente de apresentação não importa cliente de API nem sessão.** Recebe por
+  `props`, devolve por `emits`. Se precisa buscar dado, está na camada errada.
+- Nome do arquivo = nome do componente = responsabilidade. Base com prefixo `App`,
+  tela com sufixo `View`, modal com sufixo `Modal`.
+- `<script setup lang="ts">` sempre; `defineProps<T>()` e `defineEmits<T>()` tipados.
+- Um componente por arquivo, sem exceção (ADR-015).
+- Variação por mapa tipado (`Record`), nunca por cadeia de `v-if` espalhada.
+- Cálculo, formatação e geometria em **classe pura**, testável sem montar tela.
+- Autorização na tela é aparência; a garantia é do backend, que recusa com 403.
+
+**CSS — todo valor visual vem de `tokens.css`:**
+
+- Nenhuma cor, espaçamento, tipografia, raio ou sombra escrito no componente.
+- Valor novo vira token. Se não cabe na escala, a escala é que está errada.
+- `<style scoped>` sempre; estilo global apenas em `base.css`.
+- Sem `:deep()` no interior de outro componente — isso torna o detalhe dele um
+  contrato público.
+- **Única exceção:** o ponto de quebra dentro de `@media`, porque variável CSS não
+  é avaliada na condição da consulta. Valores declarados uma vez em `tokens.css`.
+
+```bash
+# Valor visual fora dos tokens (tokens.css e base.css sao as unicas excecoes)
+grep -rnE '#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(' frontend/src --include=*.vue
+grep -rnE '[0-9](px|rem|em)\b' frontend/src --include=*.vue | grep -v '@media'
+
+# Componente de apresentacao falando com a API: deve nao devolver nada
+grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vue"
+```
+
 ## 4. Padrões estabelecidos
 
 | Padrão | Onde | ADR |

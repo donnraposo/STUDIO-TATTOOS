@@ -77,6 +77,104 @@ Os três primeiros valem para todo arquivo; os demais são específicos do front
 - **Toda tela trata quatro estados:** carregando, vazia, com erro e sem permissão.
   Componentes compartilhados para os quatro, para que cada tela não invente o seu.
 
+## 4.1 SOLID aplicado ao frontend
+
+Os cinco princípios não são decoração aqui; cada um vira uma regra verificável.
+
+| Princípio | Como se manifesta nesta base |
+|---|---|
+| **Responsabilidade única** | Um componente **compõe** ou **apresenta**, nunca os dois. Tela busca dado e orquestra; componente de apresentação recebe por `props` e devolve por `emits`. Cálculo não é responsabilidade de nenhum dos dois: vai para classe pura |
+| **Aberto/fechado** | Variação por mapa tipado. Um `StatusBadge` traduz estado em token por um `Record<BookingStatus, BadgeTone>`; acrescentar estado é uma linha de dados. Cadeia de `v-if` obriga a editar o componente a cada estado novo, e é onde se esquece um |
+| **Substituição de Liskov** | Todo campo de formulário honra o mesmo contrato: `modelValue`, `update:modelValue`, `disabled`, `error`. O formulário troca um campo por outro sem saber qual é |
+| **Segregação de interface** | `props` pequenas e específicas. Um componente que precisa de três campos não recebe a entidade inteira. Componente com quinze `props` e oito booleanos são vários componentes disfarçados de um |
+| **Inversão de dependência** | Tela depende do cliente tipado do recurso, nunca de `fetch`. O `HttpClient` é a única costura com a rede; trocar transporte não toca em tela nenhuma |
+
+**A fronteira que mais importa é a do meio.** Um componente de apresentação que
+importa um cliente de API deixa de ser reutilizável e passa a ser testável só com
+rede falsa. A verificação está em `CLAUDE.md` e não deve devolver nada:
+
+```bash
+grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vue"
+```
+
+## 4.2 Padrão de componentização
+
+**Três camadas, com fronteira rígida:**
+
+| Camada | Pasta | Conhece domínio | Fala com a API | Exemplo |
+|---|---|---|---|---|
+| Base | `shared/components` | Não | Não | `AppButton`, `AppInput`, `EmptyState` |
+| Apresentação de domínio | `features/<x>/components` | Sim | **Não** | `BookingBlock`, `ClientList` |
+| Tela | `features/<x>/*View.vue` | Sim | **Sim, só ela** | `SchedulingView` |
+
+**Nomenclatura**, para que o nome do arquivo já diga a camada:
+
+| Sufixo ou prefixo | Significa |
+|---|---|
+| `App*` | Componente base, sem domínio |
+| `*View` | Tela, ligada a uma rota |
+| `*Modal` | Sobreposição com decisão |
+| `*Form` | Formulário de uma entidade |
+| `*List` | Coleção sem lógica de busca |
+
+**Regras que valem para todo componente:**
+
+- `<script setup lang="ts">`, com `defineProps<T>()` e `defineEmits<T>()` tipados.
+  Nada de `props` declaradas só em tempo de execução.
+- Um componente por arquivo, nome do arquivo igual ao do componente (ADR-015).
+- **Conteúdo variável entra por `slot`, não por `prop` booleana.** Três booleanos
+  que ligam pedaços de marcação são três componentes esperando para nascer.
+- Estados de carregando, vazio, erro e sem permissão usam os componentes
+  compartilhados. Nenhuma tela desenha o seu próprio "nada encontrado".
+
+## 4.3 Padrão de CSS
+
+**Todo valor visual vem de `tokens.css`.** Nenhuma cor, espaçamento, tipografia,
+raio, sombra ou duração escrita dentro de componente. `tokens.css` e `base.css` são
+os únicos arquivos onde literal é permitido.
+
+**Valor novo vira token, decidido uma vez.** Se um componente precisa de um
+espaçamento que não existe na escala, a pergunta certa não é "qual valor uso aqui",
+é "por que a escala não cobre este caso". Inventar o valor no componente resolve a
+tela e estraga o sistema.
+
+- `<style scoped>` sempre; estilo global apenas em `base.css`.
+- **Sem `:deep()` alcançando o interior de outro componente.** Isso transforma o
+  detalhe de implementação dele em contrato público, e o próximo que reorganizar a
+  marcação quebra um estilo que mora em outro arquivo.
+- Layout por Grid e Flex. Posição em pixel só na timeline, e mesmo lá por grade
+  (ADR-004).
+- Mobile primeiro.
+
+### A única exceção, e por que ela existe
+
+**Variável CSS não funciona dentro de `@media`.** `@media (max-width: var(--bp-sm))`
+é inválido: a condição da consulta é avaliada antes de o custom property existir.
+Não é limitação do projeto, é do CSS.
+
+Então os pontos de quebra são **a única exceção** à regra de nenhum literal em
+componente, e ela é contida assim:
+
+- Os valores são declarados uma vez, em comentário no topo de `tokens.css`, e
+  nenhum outro valor de quebra pode aparecer.
+- A verificação ignora linhas de `@media` — e só elas.
+- Se um dia a lista crescer a ponto de incomodar, a saída é `@custom-media` por
+  plugin de PostCSS, que é dependência nova e será pedida com motivo.
+
+**Um grupo de token ainda falta** e entra na M7.1.1, antes da primeira tela: as
+**camadas de `z-index`**. Sem elas, o modal de conflito e o cabeçalho fixo da
+timeline vão disputar sobreposição com números escolhidos no susto.
+
+```bash
+# Nenhuma das duas buscas pode devolver resultado
+grep -rnE '#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(' frontend/src --include=*.vue
+grep -rnE '[0-9](px|rem|em)\b' frontend/src --include=*.vue | grep -v '@media'
+```
+
+Rodando hoje, a segunda busca aponta `minmax(10rem, 1fr)` na tela de status da
+sprint 01 — medida de trilha de grade escrita à mão. Ela sai na M7.1.1 junto com a
+tela, e o valor equivalente nasce como token.
+
 ## 5. Camadas
 
 ```text
@@ -116,6 +214,7 @@ sobra para ele — e o que fecha a história por último.
 | `features/auth/LoginView.vue` | Entrada |
 | `app/router.ts` | Guarda por sessão e por perfil |
 | `shared/components/` | `AppButton`, `AppInput`, `AppCard`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState` |
+| `shared/tokens.css` | Acréscimo dos pontos de quebra e das camadas de `z-index` |
 | `scripts/seed_demo.py` | Dados de demonstração: contas, macas, clientes, agendamentos, orçamentos |
 
 **Critérios de aceite:**
