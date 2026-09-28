@@ -261,8 +261,15 @@ sobra para ele — e o que fecha a história por último.
 | `app/AppShell.vue` | Cabeçalho, navegação por perfil, área de conteúdo |
 | `features/auth/LoginView.vue` | Entrada |
 | `app/router.ts` | Guarda por sessão e por perfil |
-| `shared/components/` | `AppButton`, `AppInput`, `AppCard`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState` |
-| `shared/tokens.css` | Acréscimo dos pontos de quebra e das camadas de `z-index` |
+| `shared/components/` | `AppButton`, `AppInput`, `AppCard`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`, e — vindos da referência — `SectionKicker`, `PageHeader`, `HeroBanner` |
+| `shared/format/` | `StudioClock` e `MoneyFormatter`, classes puras |
+| `shared/async/` | `AsyncState`, o mecanismo dos quatro estados |
+| `shared/tokens.css` | Camadas de `z-index`, escala de display, kicker, largura da lateral e preenchimento de campo |
+
+> **Entregue em 28/09/2026, com duas pendências.** O `scripts/seed_demo.py` não foi
+> construído e os critérios de aceite não foram verificados, por conflito de porta
+> com outro projeto na máquina. Detalhe na evidência da M7.1.1 em
+> [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md).
 | `scripts/seed_demo.py` | Dados de demonstração: contas, macas, clientes, agendamentos, orçamentos |
 
 **Critérios de aceite:**

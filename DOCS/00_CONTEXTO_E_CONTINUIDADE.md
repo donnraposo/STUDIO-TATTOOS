@@ -314,8 +314,27 @@ ela não permite:** sinal, pagamento, sessão executada e repasse. Das duas dore
 justificam o sistema, a demonstração resolve inteira a de choque de horário nas
 macas e nenhuma parte da de saber quem recebe quanto.
 
-**Próximo passo:** etapa M7.1.1 — casca da aplicação, acesso, cliente HTTP com CSRF,
-componentes base e script de dados de demonstração.
+**A etapa M7.1.1 entregou o código, mas não está fechada.** Login em tela dividida,
+casca com barra lateral, cliente HTTP com CSRF e tratamento central do 401, sessão,
+dez componentes base, formatadores de fuso e dinheiro, e o mecanismo dos quatro
+estados de tela. ESLint e `vue-tsc` limpos, **26 testes aprovados**, verificações de
+convenção sem resultado.
+
+**Falta para fechar:** o script de dados de demonstração e a verificação dos quatro
+critérios de aceite. O motivo é de ambiente: outro projeto na mesma máquina ocupa as
+portas 5432 e 8000, e os containers `postgres` e `api` não sobem. O `frontend` roda
+sozinho na 5173, que é como tudo o que não exige servidor foi conferido.
+
+**A linguagem visual foi definida em 28/09/2026**, a partir do monograma e de telas
+de referência entregues pelo responsável: cromo escuro com área de trabalho clara,
+barra lateral, rótulo em caixa alta sobre todo título, título de display grande,
+tudo em pílula, cartão herói com uma única ação, e o ouro do monograma no lugar do
+carmim da referência. Está registrada na seção 4.0 de
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md), com o banner em
+`frontend/public/brand/banner.svg`.
+
+**Próximo passo:** destravar o ambiente, construir o `scripts/seed_demo.py`,
+verificar os critérios de aceite e então abrir a M7.1.2 — clientes.
 
 ## Estado de aprovação e limite de trabalho
 

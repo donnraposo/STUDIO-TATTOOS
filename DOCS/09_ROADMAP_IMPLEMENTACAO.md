@@ -679,10 +679,55 @@ criar a expectativa de que o financeiro já existe.
 
 | Etapa | Escopo | Situação |
 |---|---|---|
-| M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | Não iniciada |
+| M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | 🔄 **Código entregue em 28/09/2026; aceite não verificado** |
 | M7.1.2 | Clientes | Não iniciada |
 | M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | Não iniciada |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
+
+### Evidência da etapa M7.1.1 — 28/09/2026
+
+**A etapa não está concluída.** O código foi entregue e verificado no que é
+verificável sem servidor; os critérios de aceite, não. A distinção está detalhada
+mais abaixo e é o que impede de marcar a etapa como fechada.
+
+**Verificado:** ESLint sem apontamentos, `vue-tsc` sem erro, **26 testes
+aprovados**, e as três verificações de convenção do `CLAUDE.md` sem resultado —
+nenhum valor visual fora dos tokens, nenhum componente de apresentação falando com
+a API.
+
+**Fundações entregues**, e o motivo de cada uma existir como peça própria:
+
+| Peça | Existe porque |
+|---|---|
+| `HttpClient` | Única costura com a rede. O tratamento do 401 é registrado nele uma vez: a sessão cai no meio do uso de verdade, já que o backend reconfere a conta a cada requisição (RN 2.5). Se cada tela tratasse, bastaria uma esquecer |
+| `ApiError` | Traduz `detail` nas **duas** formas que o backend usa: texto, do `ErrorHandlers`, e lista de objetos, do Pydantic. Tratar só a primeira faria todo formulário recusado mostrar "status 422" e esconder o campo errado |
+| `SessionStore` | Estado da sessão, somente leitura para as telas. `restore` nunca propaga falha — tela branca é resposta pior que o formulário de login. `signOut` encerra no servidor **antes** de esquecer localmente |
+| `ProfilePermissions` | Espelha as políticas do backend para **esconder**, nunca para impedir |
+| `StudioClock` | `Europe/Dublin` fixo, nunca o fuso do navegador. Tem teste atravessando a virada do horário de verão |
+| `MoneyFormatter` | Recebe texto decimal, não número: `Numeric(12,2)` existe para que arredondamento binário não toque em repasse |
+| `AsyncState` | Dá mecanismo à regra dos quatro estados, que existia só no papel. Separa "proibido" de "falhou", porque 403 não muda por insistir |
+
+**Interface entregue:** login em tela dividida, casca com barra lateral, dez
+componentes base e a entrada provisória. A linguagem visual extraída das
+referências está na seção 4.0 de [`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md).
+
+### O que falta para fechar a M7.1.1
+
+| Pendência | Situação |
+|---|---|
+| `scripts/seed_demo.py` | **Não construído.** Sem ele não há dado para demonstrar |
+| Critérios de aceite | **Não verificados.** Nenhum dos quatro foi exercitado contra a API |
+
+**O motivo é de ambiente, não de código.** Outro projeto na mesma máquina —
+`assessoria-artistas` — ocupa as portas 5432 e 8000, e os containers `postgres` e
+`api` deste projeto não sobem enquanto isso durar. O `frontend` roda sozinho na
+5173, que é como o lint, os tipos, os testes e a renderização do login foram
+conferidos.
+
+**Saídas possíveis, quando for retomado:** parar a pilha do outro projeto, ou dar a
+este projeto portas próprias no `compose.yaml`. A segunda é mais durável e custa
+duas linhas — mas muda configuração de ambiente e fica registrada aqui como decisão
+a tomar, não assumida.
 
 **Resultado esperado:** os três perfis entram no sistema, cadastram cliente,
 solicitam e decidem agendamento com prevenção de conflito visível, e percorrem o

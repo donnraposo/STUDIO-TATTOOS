@@ -11,6 +11,11 @@
 **139 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
+**26 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+puras — sem montar componente e sem dependência nova. O que se testa ali é o que
+tem chance real de estar errado: fuso horário, formatação de dinheiro, tradução de
+erro da API e ciclo de sessão.
+
 | Área | Situação |
 |---|---|
 | Saúde e prontidão | Coberta |
@@ -25,7 +30,12 @@ no banco isolado `tattoo_studio_test`.
 | **Ciclo do orçamento** | Coberta: guest sem acesso, residente não aprova, percentual congelado em 70 e em 50 conforme a origem, correção de percentual pelo gestor registrada na auditoria, edição de aprovado voltando a pendente e limpando o percentual, recusa sem motivo, reaprovação bloqueada e visibilidade entre artistas |
 | **Imagens de referência** | Coberta: leitura sem sessão devolvendo 401, artista de fora recebendo 403 em listar, ler e anexar, imagem de um orçamento não saindo por outro, tipo não aceito, arquivo acima de 10 MB, arquivo vazio, limite de 10 por orçamento, anexar não reabrindo aprovação, residente sem anexar em aprovado e remoção apagando o arquivo |
 | **Armazenamento em sistema de arquivos** | Coberta no adaptador: ida e volta dos bytes, criação da árvore de diretórios, sobrescrita sem deixar o temporário, leitura de chave ausente como erro de domínio, remoção repetida sem erro e chave tentando escapar da raiz nos três formatos |
+| **Fuso do estúdio no frontend** | Coberta: horário de verão e horário padrão, mesmo instante escrito com deslocamentos diferentes, e minutos desde a meia-noite atravessando a virada. Uma agenda deslocada por uma hora parece correta na tela, e é por isso que tem teste |
+| **Cliente HTTP do frontend** | Coberta: CSRF ausente na leitura e presente na escrita, cookie de sessão enviado, 401 avisando a aplicação, 409 marcado para o modal de conflito, mensagem de campo extraída do erro de validação, corpo de erro que não é JSON e resposta vazia no `DELETE` |
+| **Sessão no frontend** | Coberta: reconhecimento pelo cookie, sessão expirada, API fora do ar sem impedir a aplicação de montar, e saída que só esquece o usuário depois de o servidor encerrar |
+| **Formatação de dinheiro** | Coberta: texto decimal da API, duas casas sempre, e traço em vez de `NaN` quando o valor é nulo — que é o caso do orçamento pendente |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
+| **Aceite da M7.1.1** | **Não verificado.** Os quatro critérios exigem a API no ar, bloqueada por conflito de porta com outro projeto na máquina. Ver a evidência da M7.1.1 no roadmap |
 
 ## 1. Estratégia
 
