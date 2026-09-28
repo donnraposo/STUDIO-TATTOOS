@@ -34,6 +34,9 @@ defineProps<{ kicker: string; title: string; description?: string }>();
 </template>
 
 <style scoped>
+/* A foto fica ancorada à direita, onde está a artista, e a sobreposição escurece
+   a esquerda, onde o texto se apoia. Ancorar ao centro cortaria o rosto ao meio
+   nas larguras intermediárias. */
 .hero {
   display: flex;
   align-items: flex-end;
@@ -41,7 +44,7 @@ defineProps<{ kicker: string; title: string; description?: string }>();
   padding: var(--space-10);
   border-radius: var(--radius-xl);
   background-color: var(--color-black);
-  background-image: url("/brand/banner.svg");
+  background-image: var(--overlay-media), var(--image-studio);
   background-position: center right;
   background-size: cover;
   color: var(--color-on-dark);

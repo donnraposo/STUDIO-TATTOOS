@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1054 1492" role="img" aria-label="Tattoo Studio">
+  <!--
+    Monograma do estudio, vetorizado. Substitui o logo.jpg por dois motivos.
+
+    Escala sem perda, do menu lateral a uma tela grande, e pesa poucos kilobytes
+    contra os 90 KB do raster.
+
+    E nao tem fundo: o retangulo preto do arquivo original foi retirado para que
+    a marca possa aparecer sobre qualquer superficie. Com o fundo embutido, ela
+    so funcionaria sobre preto, e um bloco escuro apareceria assim que alguem a
+    usasse sobre o off-white.
+
+    A proporcao e 1054x1492, ou seja RETRATO. Quem usar precisa respeitar isso:
+    caixa quadrada com object-fit cover corta o escudo em cima e embaixo, que foi
+    exatamente o defeito da primeira versao da casca.
+
+    O ouro do arquivo, #D9A514, confirma a paleta que os tokens ja registravam
+    como extraida do monograma (a variavel color-gold, #d9a441).
+
+    Atencao ao editar: comentario XML nao aceita hifen duplo. Um travessao
+    escrito com dois hifens quebra o arquivo inteiro, e o navegador passa a
+    servi-lo sem renderizar.
+  -->
+  <g fill="#D9A514" fill-rule="evenodd">
+    <path d="M 559 252 L 502 253 L 502 751 L 521 743 L 540 729 L 551 714 L 559 687 Z M 538 269 L 539 687 L 534 706 L 528 718 L 523 720 L 521 289 L 522 270 Z "/>
+    <path d="M 1003 128 L 264 128 L 243 134 L 239 155 L 216 153 L 215 134 L 48 128 L 65 172 L 68 221 L 43 339 L 44 407 L 74 479 L 125 520 L 176 530 L 124 475 L 106 434 L 111 390 L 144 339 L 224 286 L 339 270 L 279 304 L 232 343 L 232 358 L 218 352 L 143 369 L 170 400 L 180 437 L 181 783 L 166 828 L 120 865 L 163 868 L 204 889 L 415 1129 L 480 1227 L 518 1343 L 549 1248 L 616 1144 L 840 895 L 878 871 L 928 864 L 882 827 L 870 799 L 868 431 L 880 395 L 906 369 L 835 348 L 716 270 L 831 285 L 907 336 L 937 388 L 942 439 L 928 474 L 876 530 L 927 519 L 981 473 L 1007 410 L 1009 344 L 982 213 Z M 670 284 L 692 300 L 716 325 L 730 350 L 737 378 L 738 770 L 743 792 L 754 809 L 729 819 L 704 841 L 528 1043 L 527 786 L 575 765 L 613 737 L 634 714 L 682 649 L 719 619 L 680 601 L 671 590 L 667 578 L 667 285 Z M 386 284 L 389 285 L 389 894 L 383 890 L 331 827 L 310 813 L 295 811 L 307 795 L 313 775 L 313 394 L 315 376 L 325 346 L 336 328 L 358 304 Z M 965 157 L 960 224 L 986 388 L 949 482 L 959 390 L 899 298 L 801 256 L 646 252 L 646 583 L 680 625 L 587 730 L 502 771 L 503 1099 L 734 839 L 795 819 L 761 775 L 760 384 L 722 297 L 864 381 L 845 447 L 846 799 L 875 850 L 817 880 L 623 1094 L 519 1257 L 467 1153 L 235 879 L 175 852 L 205 798 L 204 431 L 185 383 L 333 296 L 293 382 L 291 773 L 257 820 L 308 835 L 411 954 L 410 252 L 256 255 L 231 281 L 166 291 L 93 378 L 94 472 L 66 386 L 93 226 L 88 159 Z "/>
+  </g>
+</svg>

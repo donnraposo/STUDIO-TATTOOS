@@ -99,6 +99,42 @@
   --border-thin: 0.0625rem solid var(--color-border);
   --border-dark: 0.0625rem solid var(--color-border-dark);
 
+  /* Midia de marca. O caminho fica aqui e nao no componente: trocar a foto
+     passa a ser uma linha, e nenhuma tela guarda endereco de arquivo. */
+  --image-studio: url("/brand/studio.webp");
+
+  /* O monograma entra como fundo, e nao como <img>, por dois motivos. E
+     decorativo -- o nome do estudio esta escrito ao lado --, e assim o Vite nao
+     tenta transformar o arquivo em modulo, que era o que devolvia JavaScript no
+     lugar da imagem. */
+  --image-logo: url("/brand/logo.svg");
+
+  /* Proporcao retrato do monograma. Quem desenhar caixa para ele usa isto, em
+     vez de descobrir na tela que o escudo ficou cortado. */
+  --brand-mark-ratio: 1054 / 1492;
+
+  /* Sobreposicao sobre foto. A imagem ja e escura a esquerda, mas o recorte
+     muda com a largura da tela -- em telas estreitas o lado claro sobe para
+     debaixo do texto. A sobreposicao garante a leitura em qualquer corte, que e
+     o tipo de coisa que so aparece no celular de outra pessoa. */
+  --overlay-media: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 92%) 0%,
+    rgb(0 0 0 / 70%) 38%,
+    rgb(0 0 0 / 25%) 70%,
+    rgb(0 0 0 / 10%) 100%
+  );
+
+  /* Versao para painel alto e estreito, como o lado de marca do login. Ali a
+     largura inteira e "esquerda", entao a sobreposicao horizontal cobriria a
+     foto por completo. Escurece de cima para baixo e mantem a imagem visivel. */
+  --overlay-media-panel: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 45%) 0%,
+    rgb(0 0 0 / 65%) 55%,
+    rgb(0 0 0 / 85%) 100%
+  );
+
   --shadow-card: 0 0.75rem 2rem rgb(14 14 15 / 6%);
   --shadow-raised: 0 1rem 2.5rem rgb(14 14 15 / 12%);
   --shadow-gold: 0 0 1.5rem rgb(217 164 65 / 28%);

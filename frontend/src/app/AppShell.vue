@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useRouter } from "vue-router";
 
 import AppButton from "@/shared/components/AppButton.vue";
+import BrandLockup from "@/shared/components/BrandLockup.vue";
 import SectionKicker from "@/shared/components/SectionKicker.vue";
 import { useSession } from "@/shared/session/useSession";
 
@@ -57,14 +58,7 @@ async function signOut(): Promise<void> {
 <template>
   <div class="shell">
     <aside class="sidebar">
-      <div class="brand">
-        <img
-          src="/brand/logo.jpg"
-          alt=""
-          class="mark"
-        >
-        <span class="brand-name">Studio</span>
-      </div>
+      <BrandLockup name="Studio" />
 
       <SectionKicker
         label="Studio workspace"
@@ -128,24 +122,8 @@ async function signOut(): Promise<void> {
   color: var(--color-on-dark);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 
-.mark {
-  width: var(--icon-box);
-  height: var(--icon-box);
-  border-radius: var(--radius-round);
-  object-fit: cover;
-}
 
-.brand-name {
-  font-weight: var(--weight-medium);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-}
 
 nav {
   display: flex;

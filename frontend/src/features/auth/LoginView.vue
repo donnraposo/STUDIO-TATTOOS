@@ -5,6 +5,7 @@ import { useRoute, useRouter } from "vue-router";
 import { ApiError } from "@/shared/api/ApiError";
 import AppButton from "@/shared/components/AppButton.vue";
 import AppInput from "@/shared/components/AppInput.vue";
+import BrandLockup from "@/shared/components/BrandLockup.vue";
 import SectionKicker from "@/shared/components/SectionKicker.vue";
 import { useSession } from "@/shared/session/useSession";
 
@@ -45,14 +46,10 @@ async function submit(): Promise<void> {
       está entrando, e é a única tela onde a marca aparece em tamanho grande.
     -->
     <aside class="brand-side">
-      <div class="brand">
-        <img
-          src="/brand/logo.jpg"
-          alt=""
-          class="mark"
-        >
-        <span class="brand-name">Tattoo Studio</span>
-      </div>
+      <BrandLockup
+        name="Tattoo Studio"
+        size="large"
+      />
 
       <div class="statement">
         <SectionKicker
@@ -134,30 +131,14 @@ async function submit(): Promise<void> {
   gap: var(--space-10);
   padding: var(--space-12) var(--space-10);
   background-color: var(--color-black);
-  background-image: url("/brand/banner.svg");
-  background-position: center right;
+  background-image: var(--overlay-media-panel), var(--image-studio);
+  background-position: center;
   background-size: cover;
   color: var(--color-on-dark);
 }
 
-.brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
 
-.mark {
-  width: var(--icon-box);
-  height: var(--icon-box);
-  border-radius: var(--radius-round);
-  object-fit: cover;
-}
 
-.brand-name {
-  font-weight: var(--weight-medium);
-  letter-spacing: var(--tracking-wide);
-  text-transform: uppercase;
-}
 
 .statement {
   display: flex;
