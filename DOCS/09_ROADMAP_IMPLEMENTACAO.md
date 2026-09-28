@@ -679,7 +679,7 @@ criar a expectativa de que o financeiro já existe.
 
 | Etapa | Escopo | Situação |
 |---|---|---|
-| M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | 🔄 **Código entregue em 28/09/2026; aceite não verificado** |
+| M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | ✅ Concluída em 29/09/2026 |
 | M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
 | M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | Não iniciada |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
@@ -723,14 +723,25 @@ M7.2, junto das telas de gestão.
 
 ### Evidência da etapa M7.1.1 — 28/09/2026
 
-**A etapa não está concluída.** O código foi entregue e verificado no que é
-verificável sem servidor; os critérios de aceite, não. A distinção está detalhada
-mais abaixo e é o que impede de marcar a etapa como fechada.
+> **Fechada em 29/09/2026.** Este registro nasceu dizendo "aceite não
+> verificado", porque o Docker estava travado quando a etapa foi escrita. O
+> ambiente foi destravado, o `seed_demo.py` construído e os quatro critérios
+> exercitados. O texto abaixo foi atualizado; o que valia antes está no commit
+> `2b5476b`.
 
-**Verificado:** ESLint sem apontamentos, `vue-tsc` sem erro, **26 testes
+**Verificado:** ESLint sem apontamentos, `vue-tsc` sem erro, **38 testes
 aprovados**, e as três verificações de convenção do `CLAUDE.md` sem resultado —
 nenhum valor visual fora dos tokens, nenhum componente de apresentação falando com
 a API.
+
+**Os quatro critérios de aceite, e como cada um foi provado:**
+
+| Critério | Prova |
+|---|---|
+| Os perfis entram e veem navegação diferente | Proprietário vê Overview, Clients e System; residente vê Overview e Clients, **sem System**. Conferido na tela e fixado em teste de `ProfilePermissions`, para não depender de conferência manual |
+| 401 devolve ao login sem tela quebrada | Recarregar uma rota protegida sem sessão levou a `/login?redirect=/`, preservando o destino |
+| Conta bloqueada perde acesso na requisição seguinte | `GET /auth/me` do residente respondeu **200 antes e 401 depois** do bloqueio pelo proprietário, sem nova autenticação no meio. A conta foi desbloqueada em seguida (RN 2.5) |
+| Sair encerra a sessão no servidor | Reutilizar o **mesmo cookie** depois do logout respondeu 401. Não é só a interface esquecendo: a sessão deixou de existir |
 
 **Fundações entregues**, e o motivo de cada uma existir como peça própria:
 
@@ -748,23 +759,21 @@ a API.
 componentes base e a entrada provisória. A linguagem visual extraída das
 referências está na seção 4.0 de [`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md).
 
-### O que falta para fechar a M7.1.1
+### Duas correções de ambiente que a etapa exigiu
 
-| Pendência | Situação |
+| Problema | Correção |
 |---|---|
-| `scripts/seed_demo.py` | **Não construído.** Sem ele não há dado para demonstrar |
-| Critérios de aceite | **Não verificados.** Nenhum dos quatro foi exercitado contra a API |
+| Outro projeto na máquina ocupava 5432 e 8000 | As portas publicadas deste projeto passaram a **5433** e **8001**. Dentro da rede do compose nada mudou; só o acesso a partir do host. O `/api/v1/docs` agora é `http://localhost:8001/api/v1/docs` |
+| `postgres:17-alpine` quebrava ao criar cluster novo | Trocada pela variante Debian, `postgres:17`. O erro era `Exec format error` carregando `dict_snowball.so` durante o `initdb`, com arquitetura correta dos dois lados. **A causa provável era a VM do Docker, que naquele momento estava com o sistema de arquivos em modo somente leitura** — a troca de imagem pode não ter sido necessária e pode ser revertida |
 
-**O motivo é de ambiente, não de código.** Outro projeto na mesma máquina —
-`assessoria-artistas` — ocupa as portas 5432 e 8000, e os containers `postgres` e
-`api` deste projeto não sobem enquanto isso durar. O `frontend` roda sozinho na
-5173, que é como o lint, os tipos, os testes e a renderização do login foram
-conferidos.
+**Armadilha confirmada, e ela custou tempo:** o observador de arquivos do Vite não
+enxerga arquivo novo em `public/` nem alteração em `tokens.css` através do bind
+mount do Windows. O sintoma é imagem que não aparece e token que chega vazio ao
+navegador, sem erro nenhum. A recuperação é `docker compose restart frontend`.
 
-**Saídas possíveis, quando for retomado:** parar a pilha do outro projeto, ou dar a
-este projeto portas próprias no `compose.yaml`. A segunda é mais durável e custa
-duas linhas — mas muda configuração de ambiente e fica registrada aqui como decisão
-a tomar, não assumida.
+**Dados de demonstração:** `backend/scripts/seed_demo.py` cria as cinco contas, as
+quatro macas, três clientes e um orçamento pendente. Recusa-se a rodar fora de
+`ENVIRONMENT=development` e é idempotente.
 
 **Resultado esperado:** os três perfis entram no sistema, cadastram cliente,
 solicitam e decidem agendamento com prevenção de conflito visível, e percorrem o
