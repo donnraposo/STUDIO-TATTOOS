@@ -18,9 +18,22 @@
   --text-label-2: 1rem;
   --text-label-3: 0.875rem;
 
+  /* Display. A referencia de design apoia cada tela num titulo muito maior do
+     que o topo da escala original, e e dele que vem o silencio ao redor do
+     conteudo. Usa clamp para nao estourar no celular. */
+  --text-display-1: clamp(2.5rem, 6vw, 4rem);
+  --text-display-2: clamp(2rem, 4vw, 2.75rem);
+
+  /* Kicker: rotulo em caixa alta acima do titulo. Na referencia ele aparece
+     sobre TODO titulo, e e o que da ritmo a pagina. */
+  --text-kicker: 0.6875rem;
+
   --line-tight: 1.2;
+  --line-display: 1.04;
   --line-normal: 1.5;
   --tracking-wide: 0.1em;
+  --tracking-kicker: 0.18em;
+  --tracking-display: -0.02em;
 
   /* Marca: ouro extraido da logo */
   --color-gold-bright: #f7de95;
@@ -34,10 +47,15 @@
   --color-ink-soft: #1a1a1c;
   --color-ink-line: #2a2a2d;
 
-  /* Superficies claras */
-  --color-canvas: #f2f2f0;
+  /* Superficies claras. O off-white e levemente quente para conversar com o
+     ouro; um cinza neutro deixaria a marca parecendo deslocada na propria tela. */
+  --color-canvas: #f3f1ed;
   --color-surface: #ffffff;
-  --color-surface-soft: #e8e8e6;
+  --color-surface-soft: #e9e6e0;
+
+  /* Campo de formulario. A referencia usa preenchimento sutil em vez de borda
+     forte: o campo se le como area clicavel sem competir com o botao. */
+  --color-field: #f6f4f0;
 
   /* Texto */
   --color-on-dark: #f5f4f1;
@@ -87,6 +105,8 @@
   --shadow-focus: 0 0 0 0.1875rem rgb(217 164 65 / 45%);
 
   /* Dimensoes */
+  --sidebar-width: 17.5rem;
+  --hero-height: 22rem;
   --touch-target: 2.75rem;
   --icon-size: 1.25rem;
   --icon-box: 2.75rem;
@@ -97,4 +117,25 @@
   --opacity-disabled: 0.5;
   --transition-fast: 160ms ease;
   --transition-slow: 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Trilhas de grade reutilizaveis, para que largura minima de cartao nao seja
+     escolhida de novo a cada tela. */
+  --track-card-min: 16rem;
+  --track-tile-min: 10rem;
+
+  /* Camadas. Existem para que sobreposicao seja decidida uma vez, aqui, e nao
+     com numeros escolhidos no susto quando duas coisas se cobrirem. */
+  --layer-base: 0;
+  --layer-raised: 10;
+  --layer-sticky: 100;
+  --layer-overlay: 900;
+  --layer-modal: 1000;
+
+  /* Pontos de quebra. NAO podem ser usados dentro de @media: variavel CSS nao e
+     avaliada na condicao da consulta. Ficam aqui como fonte unica do valor, que
+     e repetido literalmente nas consultas -- a unica excecao a regra de nenhum
+     literal em componente. Ver DOCS/10_ROADMAP_FRONTEND.md secao 4.3. */
+  --bp-sm: 40rem;
+  --bp-md: 64rem;
+  --bp-lg: 80rem;
 }

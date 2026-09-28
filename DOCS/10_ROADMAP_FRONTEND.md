@@ -77,6 +77,54 @@ Os três primeiros valem para todo arquivo; os demais são específicos do front
 - **Toda tela trata quatro estados:** carregando, vazia, com erro e sem permissão.
   Componentes compartilhados para os quatro, para que cada tela não invente o seu.
 
+## 4.0 Linguagem visual
+
+**Fonte:** o monograma do estúdio, em ouro sobre preto, e um conjunto de telas de
+referência de outro produto, entregues em 28/09/2026 como padrão de desenho a
+seguir. **As cores são as nossas; a estrutura é a da referência.** Onde a
+referência usa carmim como destaque, usamos o ouro do monograma.
+
+### O que foi extraído da referência
+
+| Padrão | Como se aplica aqui |
+|---|---|
+| **Cromo escuro, trabalho claro** | Barra lateral e cartões herói em preto; área de trabalho em off-white levemente quente, para conversar com o ouro |
+| **Barra lateral, não superior** | A lista de telas do MVP chega a nove itens (`01` §10); no topo, metade sumiria atrás de um menu já na terceira sprint |
+| **Kicker sobre todo título** | Rótulo em caixa alta com espaçamento largo, acima de cada título. É o que dá ritmo à página e diz onde a pessoa está antes de dizer o que há ali |
+| **Título de display grande** | Escala própria, acima dos 32px do style guide original, com entrelinha apertada e muito silêncio em volta |
+| **Tudo em pílula** | Botões, campos, item ativo do menu e selos. O campo tem preenchimento sutil em vez de borda forte, para não competir com o botão |
+| **Cartão herói** | Retângulo muito arredondado, fundo escuro, título grande e **uma** ação clara. Duas ações de igual peso num herói é a forma mais rápida de a tela não dizer nada |
+| **Destaque com parcimônia** | O ouro aparece no kicker sobre escuro, no botão primário, no avatar e no item ativo. Em mais lugares, deixaria de destacar |
+
+### O banner
+
+`frontend/public/brand/banner.svg`, usado no cartão herói e no lado de marca do
+login. **É SVG e não fotografia**, por três motivos: pesa poucos kilobytes e escala
+sem perda; nasce das formas do próprio monograma, sem depender de banco de imagens
+cujo direito de uso teria de ser verificado; e é escuro e calmo do lado esquerdo de
+propósito, que é onde o texto branco se apoia — uma foto de estúdio, com pontos
+claros imprevisíveis, deixaria a leitura refém do recorte.
+
+**O texto não é embutido na imagem.** Ele é marcação por cima, para poder ser
+traduzido, reescrito e reposicionado sem gerar imagem nova.
+
+### Componentes que sustentam o padrão
+
+| Componente | Existe para |
+|---|---|
+| `SectionKicker` | O rótulo em caixa alta, que aparece em toda tela |
+| `PageHeader` | Abertura de tela: kicker, título de display e ações. Nenhuma tela decide sozinha o tamanho do próprio título |
+| `HeroBanner` | O cartão herói, com o banner de fundo |
+
+### O que ainda não está decidido
+
+- **Ícones.** A referência usa ícone ao lado de cada item do menu e dentro dos
+  botões. Ainda não há conjunto escolhido, e escolher significa dependência nova ou
+  desenhar à mão. Fica para antes da M7.1.2, quando a navegação cresce.
+- **Densidade da agenda.** A referência é espaçosa, e a timeline de macas precisa
+  do oposto: muita informação num dia. É o primeiro ponto onde o padrão vai ter de
+  ceder, e a decisão pertence à M7.1.3.
+
 ## 4.1 SOLID aplicado ao frontend
 
 Os cinco princípios não são decoração aqui; cada um vira uma regra verificável.
