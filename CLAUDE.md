@@ -19,6 +19,7 @@ documentação é mantida atualizada a cada entrega exatamente para evitar isso.
 | Cenários de teste e critérios de aceite | `DOCS/07_PLANO_TESTES.md` |
 | Por que cada decisão foi tomada | `DOCS/08_DECISOES_ARQUITETURA.md` |
 | **Andamento das sprints** | **`DOCS/09_ROADMAP_IMPLEMENTACAO.md`** |
+| Telas, componentes e ordem do frontend | `DOCS/10_ROADMAP_FRONTEND.md` |
 
 ## 1. O que é o sistema
 
@@ -128,6 +129,7 @@ entenda o projeto **sem ler código**.
 | Mudou | Atualize |
 |---|---|
 | Progresso de sprint | `09_ROADMAP_IMPLEMENTACAO.md` e `00_CONTEXTO_E_CONTINUIDADE.md` |
+| Tela, componente ou convenção do frontend | `10_ROADMAP_FRONTEND.md` |
 | Decisão de arquitetura | `08_DECISOES_ARQUITETURA.md` |
 | Tabela ou campo | `05_MODELO_DADOS.md` |
 | Endpoint | `06_ESTRUTURA_PROJETO.md` |

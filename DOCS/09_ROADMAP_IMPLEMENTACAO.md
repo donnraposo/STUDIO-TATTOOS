@@ -6,8 +6,11 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2 e M3.
-**Em andamento:** M4 — orçamentos e sessões; M4.1 a M4.3 concluídas, M4.4 é a próxima.
-**Progresso do MVP:** 4 de 8 sprints.
+**Pausado:** M4 — orçamentos e sessões, com M4.1 a M4.3 concluídas. A M4.4 volta ao
+fim da M7.1.
+**Em andamento:** M7.1 — fatia vertical de interface (ADR-025).
+**Progresso do MVP:** 4 de 8 sprints em número; o backend está adiante disso e o
+frontend, bem atrás.
 
 | O que existe | Detalhe |
 |---|---|
@@ -18,12 +21,15 @@
 | Testes | 139 aprovados, em PostgreSQL real |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
-> **Leitura honesta do avanço.** Quatro oitavos em número de sprints, porém menos
-> que isso em esforço: a M7, com toda a interface, é a maior do MVP e ainda não
-> começou. O backend já cobre identidade, clientes e agenda — inclusive a prevenção
-> de conflito, que era o risco técnico central. **Falta todo o dinheiro:** orçamento,
-> sinal, pagamento e repasse. Enquanto essa metade não existir, o estúdio continua
-> com controle paralelo, porque o fio condutor do MVP não fecha.
+> **Leitura honesta do avanço.** O backend cobre identidade, clientes, agenda —
+> inclusive a prevenção de conflito, que era o risco técnico central — e o
+> orçamento. **Falta todo o dinheiro:** sinal, pagamento e repasse. Enquanto essa
+> metade não existir, o estúdio continua com controle paralelo, porque o fio
+> condutor do MVP não fecha.
+>
+> O frontend, por outro lado, ainda é quase tudo: existem os tokens de design e uma
+> tela de status. A M7.1 começa a mudar isso, e a demonstração que ela permite
+> cobre uma das duas dores do estúdio, não as duas.
 
 ### Pendências de costura entre sprints
 
@@ -97,7 +103,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 
 ### MVP
 
-**Estratégia de execução: backend completo primeiro, interface depois** (ADR-020).
+**Estratégia de execução: backend primeiro, com uma fatia de interface antecipada**
+(ADR-020, revisto pelo ADR-025).
 
 | Sprint | Tema | Camada | Situação |
 |---|---|---|---|
@@ -105,16 +112,21 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| **M4** | Orçamentos e sessões | Backend | 🔄 Em andamento — 3 de 4 etapas |
+| M4 | Orçamentos e sessões | Backend | ⏸️ **Pausada em 3 de 4 etapas.** Retomada na M4.4, ao fim da M7.1 |
+| **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ⬅️ Em andamento desde 28/09/2026 |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
-| M7 | Interface completa do MVP | Frontend | Não iniciada |
+| M7.2 | Restante da interface do MVP | Frontend | Não iniciada |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
-**Ponto de validação sem interface.** Enquanto o frontend não existe, o contrato
-publicado em `/api/v1/docs` é o meio de exercitar cada módulo e conferir as regras
-de negócio. Ao fim de cada sprint de backend, o responsável consegue executar o
-fluxo por ali.
+**O detalhamento do frontend está em
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md):** telas, componentes, ordem das
+etapas e critérios de aceite. O andamento continua sendo registrado **aqui**, para
+não haver duas versões do status.
+
+**Por que a M4 ficou pausada e não concluída.** Faltam as sessões, da etapa M4.4.
+Marcar a sprint como concluída seria a mentira mais fácil de contar e a mais cara de
+descobrir depois. Ela volta assim que a M7.1 fechar.
 
 ### Fase 2
 
@@ -646,23 +658,54 @@ Seja qual for o caminho, o risco de fechamento duplicado continua sendo resolvid
 banco, por unicidade da semana fechada, e não pela garantia de que só existe um
 processo executando.
 
-## Sprint M7 — Interface completa do MVP
+## Sprint M7.1 — Fatia vertical de interface
 
-**Objetivo:** construir todas as telas do MVP sobre a API já pronta e testada —
-login, clientes, agenda com a timeline de macas, orçamentos, pagamentos e repasses.
+> **Detalhamento completo em [`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md).**
+> Aqui fica apenas o resumo e o andamento.
 
-**Arquivos:** `frontend/src/features/*`, componentes compartilhados em
-`frontend/src/shared/components`.
+**Objetivo:** interface utilizável e demonstrável sobre o que a API já entrega —
+acesso, clientes, agenda com a timeline de macas e orçamentos.
 
-**Dependências:** M1 a M6.
+**Arquivos:** `frontend/src/app`, `frontend/src/features/*`,
+`frontend/src/shared/*`, e `scripts/seed_demo.py` para os dados de demonstração.
 
-**Riscos:** concentrar todo o esforço de interface em uma sprint torna a estimativa
-menos confiável; mal-entendidos de regra aparecem tarde, já com o backend pronto. A
-validação pelo `/api/v1/docs` ao fim de cada sprint de backend existe para reduzir
-esse risco.
+**Dependências:** M1, M2, M3 e as etapas M4.1 a M4.3.
+
+**Riscos:** a timeline de macas é o único componente do frontend sem biblioteca
+pronta (ADR-004) e a maior incerteza de estimativa do projeto; a demonstração pode
+criar a expectativa de que o financeiro já existe.
+
+### Etapas
+
+| Etapa | Escopo | Situação |
+|---|---|---|
+| M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | Não iniciada |
+| M7.1.2 | Clientes | Não iniciada |
+| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | Não iniciada |
+| M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
+
+**Resultado esperado:** os três perfis entram no sistema, cadastram cliente,
+solicitam e decidem agendamento com prevenção de conflito visível, e percorrem o
+orçamento até a aprovação com percentual congelado.
+
+**O que esta sprint não demonstra, e precisa ser dito na apresentação:** sinal,
+pagamento, sessão executada e repasse. Das duas dores que justificam o sistema, a
+fatia resolve inteira a de choque de horário e nenhuma parte da de saber quem recebe
+quanto.
+
+## Sprint M7.2 — Restante da interface do MVP
+
+**Objetivo:** completar a interface com o que depende das sprints financeiras —
+sessões, pagamentos, repasses, painéis por perfil e gestão de usuários.
+
+**Dependências:** M4.4, M5, M6 e a M7.1, cuja casca e componentes base são
+reaproveitados por inteiro.
+
+**Riscos:** menores que os da M7 original, porque o padrão de tela, os componentes
+base e a timeline já existem e foram exercitados.
 
 **Resultado esperado:** os três perfis operam o ciclo completo pela interface, em
-desktop e celular, sobre os tokens e componentes já definidos.
+desktop e celular.
 
 ## Sprint M8 — Implantação mínima
 

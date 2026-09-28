@@ -315,6 +315,9 @@ tela. A tela de login, antes prevista na M1, foi realocada para a M7.
 
 **Data:** 25/09/2026.
 
+> **Revisto em 28/09/2026 pelo ADR-025.** Uma fatia vertical de interface foi
+> antecipada; o restante da regra continua valendo.
+
 ## ADR-021 — Erro de domínio traduzido em um único lugar
 
 **Decisão:** casos de uso levantam `PermissionDeniedError` ou `BusinessRuleError`,
@@ -409,6 +412,44 @@ pessoal onde a expiração da sessão não alcança.
 teste de restauração precisa cobrir os dois.
 
 **Data:** 27/09/2026.
+
+## ADR-025 — Fatia vertical de interface antecipada, revendo o ADR-020
+
+**Decisão:** o ADR-020 dizia backend completo antes da interface. Passa a valer:
+backend completo antes da interface, **exceto uma fatia vertical antecipada** —
+acesso, clientes, agenda e orçamentos — construída sobre o que a API já entrega. A
+M7 foi dividida em M7.1, agora, e M7.2, depois da M6. O backend fica pausado na
+M4.4, que é retomada ao fim da M7.1.
+
+**Motivo:** o risco "toda a interface concentrada na M7" estava aberto no roadmap
+desde a reorganização em MVP e Fase 2, e a mitigação registrada — exercitar o
+`/api/v1/docs` ao fim de cada sprint de backend — não mitigava o que importa.
+Contrato de API mostra que o endpoint responde; não mostra que a regra foi entendida
+como o estúdio precisa. Um mal-entendido de tela descoberto na M7, com todo o
+backend pronto, é caro exatamente por ser tarde.
+
+Some-se a necessidade concreta de demonstrar o sistema ao responsável antes de as
+sprints financeiras começarem. Demonstração de API por documentação interativa não
+substitui ver a agenda funcionando.
+
+**Alternativa considerada:** manter o ADR-020 intacto e demonstrar pelo
+`/api/v1/docs`. Recusada porque é justamente a mitigação que já se mostrou fraca, e
+porque adiaria de novo o único componente do frontend sem biblioteca pronta — a
+timeline de macas do ADR-004 —, que é a maior incerteza de estimativa do projeto.
+
+**Consequência boa:** a timeline sai da M7.2 e vai para a M7.1.3. Construí-la agora
+tira a maior incerteza de prazo do que resta.
+
+**Consequência ruim, assumida:** quando a M5 entrar, aprovar agendamento passará a
+exigir sinal confirmado, e a tela de agenda ganhará o indicador correspondente. É
+acréscimo, não reescrita, e está na tabela de pendências de costura do roadmap.
+
+**Consequência de processo:** a M4 fica aberta em três quartos durante a M7.1. Para
+que isso não vire divergência entre código e documentação, a M4.4 está declarada
+como a retomada imediata ao fim da M7.1, e o roadmap marca a sprint como pausada, e
+não como concluída.
+
+**Data:** 28/09/2026.
 
 ## Processo de alteração
 

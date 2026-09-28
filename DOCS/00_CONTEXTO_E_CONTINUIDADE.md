@@ -296,10 +296,26 @@ Duas coisas para quem continuar o trabalho:
   regra é que o banco nunca aponte para arquivo inexistente, então a sobra possível é
   sempre arquivo órfão — lixo invisível — e nunca imagem quebrada na tela.
 
-**Próximo passo:** etapa M4.4 — sessões: gerar a partir do orçamento aprovado, marcar
-realizada, sessão parcial e confirmação de recebimento pelo gestor. A conclusão
-depende de pagamento confirmado, que é a M5, e entra na lista de pendências de
-costura do roadmap.
+**Backend pausado em 28/09/2026 para a construção da interface** (ADR-025). A M4
+ficou em três quartos: falta a etapa M4.4, com as sessões, que volta ao fim da M7.1.
+A sprint está marcada como **pausada**, não concluída.
+
+**Em andamento: M7.1 — fatia vertical de interface.** O detalhamento está em
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md); o andamento, no `09`.
+
+O motivo da mudança: o risco "toda a interface concentrada na M7" estava aberto
+desde a reorganização em MVP e Fase 2, e a mitigação registrada — exercitar o
+`/api/v1/docs` — não mitigava o que importa. Contrato de API mostra que o endpoint
+responde, não que a regra foi entendida como o estúdio precisa.
+
+**O que a fatia antecipada permite demonstrar:** acesso, clientes, agenda com
+prevenção de conflito e orçamento até a aprovação com percentual congelado. **O que
+ela não permite:** sinal, pagamento, sessão executada e repasse. Das duas dores que
+justificam o sistema, a demonstração resolve inteira a de choque de horário nas
+macas e nenhuma parte da de saber quem recebe quanto.
+
+**Próximo passo:** etapa M7.1.1 — casca da aplicação, acesso, cliente HTTP com CSRF,
+componentes base e script de dados de demonstração.
 
 ## Estado de aprovação e limite de trabalho
 
