@@ -11,7 +11,7 @@
 **139 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
-**26 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**30 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, formatação de dinheiro, tradução de
 erro da API e ciclo de sessão.
@@ -33,6 +33,7 @@ erro da API e ciclo de sessão.
 | **Fuso do estúdio no frontend** | Coberta: horário de verão e horário padrão, mesmo instante escrito com deslocamentos diferentes, e minutos desde a meia-noite atravessando a virada. Uma agenda deslocada por uma hora parece correta na tela, e é por isso que tem teste |
 | **Cliente HTTP do frontend** | Coberta: CSRF ausente na leitura e presente na escrita, cookie de sessão enviado, 401 avisando a aplicação, 409 marcado para o modal de conflito, mensagem de campo extraída do erro de validação, corpo de erro que não é JSON e resposta vazia no `DELETE` |
 | **Sessão no frontend** | Coberta: reconhecimento pelo cookie, sessão expirada, API fora do ar sem impedir a aplicação de montar, e saída que só esquece o usuário depois de o servidor encerrar |
+| **Cliente de API de clientes** | Coberta: tradução da listagem, alerta de duplicidade vindo junto do cliente criado, e o reconhecimento das **duas** formas que o detalhe devolve conforme a RN-CLI-004 |
 | **Formatação de dinheiro** | Coberta: texto decimal da API, duas casas sempre, e traço em vez de `NaN` quando o valor é nulo — que é o caso do orçamento pendente |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
 | **Aceite da M7.1.1** | **Não verificado.** Os quatro critérios exigem a API no ar, bloqueada por conflito de porta com outro projeto na máquina. Ver a evidência da M7.1.1 no roadmap |

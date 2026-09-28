@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/shared/api/ApiError";
 import type { AuthClient } from "@/shared/api/AuthClient";
-import type { AuthenticatedUser } from "@/shared/api/AuthenticatedUser";
+import type { AuthenticatedUser } from "@/shared/domain/AuthenticatedUser";
 import { SessionStore } from "@/shared/session/SessionStore";
 
 const OWNER: AuthenticatedUser = {

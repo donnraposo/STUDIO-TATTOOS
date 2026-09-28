@@ -333,8 +333,18 @@ carmim da referência. Está registrada na seção 4.0 de
 [`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md), com o banner em
 `frontend/public/brand/banner.svg`.
 
-**Próximo passo:** destravar o ambiente, construir o `scripts/seed_demo.py`,
-verificar os critérios de aceite e então abrir a M7.1.2 — clientes.
+**A etapa M7.1.2 entregou a tela de clientes** em 29/09/2026: lista, cadastro,
+edição e alerta de duplicidade. A RN-CLI-004 foi verificada com dados reais — o
+proprietário vê três clientes, cada residente vê apenas os que cadastrou.
+
+O ambiente foi destravado e o `scripts/seed_demo.py` existe. Duas correções de
+ambiente ficaram registradas: as portas publicadas mudaram para **5433** e
+**8001**, para conviver com outro projeto na máquina, e a imagem do banco passou
+a ser `postgres:17` em vez da variante alpine, que quebrava ao criar cluster novo.
+
+**Próximo passo:** o interlúdio de backend antes da timeline — filtro por
+intervalo de datas em `/bookings` e nomes de exibição nas respostas de agenda e
+orçamento —, e então a M7.1.3.
 
 ## Estado de aprovação e limite de trabalho
 

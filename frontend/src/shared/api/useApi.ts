@@ -1,8 +1,10 @@
 import { AuthClient } from "@/shared/api/AuthClient";
+import { ClientsClient } from "@/shared/api/ClientsClient";
 import { HttpClient } from "@/shared/api/HttpClient";
 
 const http = new HttpClient();
 const auth = new AuthClient(http);
+const clients = new ClientsClient(http);
 
 /** Os clientes de API da aplicação, sobre um `HttpClient` único.
  *
@@ -14,6 +16,6 @@ const auth = new AuthClient(http);
  * À medida que as etapas avançarem, os clientes de clientes, agenda e
  * orçamentos entram aqui. É também o ponto onde uma tela poderia ser servida
  * por um cliente falso em teste, sem tocar em `fetch`. */
-export function useApi(): { http: HttpClient; auth: AuthClient } {
-  return { http, auth };
+export function useApi(): { http: HttpClient; auth: AuthClient; clients: ClientsClient } {
+  return { http, auth, clients };
 }

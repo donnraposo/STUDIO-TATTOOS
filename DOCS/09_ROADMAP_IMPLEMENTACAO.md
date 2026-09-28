@@ -680,9 +680,46 @@ criar a expectativa de que o financeiro já existe.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | 🔄 **Código entregue em 28/09/2026; aceite não verificado** |
-| M7.1.2 | Clientes | Não iniciada |
+| M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
 | M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | Não iniciada |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
+
+### Evidência da etapa M7.1.2 — 29/09/2026
+
+- Tela `/clients`: lista, cadastro, edição e alerta de duplicidade.
+- Ruff não se aplica; ESLint sem apontamentos, `vue-tsc` sem erro, **30 testes
+  aprovados** no frontend, verificações de convenção sem resultado.
+
+**A RN-CLI-004 foi verificada com dados reais**, e não por inspeção de código:
+
+| Quem | Vê |
+|---|---|
+| Proprietário | 3 clientes |
+| `resident@studio.ie` | 2 — os que cadastrou |
+| `resident2@studio.ie` | 1 — o que cadastrou |
+
+**A tela não filtra nada.** O backend já devolve apenas o que o ator pode ver; se
+o frontend repetisse a regra, teria de acertá-la duas vezes, e a cópia da
+interface seria a que silenciosamente ficaria para trás. O que a tela faz é
+**explicar** o recorte — "Only the clients you registered" —, para que o
+residente não conclua que o estúdio tem dois clientes no total.
+
+**O alerta de duplicidade avisa e não bloqueia** (RN-CLI-005), e o texto diz isso
+com todas as letras: "Saved. Possible duplicate." O cliente já foi criado quando
+o aviso aparece, em tom de atenção e não de erro — se soasse como falha, quem
+está na recepção acharia que precisa refazer o cadastro.
+
+**Correção estrutural feita no caminho.** A verificação de convenção acusou os
+três componentes de apresentação importando de `shared/api`. Eles importavam
+apenas **tipos**, o que é legítimo, mas em vez de afrouxar a regra separei
+domínio de infraestrutura como no backend: os tipos foram para `shared/domain/`.
+Agora `shared/api` significa exatamente "fala com a rede", e a verificação volta
+a ser precisa sem exceção.
+
+**O que ficou de fora:** a união de cadastros duplicados (RN-CLI-006). A API está
+pronta, mas a ação exige escolher dois registros e confirmar o sobrevivente, que
+é uma interação própria. Não está nos critérios de aceite desta etapa e entra na
+M7.2, junto das telas de gestão.
 
 ### Evidência da etapa M7.1.1 — 28/09/2026
 

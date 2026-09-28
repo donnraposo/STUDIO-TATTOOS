@@ -1,7 +1,7 @@
 import { readonly, ref, type DeepReadonly, type Ref } from "vue";
 
 import { AuthClient } from "@/shared/api/AuthClient";
-import type { AuthenticatedUser } from "@/shared/api/AuthenticatedUser";
+import type { AuthenticatedUser } from "@/shared/domain/AuthenticatedUser";
 
 /** A sessão do usuário dentro da interface.
  *

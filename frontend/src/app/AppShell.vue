@@ -42,6 +42,7 @@ const navigation = computed<NavigationItem[]>(() => {
 
   return [
     { label: "Overview", route: "home", visible: true },
+    { label: "Clients", route: "clients", visible: permissions.canSeeClients(current) },
     { label: "System", route: "status", visible: permissions.isStaff(current) },
   ].filter((item) => item.visible);
 });

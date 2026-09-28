@@ -1,4 +1,4 @@
-import type { AuthenticatedUser, UserRole } from "@/shared/api/AuthenticatedUser";
+import type { AuthenticatedUser, UserRole } from "@/shared/domain/AuthenticatedUser";
 import { HttpClient } from "@/shared/api/HttpClient";
 
 /** Forma exata em que a API responde a identidade, em `snake_case`.

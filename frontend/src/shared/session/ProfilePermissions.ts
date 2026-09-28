@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from "@/shared/api/AuthenticatedUser";
+import type { AuthenticatedUser } from "@/shared/domain/AuthenticatedUser";
 
 /** O que cada perfil vê na interface.
  *
