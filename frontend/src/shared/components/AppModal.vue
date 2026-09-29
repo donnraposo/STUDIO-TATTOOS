@@ -51,11 +51,16 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
 </template>
 
 <style scoped>
+/* `overflow-y: auto` e `align-items: start` no lugar de `center`: num celular
+   deitado, ou num formulario longo, o modal centralizado passa das duas bordas
+   da tela e o topo fica inalcancavel -- sem rolagem, o campo de cima some e
+   nao ha como chegar ate ele. Isso e defeito, nao acabamento. */
 .backdrop {
   position: fixed;
   z-index: var(--layer-modal);
   display: grid;
-  place-items: center;
+  place-items: start center;
+  overflow-y: auto;
   padding: var(--space-page);
   inset: var(--space-0);
   background: var(--overlay-backdrop);
@@ -67,6 +72,7 @@ onBeforeUnmount(() => document.removeEventListener("keydown", onKeydown));
   gap: var(--space-5);
   width: 100%;
   max-width: var(--content-measure);
+  margin-block: auto;
   padding: var(--space-8);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -86,7 +92,28 @@ h2 {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+
+/* No celular o modal ocupa a largura toda, com respiro menor, e as acoes viram
+   coluna: tres botoes lado a lado em 375px ficam estreitos demais para acertar
+   com o polegar. */
+@media (max-width: 40rem) {
+  .backdrop {
+    padding: var(--space-4);
+  }
+
+  .panel {
+    gap: var(--space-4);
+    padding: var(--space-5);
+  }
+
+  .actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
 }
 </style>

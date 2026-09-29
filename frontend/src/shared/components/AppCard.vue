@@ -50,6 +50,7 @@ withDefaults(defineProps<{ title?: string }>(), { title: "" });
 
 .card-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   padding-top: var(--space-4);

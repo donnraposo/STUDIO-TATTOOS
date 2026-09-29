@@ -210,26 +210,58 @@ nav a.router-link-active {
   padding: var(--space-5) var(--space-page) var(--space-12);
 }
 
+/* Tablet e celular: a lateral vira barra no topo. A navegacao rola na
+   horizontal em vez de quebrar em varias linhas -- quatro itens ja empurrariam
+   o conteudo para baixo da dobra num telefone. */
 @media (max-width: 64rem) {
   .shell {
     grid-template-columns: 1fr;
   }
 
   .sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-4);
+    position: sticky;
+    top: var(--space-0);
+    z-index: var(--layer-sticky);
+    display: grid;
+    grid-template-areas: "brand identity" "nav nav";
+    grid-template-columns: 1fr auto;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-page);
   }
 
-  nav {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .brand {
+    grid-area: brand;
   }
 
   .identity {
+    grid-area: identity;
     padding-top: var(--space-0);
     border-top: none;
   }
+
+  nav {
+    grid-area: nav;
+    flex: none;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--space-2);
+  }
+
+  nav a {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-4);
+  }
+
+  /* O rotulo da secao e o nome completo saem: no celular eles custam altura e
+     nao dizem nada que o avatar e o proprio menu ja nao digam. */
+  .sidebar > p,
+  .who {
+    display: none;
+  }
+
+  .topline {
+    padding: var(--space-4) var(--space-page) var(--space-0);
+  }
 }
+
 </style>

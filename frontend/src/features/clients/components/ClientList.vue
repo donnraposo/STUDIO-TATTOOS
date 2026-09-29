@@ -76,4 +76,15 @@ defineEmits<{ edit: [client: Client] }>();
   color: var(--color-muted);
   font-size: var(--text-label-3);
 }
+
+/* No celular o nome e o contato ficam em cima e a acao embaixo, ocupando a
+   largura: espremer os dois na mesma linha cortaria o nome do cliente, que e
+   justamente o que se procura na lista. */
+@media (max-width: 40rem) {
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+}
 </style>

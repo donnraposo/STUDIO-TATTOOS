@@ -153,7 +153,11 @@
      bloco deixa de mostrar o nome do cliente, e a grade vira enfeite. */
   --slot-width: 2.5rem;
   --lane-label-width: 9rem;
+  --lane-label-width-compact: 5rem;
   --hero-height: 22rem;
+  /* No celular o heroi ocupa menos: 22rem tomariam a tela inteira antes de
+     qualquer conteudo aparecer. */
+  --hero-height-compact: 14rem;
   --touch-target: 2.75rem;
   --icon-size: 1.25rem;
   --icon-box: 2.75rem;

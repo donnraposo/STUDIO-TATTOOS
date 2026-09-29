@@ -37,16 +37,27 @@ defineEmits<{ click: [event: MouseEvent] }>();
 </template>
 
 <style scoped>
+/* Todos os tons carregam a MESMA borda, transparente quando nao deve aparecer.
+   Sem isso, o tom com borda visivel fica alguns pixels mais alto que o sem
+   borda, e dois botoes lado a lado nunca se alinham -- foi o que acontecia
+   entre "Cancel" e "Save changes".
+
+   A altura minima vem do alvo de toque e nao de um valor proprio: botao menor
+   que isso e dificil de acertar no celular. */
 button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
+  min-height: var(--touch-target);
   padding: var(--space-3) var(--space-6);
-  border: none;
+  border: var(--border-thin);
+  border-color: transparent;
   border-radius: var(--radius-round);
   font-size: var(--text-label-2);
   font-weight: var(--weight-medium);
+  line-height: var(--line-tight);
+  white-space: nowrap;
 }
 
 button:disabled {
@@ -56,6 +67,14 @@ button:disabled {
 
 .is-block {
   width: 100%;
+}
+
+/* Quando o container empilha as acoes, o botao acompanha em vez de ficar
+   estreito e centralizado no meio do nada. */
+@media (max-width: 40rem) {
+  button {
+    justify-content: center;
+  }
 }
 
 .is-primary {
@@ -68,7 +87,7 @@ button:disabled {
 }
 
 .is-ghost {
-  border: var(--border-thin);
+  border-color: var(--color-border);
   background: transparent;
   color: var(--color-on-light);
 }

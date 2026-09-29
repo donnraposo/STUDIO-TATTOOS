@@ -29,11 +29,12 @@ const STATUS_CLASS: Record<string, string> = {
   CANCELLED: "is-inactive",
 };
 
-defineProps<{
+const props = defineProps<{
   booking: Booking;
   placement: Placement;
   clientName: string;
   timeRange: string;
+  track: number;
 }>();
 
 defineEmits<{ select: [booking: Booking] }>();
@@ -44,7 +45,10 @@ defineEmits<{ select: [booking: Booking] }>();
     type="button"
     class="block"
     :class="[STATUS_CLASS[booking.status] ?? 'is-inactive', { 'is-clipped': placement.clipped }]"
-    :style="{ gridColumn: `${placement.column} / span ${placement.span}` }"
+    :style="{
+      gridColumn: `${props.placement.column} / span ${props.placement.span}`,
+      gridRow: `${props.track + 1}`,
+    }"
     :title="`${clientName} · ${timeRange}`"
     @click="$emit('select', booking)"
   >

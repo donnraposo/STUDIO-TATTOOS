@@ -113,15 +113,18 @@ Detalhamento e motivo de cada regra em `DOCS/10_ROADMAP_FRONTEND.md`.
   é avaliada na condição da consulta. Valores declarados uma vez em `tokens.css`.
 
 ```bash
-# Valor visual fora dos tokens (tokens.css e base.css sao as unicas excecoes)
-grep -rnE '#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\(' frontend/src --include=*.vue
-grep -rnE '[0-9](px|rem|em)\b' frontend/src --include=*.vue | grep -v '@media'
+# Valor visual fora dos tokens. Exige declaracao CSS terminada em ";" e tag no
+# inicio da linha: sem isso, prosa de comentario -- "375px", "<button>" -- vira
+# violacao, e verificacao que grita a toa e verificacao que se aprende a ignorar.
+grep -rnE '^\s*[a-z-]+:[^;]*(#[0-9a-fA-F]{3,8}|rgba?\(|hsla?\()[^;]*;' frontend/src --include=*.vue
+grep -rnE '^\s*[a-z-]+:[^;]*[0-9](px|rem|em)\b[^;]*;' frontend/src --include=*.vue | grep -v '@media'
 
 # Componente de apresentacao falando com a API: deve nao devolver nada
 grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vue"
 
 # Controle cru fora dos componentes base: so BookingBlock pode aparecer
-grep -rn "<button\|<input\|<select" frontend/src --include=*.vue \n  | grep -vE "shared/components/(AppButton|AppInput|AppSelect|AppCheckbox)\.vue"
+grep -rnE '^\s*<(button|input|select)([ >/]|$)' frontend/src --include=*.vue \
+  | grep -vE "shared/components/App(Button|Input|Select|Checkbox)\.vue"
 ```
 
 ## 4. Padrões estabelecidos

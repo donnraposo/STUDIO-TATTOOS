@@ -73,6 +73,7 @@ p {
 
 @media (max-width: 40rem) {
   .hero {
+    min-height: var(--hero-height-compact);
     padding: var(--space-6);
   }
 }

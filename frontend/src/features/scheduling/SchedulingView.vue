@@ -6,6 +6,7 @@ import { ApiError } from "@/shared/api/ApiError";
 import AppButton from "@/shared/components/AppButton.vue";
 import BookingDecision from "@/features/scheduling/components/BookingDecision.vue";
 import BookingForm, { type BookingDraft } from "@/features/scheduling/components/BookingForm.vue";
+import { LanePacker } from "@/features/scheduling/LanePacker";
 import BoothTimeline from "@/features/scheduling/components/BoothTimeline.vue";
 import ConflictModal from "@/features/scheduling/components/ConflictModal.vue";
 import { SchedulingClient } from "@/shared/api/SchedulingClient";
@@ -50,6 +51,9 @@ interface PlacedBooking {
   placement: Placement;
   clientName: string;
   timeRange: string;
+  /** Trilha dentro da maca. Solicitações concorrentes ficam em trilhas
+   * diferentes para que ambas apareçam (RN-AGE-004). */
+  track: number;
 }
 
 interface DaySchedule {
@@ -66,6 +70,7 @@ const { scheduling, clients: clientsApi, accounts } = useApi();
 const { session, permissions } = useSession();
 const clock = new StudioClock();
 const placer = new BookingPlacement(OPENING_HOUR, CLOSING_HOUR, SLOT_MINUTES, clock);
+const packer = new LanePacker();
 
 const state = useAsyncState<DaySchedule>();
 const day = ref(new Date().toISOString().slice(0, 10));
@@ -164,7 +169,7 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
     return {};
   }
 
-  const grouped: Record<string, PlacedBooking[]> = {};
+  const grouped: Record<string, Omit<PlacedBooking, "track">[]> = {};
   for (const booking of schedule.bookings) {
     const placement = placer.place(booking.startsAt, booking.endsAt);
     if (!placement) {
@@ -179,8 +184,26 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
     });
     grouped[booking.boothId] = lane;
   }
-  return grouped;
+
+  return Object.fromEntries(
+    Object.entries(grouped).map(([boothId, lane]) => [
+      boothId,
+      packer
+        .pack(lane, (entry) => entry.placement)
+        .map(({ item, track }) => ({ ...item, track })),
+    ]),
+  );
 });
+
+/** Quantas trilhas cada maca precisa, para a linha crescer o suficiente. */
+const tracksByBooth = computed<Record<string, number>>(() =>
+  Object.fromEntries(
+    Object.entries(placedByBooth.value).map(([boothId, lane]) => [
+      boothId,
+      lane.reduce((highest, entry) => Math.max(highest, entry.track + 1), 1),
+    ]),
+  ),
+);
 
 const canDecide = computed(() =>
   session.user.value ? permissions.canDecide(session.user.value) : false,
@@ -216,8 +239,9 @@ const selectedLabel = computed(() => {
   };
 });
 
-/** Aprovar e recusar compartilham o mesmo envelope: ocupado, limpa erro, tenta,
- * e em caso de conflito abre o modal em vez de mostrar texto de erro. */
+/** Todas as decisões compartilham o mesmo envelope: ocupado, limpa erro, tenta,
+ * e em caso de conflito abre o modal da RN-AGE-007 em vez de mostrar texto de
+ * erro. Aprovar, recusar, cancelar e remarcar passam por aqui. */
 async function decide(action: () => Promise<unknown>): Promise<void> {
   deciding.value = true;
   decisionFailure.value = null;
@@ -241,13 +265,6 @@ async function decide(action: () => Promise<unknown>): Promise<void> {
   }
 }
 
-async function approve(): Promise<void> {
-  const booking = selected.value;
-  if (booking) {
-    await decide(() => scheduling.approve(booking.id));
-  }
-}
-
 async function create(draft: BookingDraft): Promise<void> {
   const offsetMinutes = offsetAt(new Date(`${day.value}T00:00:00Z`));
   await decide(() =>
@@ -260,7 +277,13 @@ async function create(draft: BookingDraft): Promise<void> {
       approveImmediately: draft.approveImmediately,
     }),
   );
-  composing.value = false;
+}
+
+async function approve(): Promise<void> {
+  const booking = selected.value;
+  if (booking) {
+    await decide(() => scheduling.approve(booking.id));
+  }
 }
 
 async function reject(reason: RejectionReason, note: string | null): Promise<void> {
@@ -268,6 +291,36 @@ async function reject(reason: RejectionReason, note: string | null): Promise<voi
   if (booking) {
     await decide(() => scheduling.reject(booking.id, reason, note));
   }
+}
+
+/** Cancelamento e não comparecimento (RN-AGE-009 e RN-AGE-010). */
+async function cancel(reason: string, noShow: boolean): Promise<void> {
+  const booking = selected.value;
+  if (booking) {
+    await decide(() => scheduling.cancel(booking.id, reason, noShow));
+  }
+}
+
+/** Remarcação (RN-AGE-008). O novo intervalo passa pelas mesmas restrições do
+ * banco, então um 409 aqui cai no mesmo modal de conflito das demais ações. */
+async function reschedule(
+  startTime: string,
+  endTime: string,
+  boothId: string | null,
+): Promise<void> {
+  const booking = selected.value;
+  if (!booking) {
+    return;
+  }
+  const offsetMinutes = offsetAt(new Date(`${day.value}T00:00:00Z`));
+  await decide(() =>
+    scheduling.reschedule(
+      booking.id,
+      withOffset(day.value, startTime, offsetMinutes),
+      withOffset(day.value, endTime, offsetMinutes),
+      boothId,
+    ),
+  );
 }
 
 function startComposing(): void {
@@ -320,6 +373,7 @@ onMounted(load);
       :booths="state.data.value.booths"
       :placer="placer"
       :placed-by-booth="placedByBooth"
+      :tracks-by-booth="tracksByBooth"
       @select="selected = $event"
     />
 
@@ -341,11 +395,15 @@ onMounted(load);
       :booking="selected"
       :client-name="selectedLabel.clientName"
       :time-range="selectedLabel.timeRange"
+      :requested-at="clock.dateTime(selected.requestedAt)"
+      :booths="state.data.value?.booths ?? []"
       :can-decide="canDecide"
       :busy="deciding"
       :failure="decisionFailure"
       @approve="approve"
       @reject="reject"
+      @cancel="cancel"
+      @reschedule="reschedule"
       @close="selected = null"
     />
 

@@ -49,9 +49,14 @@ h1 {
   line-height: var(--line-display);
 }
 
+/* `flex-end` e nao o `stretch` padrao: quando uma das acoes e um campo com
+   rotulo em cima, o botao ao lado esticaria para acompanhar a pilha inteira e
+   apareceria muito mais alto que o campo. Alinhados pela base, os dois
+   terminam na mesma linha. */
 .actions {
   display: flex;
   flex-shrink: 0;
+  align-items: flex-end;
   gap: var(--space-3);
 }
 
@@ -59,6 +64,17 @@ h1 {
   .page-header {
     flex-direction: column;
     align-items: stretch;
+    gap: var(--space-4);
+  }
+
+  /* As acoes dividem a largura em vez de se espremerem num canto: num telefone,
+     um campo de data e um botao lado a lado deixam os dois pequenos demais. */
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .actions > * {
+    flex: 1 1 100%;
   }
 }
 </style>

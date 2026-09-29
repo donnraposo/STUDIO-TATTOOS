@@ -184,6 +184,14 @@ function submit(): void {
   gap: var(--space-4);
 }
 
+/* Dois campos de hora lado a lado num telefone deixam cada um com pouco mais
+   de cem pixels, e o seletor nativo fica dificil de operar. */
+@media (max-width: 40rem) {
+  .period {
+    grid-template-columns: 1fr;
+  }
+}
+
 .failure {
   color: var(--color-danger);
   font-size: var(--text-label-3);

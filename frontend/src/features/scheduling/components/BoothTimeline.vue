@@ -20,12 +20,14 @@ interface PlacedBooking {
   placement: Placement;
   clientName: string;
   timeRange: string;
+  track: number;
 }
 
 const props = defineProps<{
   booths: Booth[];
   placer: BookingPlacement;
   placedByBooth: Record<string, PlacedBooking[]>;
+  tracksByBooth: Record<string, number>;
 }>();
 
 defineEmits<{ select: [booking: Booking] }>();
@@ -33,6 +35,15 @@ defineEmits<{ select: [booking: Booking] }>();
 const gridStyle = computed(() => ({
   gridTemplateColumns: `repeat(${props.placer.slotCount}, minmax(var(--slot-width), 1fr))`,
 }));
+
+/** A maca cresce em altura quando há solicitações concorrentes: cada trilha é
+ * uma linha da grade, e todas ficam visíveis (RN-AGE-004). */
+function laneStyle(boothId: string): Record<string, string> {
+  return {
+    ...gridStyle.value,
+    gridTemplateRows: `repeat(${props.tracksByBooth[boothId] ?? 1}, auto)`,
+  };
+}
 
 /** A maca e identificada pelo numero, so (RN-AGE-001).
  *
@@ -71,7 +82,7 @@ function boothName(booth: Booth): string {
         <span class="booth">{{ boothName(booth) }}</span>
         <div
           class="slots"
-          :style="gridStyle"
+          :style="laneStyle(booth.id)"
         >
           <BookingBlock
             v-for="placed in placedByBooth[booth.id] ?? []"
@@ -80,6 +91,7 @@ function boothName(booth: Booth): string {
             :placement="placed.placement"
             :client-name="placed.clientName"
             :time-range="placed.timeRange"
+            :track="placed.track"
             @select="$emit('select', $event)"
           />
         </div>
@@ -150,5 +162,21 @@ function boothName(booth: Booth): string {
   color: var(--color-on-light);
   font-size: var(--text-label-3);
   font-weight: var(--weight-medium);
+}
+
+/* No celular a coluna de macas encolhe e o respiro diminui: 9rem de rotulo
+   comeriam um quarto da largura util antes de qualquer horario aparecer. A
+   grade continua rolando na horizontal, que e o comportamento certo aqui --
+   comprimir o dia inteiro na tela tornaria os blocos ilegiveis. */
+@media (max-width: 40rem) {
+  .head,
+  .lane {
+    grid-template-columns: var(--lane-label-width-compact) 1fr;
+    gap: var(--space-2);
+  }
+
+  .scroller {
+    padding: var(--space-3);
+  }
 }
 </style>

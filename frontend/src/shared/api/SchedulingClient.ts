@@ -93,6 +93,40 @@ export class SchedulingClient {
     );
   }
 
+  /** Cancelamento e nao comparecimento (RN-AGE-009 e RN-AGE-010).
+   *
+   * O mesmo endpoint atende aos dois, distinguidos por `noShow`. Sao estados
+   * diferentes de proposito: cancelado e nao comparecido tem o mesmo efeito
+   * sobre o sinal, mas so o segundo diz que o horario foi perdido com o cliente
+   * ausente -- e isso pesa no historico dele. */
+  async cancel(bookingId: string, reason: string, noShow: boolean): Promise<Booking> {
+    return SchedulingClient.toBooking(
+      await this.http.post<BookingPayload>(`/bookings/${bookingId}/cancel`, {
+        reason,
+        no_show: noShow,
+      }),
+    );
+  }
+
+  /** Remarcacao (RN-AGE-008). So o gestor efetiva, e a maca pode mudar junto.
+   *
+   * Pode responder 409 como qualquer gravacao de agenda: o novo intervalo passa
+   * pelas mesmas restricoes do banco. */
+  async reschedule(
+    bookingId: string,
+    startsAt: string,
+    endsAt: string,
+    boothId: string | null,
+  ): Promise<Booking> {
+    return SchedulingClient.toBooking(
+      await this.http.post<BookingPayload>(`/bookings/${bookingId}/reschedule`, {
+        starts_at: startsAt,
+        ends_at: endsAt,
+        booth_id: boothId,
+      }),
+    );
+  }
+
   /** Lê o conflito de agenda de dentro de um erro, quando houver.
    *
    * Devolve `null` para qualquer outra falha, inclusive um 409 que venha sem os
