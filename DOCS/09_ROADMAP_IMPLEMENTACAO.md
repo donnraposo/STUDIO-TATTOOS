@@ -681,10 +681,46 @@ criar a expectativa de que o financeiro já existe.
 |---|---|---|
 | M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | ✅ Concluída em 29/09/2026 |
 | M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
-| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | ✅ Concluída em 29/09/2026 |
+| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | ✅ Concluída em 29/09/2026, em duas partes |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
 
-### Evidência da etapa M7.1.3 — 29/09/2026
+### Correção de status — 29/09/2026
+
+> **Esta etapa foi declarada concluída antes de estar.** O registro original
+> cobria RN-AGE-001 a 007 e 014, mas deixava a **RN-AGE-004 pela metade** e as
+> RN-AGE-008, 009 e 010 **de fora**. A segunda parte, abaixo, fechou o que
+> faltava. O erro foi de registro, não de código: eu marquei como pronto o que
+> ainda não cumpria as regras.
+
+### Evidência da etapa M7.1.3, segunda parte — 29/09/2026
+
+Confronto tela a tela com a seção 4 das regras de negócio, e o que faltava:
+
+| Regra | O que a tela não fazia | Agora |
+|---|---|---|
+| **RN-AGE-004** | Duas solicitações no mesmo horário se empilhavam e **a de cima escondia a de baixo** — o gestor decidia sem saber que havia concorrência | `LanePacker` distribui em trilhas; o modal mostra a data e hora do pedido, que é o critério da regra |
+| **RN-AGE-005** | Aprovava em silêncio sem mencionar sinal | A tela informa que o depósito precisa ser confirmado e que o sistema ainda não o registra |
+| **RN-AGE-008** | Remarcação inexistente na tela | Novo intervalo e maca opcional, pelo endpoint que já existia sem uso |
+| **RN-AGE-009 / 010** | Cancelamento e não comparecimento inexistentes | No modal de decisão, com motivo obrigatório |
+
+**Cada decisão mostra o que faz com o dinheiro antes de ser confirmada.** As
+regras tratam o sinal de formas diferentes em cada caso — cancelar retém mesmo
+com aviso de 24h, não comparecer retém e ainda tira o repasse do artista,
+remarcar depende do prazo. Isso virou `BookingConsequence`, classe pura: o texto
+da regra não pode variar de tela para tela.
+
+**O que a tela não executa, e diz:** o efeito financeiro pertence à M5. A
+interface informa a consequência determinada pela regra; quem a aplica é o
+módulo de pagamentos, que ainda não existe.
+
+**Entregue junto:** alinhamento dos botões, responsividade de celular e tablet,
+e a unificação dos campos em `AppField` e `.control`. Detalhe em
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md).
+
+- ESLint e `vue-tsc` limpos; **59 testes** no frontend; quatro verificações de
+  convenção sem apontamento.
+
+### Evidência da etapa M7.1.3, primeira parte — 29/09/2026
 
 **A timeline existe e mostra o dia.** Macas no eixo Y, horas no eixo X, em CSS
 Grid sem biblioteca (ADR-004). O maior risco de estimativa do frontend saiu do

@@ -175,6 +175,42 @@ grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vu
 - Estados de carregando, vazio, erro e sem permissão usam os componentes
   compartilhados. Nenhuma tela desenha o seu próprio "nada encontrado".
 
+## 4.2.1 O que os componentes base garantem
+
+**Todo controle passa por um componente base.** Nenhum `<button>`, `<input>` ou
+`<select>` cru fora de `shared/components` — tamanho e cor vêm do componente, e
+controle solto sai do padrão já na primeira tela. A verificação está no
+`CLAUDE.md`.
+
+| Peça | Garante |
+|---|---|
+| `AppButton` | **Todos os tons carregam a mesma borda**, transparente quando não deve aparecer. Sem isso o tom com borda fica mais alto que o sem borda, e dois botões lado a lado nunca se alinham |
+| `AppField` | Rótulo, marca de obrigatório e mensagem de erro, uma vez só. `AppInput` e `AppSelect` repetiam os três |
+| `.control` em `base.css` | A pílula: altura, respiro, borda, raio e preenchimento. Campo de texto e seletor precisam ser **indistinguíveis em altura**, e três cópias divergiriam no primeiro ajuste |
+| `AppModal` | Rolagem própria. Sem ela, num celular deitado o modal passa das duas bordas e o topo fica inalcançável — o primeiro campo some |
+
+**Uma exceção, declarada:** `BookingBlock` usa `<button>` cru. Não é botão do
+sistema, é superfície posicionada na grade, com largura vinda de `grid-column` e
+tons ditados pelo estado do agendamento. Forçá-lo no `AppButton` significaria
+sobrescrever tudo o que o `AppButton` padroniza.
+
+## 4.2.2 Responsividade
+
+Dois pontos de quebra, e um comportamento decidido por tela em cada um.
+
+| Tela | Em 64rem (tablet) | Em 40rem (celular) |
+|---|---|---|
+| Casca | Lateral vira barra fixa no topo | Navegação rola na horizontal; rótulo de seção e nome completo somem |
+| Cabeçalho de página | — | Título e ações empilham; as ações ocupam a largura |
+| Modal | — | Ocupa a largura, respiro menor, ações em coluna |
+| Timeline | — | Coluna de macas encolhe. **A grade continua rolando na horizontal** |
+| Formulários | — | Campos de hora empilham |
+| Lista de clientes | — | Nome em cima, ação embaixo |
+
+**A timeline não se comprime de propósito.** Espremer dez horas em 375px
+tornaria os blocos ilegíveis, e agenda que não se lê não serve. Rolagem
+horizontal é a resposta certa aqui, não uma limitação.
+
 ## 4.3 Padrão de CSS
 
 **Todo valor visual vem de `tokens.css`.** Nenhuma cor, espaçamento, tipografia,
@@ -261,7 +297,7 @@ sobra para ele — e o que fecha a história por último.
 | `app/AppShell.vue` | Cabeçalho, navegação por perfil, área de conteúdo |
 | `features/auth/LoginView.vue` | Entrada |
 | `app/router.ts` | Guarda por sessão e por perfil |
-| `shared/components/` | `AppButton`, `AppInput`, `AppCard`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`, e — vindos da referência — `SectionKicker`, `PageHeader`, `HeroBanner` |
+| `shared/components/` | `AppButton`, `AppInput`, `AppSelect`, `AppCheckbox`, `AppField`, `AppCard`, `AppModal`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`, e — vindos da referência — `SectionKicker`, `PageHeader`, `HeroBanner`, `BrandLockup` |
 | `shared/format/` | `StudioClock` e `MoneyFormatter`, classes puras |
 | `shared/async/` | `AsyncState`, o mecanismo dos quatro estados |
 | `shared/tokens.css` | Camadas de `z-index`, escala de display, kicker, largura da lateral e preenchimento de campo |

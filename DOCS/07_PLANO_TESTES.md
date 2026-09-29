@@ -11,7 +11,7 @@
 **145 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
-**47 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**59 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, formatação de dinheiro, tradução de
 erro da API e ciclo de sessão.
@@ -36,6 +36,8 @@ erro da API e ciclo de sessão.
 | **Cliente de API de clientes** | Coberta: tradução da listagem, alerta de duplicidade vindo junto do cliente criado, e o reconhecimento das **duas** formas que o detalhe devolve conforme a RN-CLI-004 |
 | **Formatação de dinheiro** | Coberta: texto decimal da API, duas casas sempre, e traço em vez de `NaN` quando o valor é nulo — que é o caso do orçamento pendente |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
+| **Solicitações concorrentes na timeline** | Coberta por 6 testes de classe pura: duas pendências no mesmo horário vão para trilhas diferentes e ambas aparecem (RN-AGE-004); agendamento que começa quando outro termina divide a trilha, porque encostar não é sobrepor (RN-AGE-001); trilha liberada é reaproveitada |
+| **Contas que podem receber agendamento** | Coberta: conta bloqueada fica de fora — agendar para ela criaria compromisso que a própria pessoa não veria (RN 2.5) —, gerente que não tatua também, e proprietário que tatua entra |
 | **Posicionamento na timeline** | Coberta por 9 testes de classe pura: coluna e extensão, fuso do estúdio contra fuso do navegador, aparo nas duas bordas do expediente, meia-noite como fim do dia, e sessão curta que não pode colapsar para largura zero |
 | **Corpo do conflito de agenda** | Coberta: o 409 leva `scope` e o identificador da reserva existente, e um erro de domínio comum continua devolvendo apenas `detail` — a extensão é por dados, não um formato novo imposto a toda resposta de erro |
 | **Recorte por intervalo na agenda** | Coberta no backend: agendamento que atravessa a borda do recorte continua aparecendo, outro dia fica de fora, meia janela e janela invertida são recusadas |

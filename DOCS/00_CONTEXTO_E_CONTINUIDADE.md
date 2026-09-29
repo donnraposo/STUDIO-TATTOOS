@@ -358,8 +358,22 @@ caminho.
    esse modelo. Os testes passavam porque o pytest carrega tudo no mesmo
    processo. Corrigido por `app/core/orm_registry.py` (ADR-026).
 
+**A M7.1.3 foi fechada em duas partes**, e a primeira foi declarada concluída
+antes de estar: cobria RN-AGE-001 a 007 e 014, mas deixava a RN-AGE-004 pela
+metade e as RN-AGE-008, 009 e 010 de fora. A segunda parte fechou o que faltava,
+conferindo tela a tela contra a seção 4 das regras.
+
+O defeito mais sério estava na **RN-AGE-004**: duas solicitações no mesmo horário
+se empilhavam e a de cima escondia a de baixo, então o gestor decidia sem saber
+que havia concorrência.
+
+**Interface: 59 testes.** Componentes base agora cobrem todo controle — nenhum
+`<button>`, `<input>` ou `<select>` cru fora de `shared/components`, com uma
+exceção declarada. Responsividade de celular e tablet entregue.
+
 **Próximo passo:** etapa M7.1.4 — orçamentos e imagens de referência, que fecha a
-fatia antecipada. Depois dela, a M4.4 retoma o backend.
+fatia antecipada. Depois dela, a M4.4 retoma o backend e a M4 deixa de estar
+pausada.
 
 ## Estado de aprovação e limite de trabalho
 
