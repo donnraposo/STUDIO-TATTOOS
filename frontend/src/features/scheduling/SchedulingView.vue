@@ -2,17 +2,26 @@
 import { computed, onMounted, ref, watch } from "vue";
 
 import { BookingPlacement, type Placement } from "@/features/scheduling/BookingPlacement";
+import { ApiError } from "@/shared/api/ApiError";
+import BookingDecision from "@/features/scheduling/components/BookingDecision.vue";
 import BoothTimeline from "@/features/scheduling/components/BoothTimeline.vue";
+import ConflictModal from "@/features/scheduling/components/ConflictModal.vue";
+import { SchedulingClient } from "@/shared/api/SchedulingClient";
 import { useApi } from "@/shared/api/useApi";
 import { useAsyncState } from "@/shared/async/useAsyncState";
-import AppButton from "@/shared/components/AppButton.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import EmptyState from "@/shared/components/EmptyState.vue";
 import ErrorState from "@/shared/components/ErrorState.vue";
 import LoadingState from "@/shared/components/LoadingState.vue";
 import PageHeader from "@/shared/components/PageHeader.vue";
-import type { Booking, Booth } from "@/shared/domain/Booking";
+import type {
+  Booking,
+  BookingConflict,
+  Booth,
+  RejectionReason,
+} from "@/shared/domain/Booking";
 import { StudioClock } from "@/shared/format/StudioClock";
+import { useSession } from "@/shared/session/useSession";
 
 /** Agenda do dia: macas no eixo Y, horas no eixo X.
  *
@@ -46,12 +55,16 @@ interface DaySchedule {
 }
 
 const { scheduling, clients: clientsApi } = useApi();
+const { session, permissions } = useSession();
 const clock = new StudioClock();
 const placer = new BookingPlacement(OPENING_HOUR, CLOSING_HOUR, SLOT_MINUTES, clock);
 
 const state = useAsyncState<DaySchedule>();
 const day = ref(new Date().toISOString().slice(0, 10));
 const selected = ref<Booking | null>(null);
+const conflict = ref<BookingConflict | null>(null);
+const deciding = ref(false);
+const decisionFailure = ref<string | null>(null);
 
 const heading = computed(() => {
   const schedule = state.data.value;
@@ -142,6 +155,77 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
   return grouped;
 });
 
+const canDecide = computed(() =>
+  session.user.value ? permissions.canDecide(session.user.value) : false,
+);
+
+/** O agendamento que já ocupava o horário, quando ele está na tela.
+ *
+ * Pode não estar: o conflito pode ser com a agenda de outro artista, que este
+ * usuário não tem permissão para ver. O modal trata os dois casos — ocultar a
+ * existência do conflito seria pior do que admitir que não se pode mostrá-lo. */
+const conflicting = computed<Booking | null>(() => {
+  const id = conflict.value?.conflictingBookingId;
+  return id ? (state.data.value?.bookings.find((booking) => booking.id === id) ?? null) : null;
+});
+
+const conflictingLabel = computed<string | null>(() => {
+  const booking = conflicting.value;
+  if (!booking) {
+    return null;
+  }
+  const name = state.data.value?.namesByClient[booking.clientId] ?? "Client";
+  return `${name} · ${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`;
+});
+
+const selectedLabel = computed(() => {
+  const booking = selected.value;
+  if (!booking) {
+    return { clientName: "", timeRange: "" };
+  }
+  return {
+    clientName: state.data.value?.namesByClient[booking.clientId] ?? "Client",
+    timeRange: `${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`,
+  };
+});
+
+/** Aprovar e recusar compartilham o mesmo envelope: ocupado, limpa erro, tenta,
+ * e em caso de conflito abre o modal em vez de mostrar texto de erro. */
+async function decide(action: () => Promise<unknown>): Promise<void> {
+  deciding.value = true;
+  decisionFailure.value = null;
+  try {
+    await action();
+    selected.value = null;
+    await load();
+  } catch (error) {
+    const clash = SchedulingClient.conflictFrom(error);
+    if (clash) {
+      selected.value = null;
+      conflict.value = clash;
+      return;
+    }
+    decisionFailure.value =
+      error instanceof ApiError ? error.message : "Could not reach the studio system.";
+  } finally {
+    deciding.value = false;
+  }
+}
+
+async function approve(): Promise<void> {
+  const booking = selected.value;
+  if (booking) {
+    await decide(() => scheduling.approve(booking.id));
+  }
+}
+
+async function reject(reason: RejectionReason, note: string | null): Promise<void> {
+  const booking = selected.value;
+  if (booking) {
+    await decide(() => scheduling.reject(booking.id, reason, note));
+  }
+}
+
 watch(day, load);
 onMounted(load);
 </script>
@@ -184,18 +268,27 @@ onMounted(load);
       @select="selected = $event"
     />
 
-    <p
+    <BookingDecision
       v-if="selected"
-      class="selection"
-    >
-      {{ selected.status }} · {{ clock.dateTime(selected.startsAt) }}
-      <AppButton
-        tone="ghost"
-        @click="selected = null"
-      >
-        Clear
-      </AppButton>
-    </p>
+      :booking="selected"
+      :client-name="selectedLabel.clientName"
+      :time-range="selectedLabel.timeRange"
+      :can-decide="canDecide"
+      :busy="deciding"
+      :failure="decisionFailure"
+      @approve="approve"
+      @reject="reject"
+      @close="selected = null"
+    />
+
+    <ConflictModal
+      v-if="conflict"
+      :scope="conflict.scope"
+      :message="conflict.message"
+      :existing="conflicting"
+      :existing-label="conflictingLabel"
+      @acknowledge="conflict = null"
+    />
   </div>
 </template>
 
@@ -204,13 +297,5 @@ onMounted(load);
   display: flex;
   flex-direction: column;
   gap: var(--space-5);
-}
-
-.selection {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  color: var(--color-muted);
-  font-size: var(--text-label-3);
 }
 </style>

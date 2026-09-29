@@ -34,12 +34,6 @@ from app.modules.identity.infrastructure.password_hasher import PasswordHasher
 from app.modules.quotes.domain.quote_origin import QuoteOrigin
 from app.modules.quotes.domain.quote_status import QuoteStatus
 from app.modules.quotes.infrastructure.models.quote import Quote
-
-# Importado apenas para registrar a tabela no metadata: booking.session_id
-# aponta para ela, e sem o registro o SQLAlchemy nao resolve a chave.
-from app.modules.quotes.infrastructure.models.tattoo_session import (  # noqa: F401
-    TattooSession,
-)
 from app.modules.scheduling.domain.booking_status import BookingStatus
 from app.modules.scheduling.infrastructure.models.booking import Booking
 from app.modules.scheduling.infrastructure.models.booth import Booth

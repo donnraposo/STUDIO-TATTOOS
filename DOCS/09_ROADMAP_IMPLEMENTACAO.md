@@ -18,7 +18,7 @@ frontend, bem atrás.
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`, `/quotes/*` incluindo as imagens de referência |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 139 aprovados, em PostgreSQL real |
+| Testes | 145 no backend e 47 no frontend, todos aprovados |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
 
 > **Leitura honesta do avanço.** O backend cobre identidade, clientes, agenda —
@@ -681,7 +681,7 @@ criar a expectativa de que o financeiro já existe.
 |---|---|---|
 | M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | ✅ Concluída em 29/09/2026 |
 | M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
-| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | 🔄 Timeline de leitura entregue em 29/09/2026; decisão sobre solicitar e recusar pendente |
+| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | ✅ Concluída em 29/09/2026 |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
 
 ### Evidência da etapa M7.1.3 — 29/09/2026
@@ -716,9 +716,43 @@ já consome. Não é gambiarra a desfazer: é junção sobre conjunto pequeno, e
 gatilho para levá-la ao servidor é volume, não estética. Quem não acessa o
 cadastro de clientes — o guest — vê o bloco sem nome, em vez de tela quebrada.
 
-**O que falta para fechar a M7.1.3:** solicitar agendamento, aprovar, recusar com
-motivo e o **modal de conflito da RN-AGE-007**, aquele que não permite ignorar. O
-que existe hoje é a agenda de leitura.
+**Aprovar, recusar e o modal de conflito entraram no mesmo dia.** A recusa usa
+seletor e não campo livre, porque a lista da RN-AGE-006 é fechada: ela alimenta o
+tratamento financeiro do sinal e os relatórios de cancelamento, e texto livre
+tornaria os dois inúteis. A observação segue livre e opcional.
+
+**O modal da RN-AGE-007 não tem saída pelo conflito.** Sem botão de "criar assim
+mesmo", sem fechar clicando no fundo, sem Esc. A única ação é voltar e escolher
+outro horário. Isso não é rigor decorativo: a restrição `EXCLUDE` recusaria a
+gravação de qualquer jeito (ADR-011), e um botão de ignorar produziria um erro
+incompreensível em vez de uma explicação — ensinando a equipe a insistir.
+
+**Exercitado de ponta a ponta:** com um aprovado das 15h30 às 16h30 na maca 1,
+aprovar o pendente das 16h às 18h abriu o modal identificando o agendamento
+existente pelo nome e horário.
+
+### Dois defeitos encontrados pela tela, e corrigidos
+
+**O `409` não levava a reserva conflitante.** `BookingConflictError` carregava
+`scope` e `conflicting_booking_id` desde a M3, mas o `ErrorHandlers` serializava
+só a mensagem. O modal exigido pela RN-AGE-007 era **impossível de construir**, e
+nada acusava isso: o conflito era recusado corretamente, o teste passava, e só a
+tela ficava sem poder cumprir a regra. Agora um erro de domínio pode expor um
+dicionário `details` que a resposta incorpora — extensão por dados, sem
+condicional no tradutor.
+
+**A API não conseguia gravar agendamento nenhum.** `booking.session_id` aponta
+para `tattoo_session`, e **nenhum caminho de importação da aplicação carregava
+esse modelo** — só o `env.py` das migrações e a suíte de testes. O servidor subia,
+respondia consultas e quebrava com `NoReferencedTableError` no primeiro `INSERT`.
+A suíte não pegava porque o pytest carrega todos os módulos de teste no mesmo
+processo, e os testes de orçamento importavam o modelo que faltava: **o defeito
+existia exatamente onde não havia teste olhando, que é o servidor rodando de
+verdade.**
+
+A correção é `app/core/orm_registry.py`, um registro único importado pela raiz de
+composição e pelo `env.py`. Um lugar só lista o que está mapeado, e a duplicação
+de listas entre aplicação e migrações desapareceu junto.
 
 ### Evidência da etapa M7.1.2 — 29/09/2026
 

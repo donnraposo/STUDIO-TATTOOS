@@ -1,5 +1,12 @@
+import { ApiError } from "@/shared/api/ApiError";
 import { HttpClient } from "@/shared/api/HttpClient";
-import type { Booking, BookingStatus, Booth, RejectionReason } from "@/shared/domain/Booking";
+import type {
+  Booking,
+  BookingConflict,
+  BookingStatus,
+  Booth,
+  RejectionReason,
+} from "@/shared/domain/Booking";
 
 interface BoothPayload {
   id: string;
@@ -58,6 +65,32 @@ export class SchedulingClient {
     return SchedulingClient.toBooking(
       await this.http.post<BookingPayload>(`/bookings/${bookingId}/reject`, { reason, note }),
     );
+  }
+
+  /** Lê o conflito de agenda de dentro de um erro, quando houver.
+   *
+   * Devolve `null` para qualquer outra falha, inclusive um 409 que venha sem os
+   * campos — uma versão mais antiga da API, por exemplo. A tela precisa
+   * distinguir "conflito com reserva conhecida" de "deu erro", porque só o
+   * primeiro abre o modal da RN-AGE-007. */
+  static conflictFrom(error: unknown): BookingConflict | null {
+    if (!(error instanceof ApiError) || !error.isConflict) {
+      return null;
+    }
+
+    const payload = error.payload as { scope?: unknown; conflicting_booking_id?: unknown } | null;
+    if (payload?.scope !== "booth" && payload?.scope !== "artist") {
+      return null;
+    }
+
+    return {
+      scope: payload.scope,
+      message: error.message,
+      conflictingBookingId:
+        typeof payload.conflicting_booking_id === "string"
+          ? payload.conflicting_booking_id
+          : null,
+    };
   }
 
   private static toBooking(payload: BookingPayload): Booking {

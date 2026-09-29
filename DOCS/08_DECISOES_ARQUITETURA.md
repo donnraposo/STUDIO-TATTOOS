@@ -451,6 +451,35 @@ não como concluída.
 
 **Data:** 28/09/2026.
 
+## ADR-026 — Registro único dos modelos persistentes
+
+**Decisão:** `app/core/orm_registry.py` importa todos os modelos mapeados e é
+importado pela raiz de composição e pelo `env.py` das migrações. Nenhum outro
+lugar mantém lista de modelos.
+
+**Motivo:** o SQLAlchemy só conhece uma tabela depois que a classe que a mapeia é
+importada, e a falha aparece **na gravação**, não na inicialização. Aconteceu de
+verdade: `booking.session_id` aponta para `tattoo_session`, o módulo de agenda
+importava `Booking` e nada importava `TattooSession`. A API subia, respondia
+consultas e estourava `NoReferencedTableError` no primeiro `INSERT` de
+agendamento.
+
+**Por que os testes não pegaram**, e isto é a parte que importa: o pytest carrega
+todos os módulos de teste no mesmo processo, e os testes de orçamento importavam
+o modelo que faltava. O defeito existia apenas onde nenhum teste olhava — o
+servidor rodando. Foi a interface, ao tentar gravar um agendamento, que o
+revelou.
+
+**Consequência:** acrescentar tabela passa a exigir uma linha no registro. Em
+troca, a lista deixa de existir em dois lugares — o `env.py` mantinha a sua — e
+a aplicação não depende mais de um módulo importar outro por acaso.
+
+**Alternativa considerada:** cada fábrica de módulo importar os próprios modelos.
+Recusada porque não resolve o caso que causou o defeito: a chave estrangeira
+cruza módulos, e o módulo que precisa da tabela registrada não é o dono dela.
+
+**Data:** 29/09/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar

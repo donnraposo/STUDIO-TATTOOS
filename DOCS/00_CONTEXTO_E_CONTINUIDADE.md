@@ -343,9 +343,23 @@ ambiente ficaram registradas: as portas publicadas mudaram para **5433** e
 **8001**, para conviver com outro projeto na máquina, e a imagem do banco passou
 a ser `postgres:17` em vez da variante alpine, que quebrava ao criar cluster novo.
 
-**Próximo passo:** o interlúdio de backend antes da timeline — filtro por
-intervalo de datas em `/bookings` e nomes de exibição nas respostas de agenda e
-orçamento —, e então a M7.1.3.
+**A etapa M7.1.3 está fechada.** A timeline de macas existe em `/schedule`:
+macas no eixo Y, horas no eixo X, em CSS Grid sem biblioteca (ADR-004). Aprovar,
+recusar com motivo de lista fechada e o **modal de conflito da RN-AGE-007**, que
+não oferece caminho para ignorar. O maior risco de estimativa do frontend saiu do
+caminho.
+
+**A interface encontrou dois defeitos que nenhum teste pegava:**
+
+1. O `409` de conflito não levava a reserva existente — o modal exigido pela
+   RN-AGE-007 era impossível de construir, e nada acusava.
+2. A API **não conseguia gravar agendamento nenhum**: `booking.session_id` aponta
+   para `tattoo_session` e nenhum caminho de importação da aplicação carregava
+   esse modelo. Os testes passavam porque o pytest carrega tudo no mesmo
+   processo. Corrigido por `app/core/orm_registry.py` (ADR-026).
+
+**Próximo passo:** etapa M7.1.4 — orçamentos e imagens de referência, que fecha a
+fatia antecipada. Depois dela, a M4.4 retoma o backend.
 
 ## Estado de aprovação e limite de trabalho
 

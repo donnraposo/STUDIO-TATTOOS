@@ -135,6 +135,11 @@
     rgb(0 0 0 / 85%) 100%
   );
 
+  /* Fundo do modal. Escuro o bastante para tirar a atencao do que esta atras
+     sem apagar o contexto -- no conflito de agenda, ver a agenda por tras e
+     parte da explicacao. */
+  --overlay-backdrop: rgb(14 14 15 / 62%);
+
   --shadow-card: 0 0.75rem 2rem rgb(14 14 15 / 6%);
   --shadow-raised: 0 1rem 2.5rem rgb(14 14 15 / 12%);
   --shadow-gold: 0 0 1.5rem rgb(217 164 65 / 28%);

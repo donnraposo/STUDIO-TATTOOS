@@ -4,6 +4,10 @@ from sqlalchemy.orm import Session
 
 from app.core.csrf_guard import CsrfGuard
 from app.core.database import Database
+
+# Importado pelo efeito de registrar todos os modelos no metadata antes de
+# qualquer gravacao. Ver o modulo para o defeito que isto evita.
+from app.core.orm_registry import METADATA  # noqa: F401
 from app.core.settings import Settings
 from app.modules.clients.clients_factory import ClientsFactory
 from app.modules.identity.identity_factory import IdentityFactory
