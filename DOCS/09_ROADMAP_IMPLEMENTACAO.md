@@ -5,10 +5,9 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1, M2 e M3.
-**Pausado:** M4 — orçamentos e sessões, com M4.1 a M4.3 concluídas. A M4.4 volta ao
-fim da M7.1.
-**Em andamento:** M7.1 — fatia vertical de interface (ADR-025).
+**Concluído:** sprint 01, M1, M2, M3 e M7.1 — a fatia vertical de interface.
+**Pausado:** M4 — orçamentos e sessões, com M4.1 a M4.3 concluídas.
+**Próxima:** M4.4 — sessões. A M7.1 fechou em 29/09/2026 e a M4 volta a andar.
 **Progresso do MVP:** 4 de 8 sprints em número; o backend está adiante disso e o
 frontend, bem atrás.
 
@@ -112,8 +111,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| M4 | Orçamentos e sessões | Backend | ⏸️ **Pausada em 3 de 4 etapas.** Retomada na M4.4, ao fim da M7.1 |
-| **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ⬅️ Em andamento desde 28/09/2026 |
+| M4 | Orçamentos e sessões | Backend | ⏸️ **Pausada em 3 de 4 etapas.** ⬅️ Retomada agora, na M4.4 |
+| **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | Não iniciada |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7.2 | Restante da interface do MVP | Frontend | Não iniciada |
@@ -126,7 +125,8 @@ não haver duas versões do status.
 
 **Por que a M4 ficou pausada e não concluída.** Faltam as sessões, da etapa M4.4.
 Marcar a sprint como concluída seria a mentira mais fácil de contar e a mais cara de
-descobrir depois. Ela volta assim que a M7.1 fechar.
+descobrir depois. **A M7.1 fechou em 29/09/2026 e a M4.4 é a próxima etapa do
+projeto** — a pausa durou de 27/09 a 29/09/2026.
 
 ### Fase 2
 
@@ -682,7 +682,51 @@ criar a expectativa de que o financeiro já existe.
 | M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | ✅ Concluída em 29/09/2026 |
 | M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
 | M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | ✅ Concluída em 29/09/2026, em duas partes |
-| M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
+| M7.1.4 | Orçamentos e imagens de referência | ✅ Concluída em 29/09/2026 |
+
+### Evidência da etapa M7.1.4 — 29/09/2026
+
+**O ciclo do orçamento existe em `/quotes`**, e com ele a fatia vertical fecha:
+da autenticação ao dinheiro acordado, tudo o que a API entrega tem tela.
+
+Confronto com a seção 5 das regras de negócio:
+
+| Regra | Como a tela cumpre |
+|---|---|
+| **RN-ORC-001** | O item "Quotes" não aparece para o guest. A rota existe para todos, e quem digitar o endereço recebe 403 da API, que o `AsyncState` mostra **sem** oferecer "tentar de novo" — insistir não muda permissão |
+| **RN-ORC-002** | Aprovar e rejeitar só aparecem para gestor. O detalhe mostra a decisão registrada: data, hora e o percentual congelado |
+| **RN-ORC-003** | **O formulário avisa antes de salvar** que editar um aprovado o devolve a Pendente e descarta o percentual acordado, com o número escrito no aviso. Cliente e artista não aparecem na edição: reatribuir não é editar |
+| **RN-ORC-004** | Todos os campos, incluindo as imagens de referência opcionais |
+| **RN-REP-006** | A aprovação mostra o que será congelado — 70% para cliente próprio, 50% para indicação — e aceita a correção pontual da RN-CLI-003 num campo opcional, que vazio mantém o padrão |
+| **RN-PAG-001** | O formulário avisa quando sessões × valor por sessão não fecha com o total. **Avisa, não impede:** o backend não recusa esse caso hoje, e bloquear só no navegador daria a impressão de uma garantia que o sistema não tem |
+
+**Verificado com dados reais, não só em teste.** Um orçamento aprovado a 70% teve
+o valor total alterado e voltou a Pendente com a participação zerada; a imagem de
+referência subiu, apareceu na lista e foi removida, e a rota de leitura devolveu
+`image/png` com `private, no-store`.
+
+**Um defeito de interface apareceu no caminho.** Decidido o orçamento, o modal
+continuava no modo de decisão, oferecendo "Confirm approval" sobre algo já
+aprovado — e o segundo clique voltava com "Only a pending quote can be
+approved.", que quem acabara de aprovar lia como falha da própria aprovação. O
+modal agora volta à leitura quando o estado muda debaixo dele.
+
+**Corrigido junto:** o item "Overview" ficava aceso sobre qualquer tela, porque a
+rota raiz é prefixo de todas as outras e a classe `router-link-active` é de
+prefixo. Dois itens marcados ao mesmo tempo, e nenhum dizendo onde se está.
+
+**Dois componentes base novos**, porque a alternativa era controle cru na tela:
+`AppTextarea` para a descrição e as observações, e `AppFileInput`, que esconde o
+`<input type="file">` — cujo botão nativo nenhum navegador deixa estilizar por
+completo — atrás de um `AppButton`.
+
+**Três classes puras novas**, testáveis sem montar tela: `QuoteDraftCheck`
+(validação e a soma das sessões **em centavos inteiros**, porque três sessões de
+€133,33 somam 399.99000000000007 em ponto flutuante e a tela acusaria diferença
+onde não há), `QuoteDisplay` (estados, origens e percentual padrão) e `ByteSize`.
+
+- ESLint e `vue-tsc` limpos; **83 testes** no frontend; quatro verificações de
+  convenção sem apontamento.
 
 ### Correção de status — 29/09/2026
 

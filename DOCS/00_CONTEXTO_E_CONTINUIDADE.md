@@ -1,9 +1,9 @@
 # Contexto do Projeto e Continuidade para Próxima IA
 
-**Última atualização:** 26/09/2026  
+**Última atualização:** 29/09/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** implementação em andamento. Sprint 01, M1, M2 e M3 concluídas; a M4 — orçamentos e sessões — está em execução. O desenho funcional está fechado desde 24/09/2026.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3 e a fatia vertical de interface M7.1 concluídas; a M4 — orçamentos e sessões — está pausada na etapa M4.4, que é a próxima. O desenho funcional está fechado desde 24/09/2026.
 
 > **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
 > sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),
@@ -367,13 +367,29 @@ O defeito mais sério estava na **RN-AGE-004**: duas solicitações no mesmo hor
 se empilhavam e a de cima escondia a de baixo, então o gestor decidia sem saber
 que havia concorrência.
 
-**Interface: 59 testes.** Componentes base agora cobrem todo controle — nenhum
-`<button>`, `<input>` ou `<select>` cru fora de `shared/components`, com uma
-exceção declarada. Responsividade de celular e tablet entregue.
+**A etapa M7.1.4 fechou a fatia antecipada** em 29/09/2026: orçamentos e imagens
+de referência em `/quotes`. Criar, editar, aprovar com o percentual congelado,
+rejeitar com motivo, e anexar, listar e remover imagens pela rota autenticada.
 
-**Próximo passo:** etapa M7.1.4 — orçamentos e imagens de referência, que fecha a
-fatia antecipada. Depois dela, a M4.4 retoma o backend e a M4 deixa de estar
-pausada.
+**A regra que a tela precisava explicar, e explica:** editar um orçamento
+aprovado o devolve a Pendente e descarta o percentual acordado (RN-ORC-003 e
+RN-REP-006). O formulário avisa **antes** de salvar, com o percentual que será
+perdido escrito no aviso. Verificado com dados reais: um orçamento aprovado a
+70% voltou a Pendente com a participação zerada ao ter o valor total alterado.
+
+**A M7.1.4 encontrou um defeito de interface:** decidido o orçamento, o modal
+continuava no modo de decisão, oferecendo "Confirm approval" sobre algo já
+aprovado — e o segundo clique voltava do servidor com "Only a pending quote can
+be approved.", que quem acabara de aprovar lia como falha da própria aprovação.
+
+**Interface: 83 testes.** Componentes base agora cobrem todo controle — nenhum
+`<button>`, `<input>`, `<select>` ou `<textarea>` cru fora de
+`shared/components`, com uma exceção declarada. Responsividade de celular e
+tablet entregue.
+
+**Próximo passo:** etapa M4.4 — sessões. A M4 deixa de estar pausada e o backend
+volta a andar: gerar sessões do orçamento aprovado, marcar realizada, sessão
+parcial e confirmar recebimento (RN-ORC-005 e RN-ORC-006).
 
 ## Estado de aprovação e limite de trabalho
 

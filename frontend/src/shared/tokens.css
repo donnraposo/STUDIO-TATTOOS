@@ -165,7 +165,16 @@
   --brand-mark-size: 3.5rem;
   --content-measure: 42rem;
 
+  /* Miniatura de imagem de referencia. Grande o bastante para reconhecer o
+     desenho, pequena o bastante para caber quatro numa linha de celular. */
+  --thumb-size: 6rem;
+
   --opacity-disabled: 0.5;
+
+  /* Invisivel mas ainda presente para o teclado e para o leitor de tela. Usado
+     pelo campo de arquivo, que precisa continuar alcancavel por Tab enquanto
+     quem aparece na tela e o botao do projeto. */
+  --opacity-invisible: 0;
   --transition-fast: 160ms ease;
   --transition-slow: 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
 

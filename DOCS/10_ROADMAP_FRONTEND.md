@@ -177,10 +177,10 @@ grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vu
 
 ## 4.2.1 O que os componentes base garantem
 
-**Todo controle passa por um componente base.** Nenhum `<button>`, `<input>` ou
-`<select>` cru fora de `shared/components` — tamanho e cor vêm do componente, e
-controle solto sai do padrão já na primeira tela. A verificação está no
-`CLAUDE.md`.
+**Todo controle passa por um componente base.** Nenhum `<button>`, `<input>`,
+`<select>` ou `<textarea>` cru fora de `shared/components` — tamanho e cor vêm do
+componente, e controle solto sai do padrão já na primeira tela. A verificação
+está no `CLAUDE.md`.
 
 | Peça | Garante |
 |---|---|
@@ -188,6 +188,8 @@ controle solto sai do padrão já na primeira tela. A verificação está no
 | `AppField` | Rótulo, marca de obrigatório e mensagem de erro, uma vez só. `AppInput` e `AppSelect` repetiam os três |
 | `.control` em `base.css` | A pílula: altura, respiro, borda, raio e preenchimento. Campo de texto e seletor precisam ser **indistinguíveis em altura**, e três cópias divergiriam no primeiro ajuste |
 | `AppModal` | Rolagem própria. Sem ela, num celular deitado o modal passa das duas bordas e o topo fica inalcançável — o primeiro campo some |
+| `AppTextarea` | Mesmo contrato do `AppInput` e mesma pílula, com o raio aberto: numa caixa de várias linhas o canto arredondado dobraria as pontas do texto para dentro |
+| `AppFileInput` | Esconde o `<input type="file">` — cujo botão nativo nenhum navegador deixa estilizar por completo — atrás de um `AppButton`. Escondido com `opacity`, **não** com `display: none`, que o tiraria do alcance do teclado. Limpa o valor depois de cada escolha, senão escolher o mesmo arquivo duas vezes não dispara evento e parece travamento |
 
 **Uma exceção, declarada:** `BookingBlock` usa `<button>` cru. Não é botão do
 sistema, é superfície posicionada na grade, com largura vinda de `grid-column` e
@@ -297,7 +299,7 @@ sobra para ele — e o que fecha a história por último.
 | `app/AppShell.vue` | Cabeçalho, navegação por perfil, área de conteúdo |
 | `features/auth/LoginView.vue` | Entrada |
 | `app/router.ts` | Guarda por sessão e por perfil |
-| `shared/components/` | `AppButton`, `AppInput`, `AppSelect`, `AppCheckbox`, `AppField`, `AppCard`, `AppModal`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`, e — vindos da referência — `SectionKicker`, `PageHeader`, `HeroBanner`, `BrandLockup` |
+| `shared/components/` | `AppButton`, `AppInput`, `AppSelect`, `AppTextarea`, `AppCheckbox`, `AppFileInput`, `AppField`, `AppCard`, `AppModal`, `StatusBadge`, `LoadingState`, `EmptyState`, `ErrorState`, e — vindos da referência — `SectionKicker`, `PageHeader`, `HeroBanner`, `BrandLockup` |
 | `shared/format/` | `StudioClock` e `MoneyFormatter`, classes puras |
 | `shared/async/` | `AsyncState`, o mecanismo dos quatro estados |
 | `shared/tokens.css` | Camadas de `z-index`, escala de display, kicker, largura da lateral e preenchimento de campo |
@@ -367,21 +369,41 @@ dentro do componente significaria testá-la pela aparência, ou não testá-la.
 - Agendamentos adjacentes, sem intervalo, aparecem encostados e não sobrepostos.
 - A grade é renderizada em `Europe/Dublin` mesmo com o navegador em outro fuso.
 
-### M7.1.4 — Orçamentos
+### M7.1.4 — Orçamentos ✅
 
-**Entrega:** o ciclo do orçamento e as imagens de referência.
+**Entrega:** o ciclo do orçamento e as imagens de referência. Concluída em
+29/09/2026.
 
-Telas e componentes: `QuotesView`, `QuoteList`, `QuoteForm`, `QuoteDecisionPanel`,
-`ReferenceImageGallery`, `ReferenceImageUploader`. Cliente de API: `QuotesClient`.
+Telas e componentes: `QuotesView`, `QuoteList`, `QuoteForm`, `QuoteDetail`,
+`ReferenceImages`. Cliente de API: `QuotesClient`. Classes puras:
+`QuoteDraftCheck` e `QuoteDisplay`, mais `ByteSize` em `shared/format`.
 
-**Critérios de aceite:**
+> **Três componentes viraram dois, e o nome mudou.** O plano previa
+> `QuoteDecisionPanel`, `ReferenceImageGallery` e `ReferenceImageUploader`.
+> Decisão e leitura são o mesmo modal — separá-los obrigaria a duplicar os campos
+> do orçamento nos dois —, e galeria e envio são a mesma lista: o botão de enviar
+> mora no cabeçalho dela. `QuoteDetail` e `ReferenceImages` é o que existe.
+
+**Critérios de aceite, todos verificados com dados reais:**
 
 - Residente cria e edita enquanto pendente; guest não vê o módulo.
 - Aprovação mostra o percentual congelado, 70% ou 50% conforme a origem.
 - **Editar um orçamento aprovado mostra na tela que ele voltou a pendente e que o
   percentual foi descartado.** É a regra mais fácil de parecer bug para quem opera,
-  e a tela precisa explicá-la em vez de só executá-la.
+  e a tela precisa explicá-la em vez de só executá-la. O aviso aparece **antes** de
+  salvar, com o percentual que será perdido escrito nele.
 - Imagens são enviadas, listadas e removidas, carregando pela rota autenticada.
+
+**Dinheiro é texto do começo ao fim.** `Quote.totalValue` é `string`, não
+`number`: a API devolve decimal exato e converter para `number` reintroduziria o
+arredondamento binário que o `Numeric(12, 2)` do banco existe para evitar. Onde a
+tela precisa somar — sessões × valor por sessão, para o aviso da RN-PAG-001 — a
+conta é feita **em centavos inteiros** dentro de `QuoteDraftCheck`.
+
+**O que a tela avisa mas não impede.** A RN-PAG-001 diz que a soma das sessões não
+passa do total aprovado, e o backend não recusa esse caso hoje. Bloquear no
+navegador criaria uma trava que só existe ali, e daria a impressão de uma garantia
+que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa.
 
 ## 7. O que fica para a M7.2
 

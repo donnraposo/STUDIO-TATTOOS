@@ -1,11 +1,20 @@
+<script lang="ts">
+/** Os tons disponíveis. Fica em bloco `<script>` comum, como em `AppSelect`,
+ * porque `<script setup>` não exporta tipos para quem importa o componente — e
+ * quem decide o tom de um estado de domínio precisa do mesmo conjunto, sob pena
+ * de a união ser copiada e passar a divergir. */
+export type BadgeTone = "neutral" | "positive" | "danger" | "warning" | "info";
+</script>
+
 <script setup lang="ts">
 /** Selo de estado.
  *
- * O tom vem por mapa tipado. Quando a M7.1.3 acrescentar os estados de
- * agendamento e a M7.1.4 os de orçamento, cada um é uma entrada de dados na
- * tela que o usa — nada muda aqui dentro. */
-type BadgeTone = "neutral" | "positive" | "danger" | "warning" | "info";
-
+ * O tom vem por mapa tipado. Os estados de agendamento e de orçamento são
+ * entradas de dados na camada que os conhece — `QuoteDisplay`, por exemplo —,
+ * e nada muda aqui dentro.
+ *
+ * O rótulo também vem de fora: `APPROVED` é o nome do estado na API, não o que
+ * se escreve numa tela em inglês corrente. */
 const TONE_CLASS: Record<BadgeTone, string> = {
   neutral: "is-neutral",
   positive: "is-positive",

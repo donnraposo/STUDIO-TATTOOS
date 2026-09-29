@@ -8,8 +8,12 @@ import { useSession } from "@/shared/session/useSession";
  * As protegidas ficam **dentro** da casca, como filhas: a casca só existe para
  * quem entrou, e aninhar evita que cada tela precise lembrar de desenhá-la.
  *
- * A entrada definida para o MVP é a agenda do dia. Enquanto ela não existe
- * (M7.1.3), `home` responde por `/`. */
+ * A entrada definida para o MVP é a agenda do dia. Enquanto a visão geral não
+ * for substituída por ela, `home` responde por `/`.
+ *
+ * **Não há rota escondida por perfil.** `/quotes` existe para todo mundo, e o
+ * guest que digitar o endereço recebe 403 do backend (RN-ORC-001). Esconder o
+ * item de menu é cortesia; a tranca é do servidor. */
 const routes: RouteRecordRaw[] = [
   {
     path: "/login",
@@ -35,6 +39,11 @@ const routes: RouteRecordRaw[] = [
         path: "clients",
         name: "clients",
         component: () => import("@/features/clients/ClientsView.vue"),
+      },
+      {
+        path: "quotes",
+        name: "quotes",
+        component: () => import("@/features/quotes/QuotesView.vue"),
       },
       {
         path: "status",

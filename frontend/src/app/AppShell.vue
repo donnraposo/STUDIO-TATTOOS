@@ -44,6 +44,7 @@ const navigation = computed<NavigationItem[]>(() => {
     { label: "Overview", route: "home", visible: true },
     { label: "Schedule", route: "schedule", visible: true },
     { label: "Clients", route: "clients", visible: permissions.canSeeClients(current) },
+    { label: "Quotes", route: "quotes", visible: permissions.canSeeQuotes(current) },
     { label: "System", route: "status", visible: permissions.isStaff(current) },
   ].filter((item) => item.visible);
 });
@@ -149,7 +150,11 @@ nav a:hover {
   color: var(--color-on-dark);
 }
 
-nav a.router-link-active {
+/* `exact-active` e nao `active`: a rota raiz e prefixo de todas as outras, e
+   com a classe comum o item "Overview" ficava aceso em cima de qualquer tela
+   -- dois itens marcados ao mesmo tempo, e nenhum deles dizendo onde voce
+   esta. */
+nav a.router-link-exact-active {
   background: var(--color-ink-soft);
   color: var(--color-gold-bright);
   font-weight: var(--weight-medium);

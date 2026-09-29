@@ -11,10 +11,10 @@
 **145 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
-**59 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**83 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
-tem chance real de estar errado: fuso horário, formatação de dinheiro, tradução de
-erro da API e ciclo de sessão.
+tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
+tradução de erro da API e ciclo de sessão.
 
 | Área | Situação |
 |---|---|
@@ -42,6 +42,10 @@ erro da API e ciclo de sessão.
 | **Corpo do conflito de agenda** | Coberta: o 409 leva `scope` e o identificador da reserva existente, e um erro de domínio comum continua devolvendo apenas `detail` — a extensão é por dados, não um formato novo imposto a toda resposta de erro |
 | **Recorte por intervalo na agenda** | Coberta no backend: agendamento que atravessa a borda do recorte continua aparecendo, outro dia fica de fora, meia janela e janela invertida são recusadas |
 | **Permissões de exibição** | Coberta: os quatro perfis, e o caso que justifica o arquivo — o guest **tatua**, então qualquer verificação por "atua como artista" o deixaria entrar nos orçamentos, que a RN-ORC-001 lhe nega |
+| **Rascunho de orçamento** | Coberta por 11 testes de classe pura: os limites de cada campo repetindo o `QuoteFieldsRequest`, recusa de `1e3`, `10,50` e três casas decimais num campo de dinheiro, e **a soma das sessões em centavos inteiros** — três sessões de €133,33 fecham exatos €399,99, que em ponto flutuante dariam 399.99000000000007 e fariam a tela acusar diferença onde não há |
+| **Apresentação do orçamento** | Coberta: os três estados com o tom certo, as duas origens, e o percentual padrão de cada uma — 70% para cliente próprio, 50% para indicação (RN-REP-001 e RN-REP-002) |
+| **Cliente de API de orçamentos** | Coberta: tradução da listagem, cliente e artista presentes na criação e **ausentes na edição** (reatribuir não é editar), percentual congelado chegando como texto, e o envio de imagem como multipart sem `Content-Type` definido à mão — defini-lo produz um corpo que o servidor não consegue separar |
+| **Tamanho de arquivo** | Coberta: múltiplos de 1024 como o sistema operacional mostra, byte inteiro sem casa decimal, e traço em vez de `NaN` |
 | **Aceite da M7.1.1** | ✅ Os quatro critérios exercitados contra a API: navegação por perfil, 401 devolvendo ao login, conta bloqueada perdendo acesso na requisição seguinte e logout encerrando a sessão no servidor |
 
 ## 1. Estratégia

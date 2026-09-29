@@ -186,6 +186,24 @@ features/scheduling/components/
 O posicionamento usa `grid-column` calculado a partir do intervalo, evitando
 cálculo manual de pixels.
 
+### 3.2 Componentes de orçamento
+
+```text
+features/quotes/
+├── QuotesView.vue              tela: a única peça da pasta que fala com a API
+├── QuoteDisplay.ts             estados, origens e percentual padrão por origem
+├── QuoteDraftCheck.ts          validação do rascunho e soma das sessões em centavos
+└── components/
+    ├── QuoteList.vue           cartões do recorte que o backend devolveu
+    ├── QuoteForm.vue           criação e edição, com o aviso da RN-ORC-003
+    ├── QuoteDetail.vue         leitura e decisão: aprovar e rejeitar
+    └── ReferenceImages.vue     miniaturas, envio e remoção
+```
+
+A imagem é buscada pelo `content_path` devolvido pela API, que confere o cookie
+de sessão a cada leitura. Não há endereço assinado nem temporário: o caminho pode
+ficar à vista no HTML porque, sem sessão, ele não responde.
+
 ## 4. Contratos de API
 
 Prefixo `/api/v1`, mesmo domínio do frontend.

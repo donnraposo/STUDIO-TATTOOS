@@ -94,7 +94,8 @@ Detalhamento e motivo de cada regra em `DOCS/10_ROADMAP_FRONTEND.md`.
   tela com sufixo `View`, modal com sufixo `Modal`.
 - `<script setup lang="ts">` sempre; `defineProps<T>()` e `defineEmits<T>()` tipados.
 - Um componente por arquivo, sem exceção (ADR-015).
-- **Nenhum `<button>`, `<input>` ou `<select>` cru fora de `shared/components`.**
+- **Nenhum `<button>`, `<input>`, `<select>` ou `<textarea>` cru fora de
+  `shared/components`.**
   Tamanho e cor vêm do componente base; controle solto sai do padrão na primeira
   tela. A única exceção hoje é `BookingBlock`, que é superfície posicionada na
   grade e não controle do sistema — está documentada no próprio arquivo.
@@ -123,8 +124,8 @@ grep -rnE '^\s*[a-z-]+:[^;]*[0-9](px|rem|em)\b[^;]*;' frontend/src --include=*.v
 grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vue"
 
 # Controle cru fora dos componentes base: so BookingBlock pode aparecer
-grep -rnE '^\s*<(button|input|select)([ >/]|$)' frontend/src --include=*.vue \
-  | grep -vE "shared/components/App(Button|Input|Select|Checkbox)\.vue"
+grep -rnE '^\s*<(button|input|select|textarea)([ >/]|$)' frontend/src --include=*.vue \
+  | grep -vE "shared/components/App(Button|Input|Select|Textarea|Checkbox|FileInput)\.vue"
 ```
 
 ## 4. Padrões estabelecidos
