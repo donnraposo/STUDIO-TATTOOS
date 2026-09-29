@@ -1,33 +1,37 @@
+<script lang="ts">
+/** Uma opção do seletor. Fica em bloco `<script>` comum porque `<script setup>`
+ * não exporta tipos para quem importa o componente. */
+export interface SelectOption {
+  value: string;
+  label: string;
+}
+</script>
+
 <script setup lang="ts">
-/** Campo de texto base.
+/** Seleção de uma opção entre poucas.
  *
- * Honra o contrato que todo campo do projeto honra — `modelValue`,
- * `update:modelValue`, `disabled` e `error` — para que um formulário possa
- * trocar um campo por outro sem saber qual é. */
+ * Honra o mesmo contrato do `AppInput` — `modelValue`, `update:modelValue`,
+ * `disabled`, `error` — para que um formulário troque um campo por outro sem
+ * saber qual é.
+ *
+ * As opções entram como dados, e não como `slot` de `<option>`: assim o
+ * componente controla a marcação e nenhuma tela reinventa o estado vazio. */
 const props = withDefaults(
   defineProps<{
     modelValue: string;
     label: string;
-    type?: "text" | "email" | "password" | "tel" | "number" | "date" | "time";
+    options: SelectOption[];
     placeholder?: string;
     error?: string | null;
     disabled?: boolean;
     required?: boolean;
-    autocomplete?: string;
   }>(),
-  {
-    type: "text",
-    placeholder: "",
-    error: null,
-    disabled: false,
-    required: false,
-    autocomplete: "off",
-  },
+  { placeholder: "", error: null, disabled: false, required: false },
 );
 
 defineEmits<{ "update:modelValue": [value: string] }>();
 
-const fieldId = `field-${Math.random().toString(36).slice(2)}`;
+const fieldId = `select-${Math.random().toString(36).slice(2)}`;
 const errorId = `${fieldId}-error`;
 </script>
 
@@ -40,18 +44,30 @@ const errorId = `${fieldId}-error`;
         aria-hidden="true"
       >*</span>
     </label>
-    <input
+    <select
       :id="fieldId"
       :value="props.modelValue"
-      :type="props.type"
-      :placeholder="props.placeholder"
       :disabled="props.disabled"
       :required="props.required"
-      :autocomplete="props.autocomplete"
       :aria-invalid="Boolean(props.error)"
       :aria-describedby="props.error ? errorId : undefined"
-      @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+      @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
     >
+      <option
+        v-if="props.placeholder"
+        value=""
+        disabled
+      >
+        {{ props.placeholder }}
+      </option>
+      <option
+        v-for="option in props.options"
+        :key="option.value"
+        :value="option.value"
+      >
+        {{ option.label }}
+      </option>
+    </select>
     <p
       v-if="props.error"
       :id="errorId"
@@ -76,9 +92,7 @@ label {
   font-weight: var(--weight-medium);
 }
 
-/* Pílula com preenchimento sutil, como na referência: o campo se lê como área
-   clicável sem competir com o botão, que é quem deve puxar o olho. */
-input {
+select {
   min-height: var(--touch-target);
   padding: var(--space-2) var(--space-5);
   border: var(--border-thin);
@@ -88,16 +102,16 @@ input {
   color: var(--color-on-light);
 }
 
-input:hover:not(:disabled) {
+select:hover:not(:disabled) {
   border-color: var(--color-border);
 }
 
-input:disabled {
+select:disabled {
   background: var(--color-surface-soft);
   opacity: var(--opacity-disabled);
 }
 
-input[aria-invalid="true"] {
+select[aria-invalid="true"] {
   border-color: var(--color-danger);
 }
 

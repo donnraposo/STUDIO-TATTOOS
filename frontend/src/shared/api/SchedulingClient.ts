@@ -55,6 +55,32 @@ export class SchedulingClient {
     return payload.map(SchedulingClient.toBooking);
   }
 
+  /** Cria a reserva. Residente e guest criam em `REQUESTED`; o gestor pode
+   * criar ja aprovada (RN-AGE-005).
+   *
+   * Nenhuma verificacao de conflito acontece antes: quem decide e a restricao
+   * do banco, no momento da gravacao (ADR-011). Um 409 aqui e resposta
+   * esperada, nao falha da interface. */
+  async create(booking: {
+    clientId: string;
+    boothId: string;
+    startsAt: string;
+    endsAt: string;
+    artistId: string | null;
+    approveImmediately: boolean;
+  }): Promise<Booking> {
+    return SchedulingClient.toBooking(
+      await this.http.post<BookingPayload>("/bookings", {
+        client_id: booking.clientId,
+        booth_id: booking.boothId,
+        starts_at: booking.startsAt,
+        ends_at: booking.endsAt,
+        artist_id: booking.artistId,
+        approve_immediately: booking.approveImmediately,
+      }),
+    );
+  }
+
   async approve(bookingId: string): Promise<Booking> {
     return SchedulingClient.toBooking(
       await this.http.post<BookingPayload>(`/bookings/${bookingId}/approve`),

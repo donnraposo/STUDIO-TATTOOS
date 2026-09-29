@@ -3,7 +3,9 @@ import { computed, onMounted, ref, watch } from "vue";
 
 import { BookingPlacement, type Placement } from "@/features/scheduling/BookingPlacement";
 import { ApiError } from "@/shared/api/ApiError";
+import AppButton from "@/shared/components/AppButton.vue";
 import BookingDecision from "@/features/scheduling/components/BookingDecision.vue";
+import BookingForm, { type BookingDraft } from "@/features/scheduling/components/BookingForm.vue";
 import BoothTimeline from "@/features/scheduling/components/BoothTimeline.vue";
 import ConflictModal from "@/features/scheduling/components/ConflictModal.vue";
 import { SchedulingClient } from "@/shared/api/SchedulingClient";
@@ -20,6 +22,8 @@ import type {
   Booth,
   RejectionReason,
 } from "@/shared/domain/Booking";
+import type { Client } from "@/shared/domain/Client";
+import type { StudioMember } from "@/shared/domain/StudioMember";
 import { StudioClock } from "@/shared/format/StudioClock";
 import { useSession } from "@/shared/session/useSession";
 
@@ -51,10 +55,14 @@ interface PlacedBooking {
 interface DaySchedule {
   booths: Booth[];
   bookings: Booking[];
-  namesByClient: Record<string, string>;
+  /** A lista inteira, e nao so um mapa de nomes: o formulario de nova reserva
+   * precisa das mesmas pessoas para o seletor de cliente. Guardar as duas
+   * coisas separadas faria a tela buscar clientes duas vezes. */
+  clients: Client[];
+  artists: StudioMember[];
 }
 
-const { scheduling, clients: clientsApi } = useApi();
+const { scheduling, clients: clientsApi, accounts } = useApi();
 const { session, permissions } = useSession();
 const clock = new StudioClock();
 const placer = new BookingPlacement(OPENING_HOUR, CLOSING_HOUR, SLOT_MINUTES, clock);
@@ -63,6 +71,7 @@ const state = useAsyncState<DaySchedule>();
 const day = ref(new Date().toISOString().slice(0, 10));
 const selected = ref<Booking | null>(null);
 const conflict = ref<BookingConflict | null>(null);
+const composing = ref(false);
 const deciding = ref(false);
 const decisionFailure = ref<string | null>(null);
 
@@ -83,8 +92,8 @@ function dayWindow(date: string): { startsAt: string; endsAt: string } {
   const opening = new Date(`${date}T00:00:00Z`);
   const offsetMinutes = offsetAt(opening);
   return {
-    startsAt: withOffset(date, OPENING_HOUR, offsetMinutes),
-    endsAt: withOffset(date, CLOSING_HOUR, offsetMinutes),
+    startsAt: withOffset(date, `${String(OPENING_HOUR).padStart(2, "0")}:00`, offsetMinutes),
+    endsAt: withOffset(date, `${String(CLOSING_HOUR).padStart(2, "0")}:00`, offsetMinutes),
   };
 }
 
@@ -98,12 +107,17 @@ function offsetAt(date: Date): number {
   return Math.round((readAsStudio.getTime() - readAsUtc.getTime()) / 60000);
 }
 
-function withOffset(date: string, hour: number, offsetMinutes: number): string {
+/** Monta o instante ISO no fuso do estúdio a partir de `HH:MM`.
+ *
+ * O deslocamento vem calculado para a data em questão, e não fixado: o horário
+ * de verão irlandês muda duas vezes por ano, e uma reserva marcada com o
+ * deslocamento errado cairia uma hora fora sem ninguém notar. */
+function withOffset(date: string, time: string, offsetMinutes: number): string {
   const sign = offsetMinutes < 0 ? "-" : "+";
   const absolute = Math.abs(offsetMinutes);
   const hh = String(Math.floor(absolute / 60)).padStart(2, "0");
   const mm = String(absolute % 60).padStart(2, "0");
-  return `${date}T${String(hour).padStart(2, "0")}:00:00${sign}${hh}:${mm}`;
+  return `${date}T${time}:00${sign}${hh}:${mm}`;
 }
 
 async function load(): Promise<void> {
@@ -113,23 +127,36 @@ async function load(): Promise<void> {
       scheduling.listBooths(),
       scheduling.listBookings(window.startsAt, window.endsAt),
     ]);
-    return { booths, bookings, namesByClient: await clientNames() };
+    return { booths, bookings, clients: await visibleClients(), artists: await bookableArtists() };
   });
 }
 
-/** Falha em buscar nomes não derruba a agenda.
+/** Falha em buscar clientes não derruba a agenda.
  *
- * O guest não acessa o cadastro de clientes e receberia 403 aqui. A agenda dele
- * precisa abrir do mesmo jeito — sem nome é menos informação, sem agenda é
- * tela quebrada. */
-async function clientNames(): Promise<Record<string, string>> {
+ * O guest não acessa o cadastro e receberia 403 aqui. A agenda dele precisa
+ * abrir do mesmo jeito — sem nome é menos informação, sem agenda é tela
+ * quebrada. */
+async function visibleClients(): Promise<Client[]> {
   try {
-    const registered = await clientsApi.list();
-    return Object.fromEntries(registered.map((client) => [client.id, client.name]));
+    return await clientsApi.list();
   } catch {
-    return {};
+    return [];
   }
 }
+
+/** Só o gestor lista contas; os demais recebem 403 e agendam para si mesmos,
+ * que é o caso em que o seletor de artista nem aparece. */
+async function bookableArtists(): Promise<StudioMember[]> {
+  try {
+    return await accounts.listArtists();
+  } catch {
+    return [];
+  }
+}
+
+const namesByClient = computed<Record<string, string>>(() =>
+  Object.fromEntries((state.data.value?.clients ?? []).map((client) => [client.id, client.name])),
+);
 
 const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
   const schedule = state.data.value;
@@ -147,7 +174,7 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
     lane.push({
       booking,
       placement,
-      clientName: schedule.namesByClient[booking.clientId] ?? "Client",
+      clientName: namesByClient.value[booking.clientId] ?? "Client",
       timeRange: `${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`,
     });
     grouped[booking.boothId] = lane;
@@ -174,7 +201,7 @@ const conflictingLabel = computed<string | null>(() => {
   if (!booking) {
     return null;
   }
-  const name = state.data.value?.namesByClient[booking.clientId] ?? "Client";
+  const name = namesByClient.value[booking.clientId] ?? "Client";
   return `${name} · ${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`;
 });
 
@@ -184,7 +211,7 @@ const selectedLabel = computed(() => {
     return { clientName: "", timeRange: "" };
   }
   return {
-    clientName: state.data.value?.namesByClient[booking.clientId] ?? "Client",
+    clientName: namesByClient.value[booking.clientId] ?? "Client",
     timeRange: `${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`,
   };
 });
@@ -197,11 +224,13 @@ async function decide(action: () => Promise<unknown>): Promise<void> {
   try {
     await action();
     selected.value = null;
+    composing.value = false;
     await load();
   } catch (error) {
     const clash = SchedulingClient.conflictFrom(error);
     if (clash) {
       selected.value = null;
+      composing.value = false;
       conflict.value = clash;
       return;
     }
@@ -219,11 +248,31 @@ async function approve(): Promise<void> {
   }
 }
 
+async function create(draft: BookingDraft): Promise<void> {
+  const offsetMinutes = offsetAt(new Date(`${day.value}T00:00:00Z`));
+  await decide(() =>
+    scheduling.create({
+      clientId: draft.clientId,
+      boothId: draft.boothId,
+      startsAt: withOffset(day.value, draft.startTime, offsetMinutes),
+      endsAt: withOffset(day.value, draft.endTime, offsetMinutes),
+      artistId: draft.artistId,
+      approveImmediately: draft.approveImmediately,
+    }),
+  );
+  composing.value = false;
+}
+
 async function reject(reason: RejectionReason, note: string | null): Promise<void> {
   const booking = selected.value;
   if (booking) {
     await decide(() => scheduling.reject(booking.id, reason, note));
   }
+}
+
+function startComposing(): void {
+  decisionFailure.value = null;
+  composing.value = true;
 }
 
 watch(day, load);
@@ -242,6 +291,12 @@ onMounted(load);
           label="Day"
           type="date"
         />
+        <AppButton
+          :disabled="state.isLoading.value"
+          @click="startComposing"
+        >
+          New booking
+        </AppButton>
       </template>
     </PageHeader>
 
@@ -266,6 +321,19 @@ onMounted(load);
       :placer="placer"
       :placed-by-booth="placedByBooth"
       @select="selected = $event"
+    />
+
+    <BookingForm
+      v-if="composing && state.data.value"
+      :day="day"
+      :clients="state.data.value.clients"
+      :booths="state.data.value.booths"
+      :artists="state.data.value.artists"
+      :can-decide="canDecide"
+      :busy="deciding"
+      :failure="decisionFailure"
+      @submit="create"
+      @close="composing = false"
     />
 
     <BookingDecision
