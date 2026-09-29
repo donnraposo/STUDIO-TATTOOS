@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from psycopg.types.range import Range
-from sqlalchemy import select, text
+from sqlalchemy import Select, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -46,17 +46,29 @@ class BookingRepository:
     def find_by_id(self, booking_id: uuid.UUID) -> Booking | None:
         return self._session.get(Booking, booking_id)
 
-    def list_for_artist(self, artist_id: uuid.UUID) -> list[Booking]:
-        statement = (
-            select(Booking)
-            .where(Booking.artist_id == artist_id)
-            .order_by(Booking.requested_at.desc())
-        )
-        return list(self._session.execute(statement).scalars())
+    def list_for_artist(
+        self, artist_id: uuid.UUID, window: Range | None = None
+    ) -> list[Booking]:
+        statement = select(Booking).where(Booking.artist_id == artist_id)
+        return self._fetch(statement, window)
 
-    def list_all(self) -> list[Booking]:
-        statement = select(Booking).order_by(Booking.requested_at.desc())
-        return list(self._session.execute(statement).scalars())
+    def list_all(self, window: Range | None = None) -> list[Booking]:
+        return self._fetch(select(Booking), window)
+
+    def _fetch(self, statement: Select[tuple[Booking]], window: Range | None) -> list[Booking]:
+        """Aplica a janela de tempo, quando houver, e ordena.
+
+        O recorte usa o operador de sobreposicao do PostgreSQL, `&&`, e nao uma
+        comparacao com o inicio do agendamento: uma sessao que comeca as 19h de
+        terca e termina as 21h **pertence** ao dia de terca, e um filtro por
+        `inicio >= :de` a perderia ao consultar so a partir das 20h.
+
+        Sem janela, devolve tudo. A agenda sempre informa uma; quem nao informa
+        esta consultando historico, e ai o conjunto inteiro e o que se quer."""
+        if window is not None:
+            statement = statement.where(Booking.period.op("&&")(window))
+        ordered = statement.order_by(Booking.requested_at.desc())
+        return list(self._session.execute(ordered).scalars())
 
     def list_pending(self) -> list[Booking]:
         statement = (

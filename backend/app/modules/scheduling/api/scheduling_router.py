@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Request, status
 
@@ -86,10 +87,21 @@ class SchedulingRouter:
             )
             return BoothResponse.from_model(booth)
 
-    def list_bookings(self, request: Request) -> list[BookingResponse]:
+    def list_bookings(
+        self,
+        request: Request,
+        starts_at: datetime | None = None,
+        ends_at: datetime | None = None,
+    ) -> list[BookingResponse]:
+        """A agenda consulta um dia por vez, informando os dois extremos.
+
+        Sem intervalo, devolve tudo — que e o uso de historico. A validacao de
+        meia janela fica no caso de uso, nao aqui: e regra, nao formato."""
         actor = self._authenticator.require_user(request)
         with self._container.database.session() as session:
-            bookings = self._container.scheduling.list_bookings(session).execute(actor)
+            bookings = self._container.scheduling.list_bookings(session).execute(
+                actor, starts_at, ends_at
+            )
             return [BookingResponse.from_model(booking) for booking in bookings]
 
     def request_booking(self, payload: BookingRequest, request: Request) -> BookingResponse:
