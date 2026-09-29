@@ -8,8 +8,15 @@
 
 ## 0. Cobertura atual
 
-**145 testes aprovados** no backend, executados em container contra PostgreSQL real
+**172 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
+
+> **A suíte devolve as conexões entre testes.** Cada teste monta um `Container`
+> próprio, com engine próprio, e o pool não se fechava sozinho: ao passar de cento
+> e poucos testes o PostgreSQL começou a recusar com `sorry, too many clients
+> already`, derrubando treze testes que não tinham defeito nenhum. É o tipo de
+> falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
+> existe por isso e o `conftest` o chama no encerramento de cada teste.
 
 **83 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
@@ -27,6 +34,9 @@ tradução de erro da API e ciclo de sessão.
 | Fluxo de agenda | Coberta: solicitar, aprovar, rejeitar, cancelar, não comparecer, remarcar, com conflito devolvendo 409 |
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | **Integridade de orçamento e sessão** | Coberta por 11 testes de restrição na migração `0005`: aprovado sem percentual congelado, rejeitado sem motivo, sequência duplicada, parcial sem valor cobrado, realizada sem data real, quitada sem confirmação do gestor e dois agendamentos vivos na mesma sessão |
+| **Ciclo da sessão** | Coberta: aprovação gerando as sessões previstas com origem e percentual congelados, orçamento pendente sem sessão nenhuma, reaprovação mantendo a realizada e refazendo só as agendadas, artista marcando realizada, artista de fora recebendo 403, parcial registrando o cobrado, parcial com valor igual ao previsto recusada, artista sem confirmar recebimento, gestor confirmando e concluindo, sessão agendada não confirmável, correção de valor sem motivo recusada e com motivo gravada na auditoria, e sessão quitada não podendo ser remarcada |
+| **Ajuste das sessões restantes** | Coberta: artista sem ajustar, ajuste que mantém o total deixando o orçamento aprovado, ajuste que muda o total devolvendo a Pendente com o percentual descartado, o cobrado de uma parcial entrando na conta no lugar do previsto, sessão de valor zero recusada, e artista de fora sem ver as sessões |
+| **Aritmética das sessões** | Coberta por 8 testes de classe pura: sequência continuando depois do que já foi resolvido, plano que encolheu abaixo do executado não pedindo sessão nenhuma, soma do cobrado com o previsto, e três sessões de €133,33 fechando €399,99 exatos |
 | **Ciclo do orçamento** | Coberta: guest sem acesso, residente não aprova, percentual congelado em 70 e em 50 conforme a origem, correção de percentual pelo gestor registrada na auditoria, edição de aprovado voltando a pendente e limpando o percentual, recusa sem motivo, reaprovação bloqueada e visibilidade entre artistas |
 | **Imagens de referência** | Coberta: leitura sem sessão devolvendo 401, artista de fora recebendo 403 em listar, ler e anexar, imagem de um orçamento não saindo por outro, tipo não aceito, arquivo acima de 10 MB, arquivo vazio, limite de 10 por orçamento, anexar não reabrindo aprovação, residente sem anexar em aprovado e remoção apagando o arquivo |
 | **Armazenamento em sistema de arquivos** | Coberta no adaptador: ida e volta dos bytes, criação da árvore de diretórios, sobrescrita sem deixar o temporário, leitura de chave ausente como erro de domínio, remoção repetida sem erro e chave tentando escapar da raiz nos três formatos |

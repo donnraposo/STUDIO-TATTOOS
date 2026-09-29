@@ -30,6 +30,17 @@ class Database:
         finally:
             session.close()
 
+    def dispose(self) -> None:
+        """Devolve ao servidor as conexoes que o pool mantinha abertas.
+
+        Na aplicacao roda uma vez, no encerramento. Na suite roda a cada teste,
+        e ai ela e obrigatoria: cada teste monta um `Container` proprio, com
+        engine proprio, e um pool que ninguem fecha continua segurando conexao
+        depois que o teste terminou. Foi o que derrubou a suite ao passar de
+        cento e poucos testes, com "sorry, too many clients already" -- uma
+        falha que nao acusa o teste culpado, porque o culpado e o acumulo."""
+        self._engine.dispose()
+
     def is_reachable(self) -> bool:
         try:
             with self._engine.connect() as connection:

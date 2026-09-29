@@ -5,9 +5,9 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1, M2, M3 e M7.1 — a fatia vertical de interface.
-**Pausado:** M4 — orçamentos e sessões, com M4.1 a M4.3 concluídas.
-**Próxima:** M4.4 — sessões. A M7.1 fechou em 29/09/2026 e a M4 volta a andar.
+**Concluído:** sprint 01, M1, M2, M3, M4 e M7.1 — a fatia vertical de interface.
+**Próxima:** M5 — pagamentos e sinal. A M4 saiu da pausa e fechou em 30/09/2026,
+com as sessões da M4.4.
 **Progresso do MVP:** 4 de 8 sprints em número; o backend está adiante disso e o
 frontend, bem atrás.
 
@@ -111,9 +111,9 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M1 | Identidade e acesso | Backend | ✅ Concluída em 26/09/2026 |
 | M2 | Clientes | Backend | ✅ Concluída em 26/09/2026 |
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
-| M4 | Orçamentos e sessões | Backend | ⏸️ **Pausada em 3 de 4 etapas.** ⬅️ Retomada agora, na M4.4 |
+| M4 | Orçamentos e sessões | Backend | ✅ Concluída em 30/09/2026 |
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
-| M5 | Pagamentos e sinal | Backend | Não iniciada |
+| M5 | Pagamentos e sinal | Backend | ⬅️ Próxima |
 | M6 | Repasses e fechamento semanal | Backend | Não iniciada |
 | M7.2 | Restante da interface do MVP | Frontend | Não iniciada |
 | M8 | Implantação mínima | Infra | Não iniciada |
@@ -123,10 +123,9 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 etapas e critérios de aceite. O andamento continua sendo registrado **aqui**, para
 não haver duas versões do status.
 
-**Por que a M4 ficou pausada e não concluída.** Faltam as sessões, da etapa M4.4.
-Marcar a sprint como concluída seria a mentira mais fácil de contar e a mais cara de
-descobrir depois. **A M7.1 fechou em 29/09/2026 e a M4.4 é a próxima etapa do
-projeto** — a pausa durou de 27/09 a 29/09/2026.
+**A M4 esteve pausada de 27/09 a 29/09/2026**, com três das quatro etapas prontas.
+Marcá-la como concluída naquele momento seria a mentira mais fácil de contar e a
+mais cara de descobrir depois. A M4.4 fechou em 30/09/2026 e a sprint está inteira.
 
 ### Fase 2
 
@@ -455,7 +454,7 @@ conferir cada regra antes da seguinte.
 | M4.1 | Tabelas `quote`, `quote_reference_image` e `tattoo_session`; migração `0005`; `booking.session_id` | ✅ Concluída em 26/09/2026 |
 | M4.2 | Ciclo do orçamento: criar, editar, aprovar, rejeitar, percentual congelado | ✅ Concluída em 27/09/2026 |
 | M4.3 | Imagens de referência: armazenamento privado, upload e leitura autenticada | ✅ Concluída em 27/09/2026 |
-| M4.4 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | ⬅️ Próxima |
+| M4.4 | Sessões: gerar do orçamento aprovado, marcar realizada, sessão parcial, confirmar recebimento | ✅ Concluída em 30/09/2026 |
 
 As imagens de referência ganharam etapa própria ao se confirmar o que a decisão de
 escopo já indicava: elas trazem a primeira dependência de infraestrutura externa do
@@ -471,6 +470,43 @@ numa entrega só.
 | Remoção de imagem | Incluída, embora a RN-ORC-004 não a mencione: anexar o arquivo errado é banal. Apaga o arquivo de verdade, não só desvincula, porque imagem é dado pessoal (RN-CLI-007) |
 | Histórico de estado | `audit_log`, sem tabela paralela (ADR-023) |
 | Ordem em relação à M5 | M4 antes da M5: pagamento se liga à sessão, então a sessão precisa existir primeiro. A conclusão de sessão da RN-ORC-005 depende de pagamento confirmado e entra na lista de pendências de costura |
+
+### Evidência da etapa M4.4 — 30/09/2026
+
+**A sessão existe, e com ela a M4 fecha.** O ciclo vai do orçamento aprovado à
+sessão concluída, que é a unidade sobre a qual a M6 vai calcular repasse.
+
+Confronto com as regras:
+
+| Regra | Como o backend cumpre |
+|---|---|
+| **RN-ORC-005** | O artista marca realizada; o gestor confirma o valor recebido; só então a sessão fica `PAID_OFF`. São dois atos e dois estados, não um campo booleano |
+| **RN-ORC-005**, correções | Confirmar um valor diferente do informado **exige motivo**, que vai para a auditoria no campo `reason` |
+| **RN-ORC-006** | Sessão interrompida vira `PARTIALLY_DONE` com o valor efetivamente cobrado, e é ele que entra no cálculo do comprometido |
+| **RN-ORC-006**, ajuste | O gestor refaz as sessões restantes; se o comprometido deixar de fechar com o valor aprovado, o orçamento volta a Pendente e o percentual congelado é descartado |
+| **RN-REP-006** | `origin` e `artist_percentage` são copiados para cada sessão na aprovação. Reaprovar com outro percentual não alcança o que já foi executado |
+
+**Decisões tomadas durante a implementação:**
+
+| Tema | Decisão |
+|---|---|
+| Quando as sessões nascem | **Na aprovação, mesma transação.** Orçamento aprovado sem sessões não significa nada: ninguém tem o que marcar como realizado e o repasse não tem sobre o que incidir. Um segundo passo dependeria de alguém lembrar de chamá-lo depois de aprovar pela tela |
+| Reaprovação | Sessão já resolvida fica onde está, com o número de sequência que tem; as agendadas são descartadas e recriadas pelo plano novo. Recriar tudo apagaria trabalho executado; não recriar nada deixaria o plano velho valendo |
+| Parcial e completa num caso de uso só | Valor ausente significa sessão inteira. Um parâmetro booleano ao lado do valor diria a mesma coisa duas vezes e abriria a chance de dizer as duas diferente. Parcial exige cobrar **menos** que o previsto — aceitar o valor igual marcaria como interrompida uma sessão que correu inteira |
+| `CANCELLED` e `NO_SHOW` | **Fora desta etapa.** Os dois estados existem na tabela desde a M4.1, mas quem os produz é o cancelamento e o não comparecimento do agendamento, cuja consequência é financeira (RN-PAG-004) e pertence à M5 |
+| Confirmação de recebimento | Lançada à mão, como a RN-PAG-006 permite nesta versão. Na M5 ela passa a se apoiar num pagamento confirmado em vez de num valor digitado |
+
+**Um defeito de infraestrutura de teste apareceu ao crescer a suíte.** Cada teste
+monta um `Container` próprio, com engine próprio, e o pool nunca era devolvido:
+ao passar de cento e poucos testes o PostgreSQL começou a recusar conexão com
+`sorry, too many clients already`, derrubando treze testes que não tinham nada de
+errado. `Database.dispose()` existe por isso, e o `conftest` o chama a cada teste.
+
+- Ruff limpo; **172 testes** no backend; verificação de uma classe por arquivo sem
+  apontamento. Conferido também contra o servidor rodando: aprovação gerando as
+  quatro sessões com 70% congelado, parcial de €100 sobre €250, correção para
+  €150 recusada sem motivo e aceita com ele, e o ajuste devolvendo o orçamento a
+  Pendente por não fechar com o total aprovado.
 
 ### Evidência da etapa M4.3 — 27/09/2026
 

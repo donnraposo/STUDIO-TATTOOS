@@ -32,7 +32,12 @@ def container(test_database: DatabaseProvisioner, tmp_path: Path) -> Iterator[Co
     settings = test_database.settings.model_copy(
         update={"storage_root": str(tmp_path / "objects")}
     )
-    yield Container(settings=settings)
+    active = Container(settings=settings)
+    yield active
+    # Sem isto, o pool de cada teste segura conexoes ate o servidor recusar
+    # novas. A suite passou a estourar `too many clients` ao crescer, e a falha
+    # aparecia em testes que nao tinham nada de errado.
+    active.database.dispose()
     Container.reset()
 
 

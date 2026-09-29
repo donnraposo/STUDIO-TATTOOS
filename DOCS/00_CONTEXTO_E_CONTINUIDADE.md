@@ -1,9 +1,9 @@
 # Contexto do Projeto e Continuidade para Próxima IA
 
-**Última atualização:** 29/09/2026  
+**Última atualização:** 30/09/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3 e a fatia vertical de interface M7.1 concluídas; a M4 — orçamentos e sessões — está pausada na etapa M4.4, que é a próxima. O desenho funcional está fechado desde 24/09/2026.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4 e a fatia vertical de interface M7.1 concluídas. A próxima é a M5 — pagamentos e sinal. O desenho funcional está fechado desde 24/09/2026.
 
 > **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
 > sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),
@@ -387,9 +387,37 @@ be approved.", que quem acabara de aprovar lia como falha da própria aprovaçã
 `shared/components`, com uma exceção declarada. Responsividade de celular e
 tablet entregue.
 
-**Próximo passo:** etapa M4.4 — sessões. A M4 deixa de estar pausada e o backend
-volta a andar: gerar sessões do orçamento aprovado, marcar realizada, sessão
-parcial e confirmar recebimento (RN-ORC-005 e RN-ORC-006).
+**A etapa M4.4 fechou a M4** em 30/09/2026: as sessões existem, e com elas o ciclo
+vai do orçamento aprovado à sessão concluída — a unidade sobre a qual a M6 vai
+calcular repasse.
+
+**As sessões nascem da aprovação, na mesma transação.** Orçamento aprovado sem
+sessões não significa nada: ninguém tem o que marcar como realizado e o repasse
+não tem sobre o que incidir. Na reaprovação, sessão já resolvida fica onde está e
+só as agendadas são refeitas pelo plano novo.
+
+**Realizada e concluída são estados diferentes, e é de propósito.** O artista
+marca que a sessão aconteceu; o gestor confirma quanto entrou. Só depois das duas
+a sessão vale para repasse (RN-ORC-005). Confirmar um valor diferente do informado
+exige motivo, que fica na auditoria.
+
+**Sessão parcial e o ajuste da RN-ORC-006 funcionam:** uma sessão de €250 cobrada
+a €100 vira `PARTIALLY_DONE`, e quando o gestor refaz as restantes e o
+comprometido deixa de fechar com o valor aprovado, o orçamento volta a Pendente
+com o percentual congelado descartado.
+
+**`CANCELLED` e `NO_SHOW` ficaram fora**, embora existam na tabela desde a M4.1:
+quem os produz é o cancelamento e o não comparecimento do agendamento, cuja
+consequência é financeira (RN-PAG-004) e pertence à M5.
+
+**Backend: 172 testes.** Um defeito da própria suíte apareceu ao crescê-la — cada
+teste montava um engine que ninguém devolvia, e o PostgreSQL passou a recusar
+conexão com `too many clients`, derrubando treze testes sadios. `Database.dispose()`
+existe por causa disso.
+
+**Próximo passo:** sprint M5 — pagamentos e sinal. Sinal de €50, confirmação
+manual pelo gestor, estados do pagamento, devoluções, e as consequências
+financeiras de cancelamento, remarcação e não comparecimento.
 
 ## Estado de aprovação e limite de trabalho
 

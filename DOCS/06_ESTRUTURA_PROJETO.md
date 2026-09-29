@@ -218,7 +218,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Agenda | `GET /bookings`, `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
 | Orçamentos | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
-| Sessões | `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
+| Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
 | Pagamentos | `GET/POST /payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
@@ -227,6 +227,13 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**Sessões não têm rota de criação.** Elas nascem da aprovação do orçamento, na
+mesma transação (RN-ORC-005). Um `POST /sessions` permitiria criar sessão sem
+orçamento aprovado, que é o estado que a regra impede ao exigir que só sessão
+concluída entre em repasse. A listagem pende do orçamento porque a sessão não
+existe fora dele; marcar e confirmar pendem da sessão, porque quem age já a tem
+em mão.
 
 **Convenções:**
 - Autenticação por cookie de sessão; token CSRF obrigatório em operações que alteram dados.

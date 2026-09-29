@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
+from app.modules.quotes.application.generate_sessions import GenerateSessions
 from app.modules.quotes.domain.artist_percentage_policy import ArtistPercentagePolicy
 from app.modules.quotes.domain.quote_origin import QuoteOrigin
 from app.modules.quotes.domain.quote_policy import QuotePolicy
@@ -25,18 +26,26 @@ class ApproveQuote:
     atendimento, como a RN-CLI-003 prevê. Omitido, vale o padrão da origem. A
     correção fica na auditoria junto do valor que teria sido aplicado — um
     percentual fora do padrão precisa ser rastreável, ou vira um acordo
-    particular sem registro."""
+    particular sem registro.
+
+    **A aprovação também cria as sessões previstas** (RN-ORC-005), na mesma
+    transação. Um orçamento aprovado sem sessões não significa nada: ninguém tem
+    o que marcar como realizado e o repasse não tem sobre o que incidir. Deixar
+    a geração como um segundo passo seria deixá-la depender de alguém lembrar de
+    chamá-la depois de aprovar pela tela."""
 
     def __init__(
         self,
         quotes: QuoteRepository,
         policy: QuotePolicy,
         percentages: ArtistPercentagePolicy,
+        sessions: GenerateSessions,
         audit: AuditRecorder,
     ) -> None:
         self._quotes = quotes
         self._policy = policy
         self._percentages = percentages
+        self._sessions = sessions
         self._audit = audit
 
     def execute(
@@ -63,6 +72,7 @@ class ApproveQuote:
         quote.approved_at = datetime.now(UTC)
         quote.approved_by = actor.id
         self._quotes.persist(quote)
+        self._sessions.execute(actor, quote)
 
         self._audit.record(
             actor_id=actor.id,

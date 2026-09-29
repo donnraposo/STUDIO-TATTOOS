@@ -7,6 +7,7 @@ from app.modules.health.api.health_router import HealthRouter
 from app.modules.identity.api.account_router import AccountRouter
 from app.modules.identity.api.auth_router import AuthRouter
 from app.modules.quotes.api.quote_router import QuoteRouter
+from app.modules.quotes.api.session_router import SessionRouter
 from app.modules.scheduling.api.scheduling_router import SchedulingRouter
 
 
@@ -38,4 +39,5 @@ class Application:
             ClientRouter(self._container).build(),
             SchedulingRouter(self._container).build(),
             QuoteRouter(self._container).build(),
+            SessionRouter(self._container).build(),
         ]
