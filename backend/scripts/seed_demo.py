@@ -18,8 +18,10 @@ esbarraria na unicidade do e-mail e deixaria o banco pela metade.
 
 import os
 import sys
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
+from psycopg.types.range import Range
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -32,6 +34,14 @@ from app.modules.identity.infrastructure.password_hasher import PasswordHasher
 from app.modules.quotes.domain.quote_origin import QuoteOrigin
 from app.modules.quotes.domain.quote_status import QuoteStatus
 from app.modules.quotes.infrastructure.models.quote import Quote
+
+# Importado apenas para registrar a tabela no metadata: booking.session_id
+# aponta para ela, e sem o registro o SQLAlchemy nao resolve a chave.
+from app.modules.quotes.infrastructure.models.tattoo_session import (  # noqa: F401
+    TattooSession,
+)
+from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.infrastructure.models.booking import Booking
 from app.modules.scheduling.infrastructure.models.booth import Booth
 
 
@@ -53,7 +63,9 @@ class DemoSeeder:
         ("guest@studio.ie", "Lucia Ferrari", UserRole.GUEST, False, "Lu"),
     ]
 
-    _BOOTHS = [(1, "Window"), (2, "Back"), (3, "Studio"), (4, "Private")]
+    # Quatro macas, identificadas apenas pelo numero (RN-AGE-001). Sem apelido:
+    # nenhuma regra pede, e nome inventado aqui vira nome inventado na operacao.
+    _BOOTHS = [1, 2, 3, 4]
 
     _CLIENTS = [
         ("Niamh O'Sullivan", "+353 87 111 1111", "@niamh.os", "resident@studio.ie"),
@@ -66,12 +78,55 @@ class DemoSeeder:
         self._password = password
         self._hasher = PasswordHasher()
 
+    # Agenda de hoje: hora de inicio, duracao, indice da maca, artista e estado.
+    # Artistas e macas diferentes de proposito, para nao esbarrar nas restricoes
+    # EXCLUDE -- que e justamente o que a demonstracao quer mostrar funcionando.
+    _BOOKINGS = [
+        (10, 2, 0, "resident@studio.ie", BookingStatus.APPROVED),
+        (13, 3, 1, "resident2@studio.ie", BookingStatus.APPROVED),
+        (15, 2, 0, "guest@studio.ie", BookingStatus.REQUESTED),
+        (17, 2, 2, "owner@studio.ie", BookingStatus.APPROVED),
+    ]
+
     def run(self) -> None:
         accounts = self._seed_accounts()
-        self._seed_booths()
+        booths = self._seed_booths()
         clients = self._seed_clients(accounts)
         self._seed_quote(accounts, clients)
+        self._seed_bookings(accounts, booths, clients)
         self._session.commit()
+
+    def _seed_bookings(
+        self,
+        accounts: dict[str, UserAccount],
+        booths: list[Booth],
+        clients: list[Client],
+    ) -> None:
+        """Agenda do dia corrente, para a timeline abrir com conteudo.
+
+        Usa HOJE e nao uma data fixa: uma agenda semeada em setembro estaria
+        vazia em outubro, e quem abrisse a tela concluiria que ela nao
+        funciona."""
+        if self._session.execute(select(Booking)).first() is not None:
+            return
+
+        today = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+        for hour, duration, booth_index, artist_email, status in self._BOOKINGS:
+            start = today.replace(hour=hour)
+            self._session.add(
+                Booking(
+                    client_id=clients[booth_index % len(clients)].id,
+                    artist_id=accounts[artist_email].id,
+                    booth_id=booths[booth_index].id,
+                    period=Range(start, start + timedelta(hours=duration), bounds="[)"),
+                    status=status,
+                    decided_at=today if status == BookingStatus.APPROVED else None,
+                    decided_by=accounts["owner@studio.ie"].id
+                    if status == BookingStatus.APPROVED
+                    else None,
+                )
+            )
+        self._session.flush()
 
     def _seed_accounts(self) -> dict[str, UserAccount]:
         created: dict[str, UserAccount] = {}
@@ -99,14 +154,15 @@ class DemoSeeder:
         self._session.flush()
         return created
 
-    def _seed_booths(self) -> None:
-        for number, label in self._BOOTHS:
+    def _seed_booths(self) -> list[Booth]:
+        for number in self._BOOTHS:
             existing = self._session.execute(
                 select(Booth).where(Booth.number == number)
             ).scalar_one_or_none()
             if existing is None:
-                self._session.add(Booth(number=number, label=label))
+                self._session.add(Booth(number=number))
         self._session.flush()
+        return list(self._session.execute(select(Booth).order_by(Booth.number)).scalars())
 
     def _seed_clients(self, accounts: dict[str, UserAccount]) -> list[Client]:
         clients: list[Client] = []

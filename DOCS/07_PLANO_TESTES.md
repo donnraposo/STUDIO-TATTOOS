@@ -11,7 +11,7 @@
 **139 testes aprovados** no backend, executados em container contra PostgreSQL real
 no banco isolado `tattoo_studio_test`.
 
-**38 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**47 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, formatação de dinheiro, tradução de
 erro da API e ciclo de sessão.
@@ -36,6 +36,8 @@ erro da API e ciclo de sessão.
 | **Cliente de API de clientes** | Coberta: tradução da listagem, alerta de duplicidade vindo junto do cliente criado, e o reconhecimento das **duas** formas que o detalhe devolve conforme a RN-CLI-004 |
 | **Formatação de dinheiro** | Coberta: texto decimal da API, duas casas sempre, e traço em vez de `NaN` quando o valor é nulo — que é o caso do orçamento pendente |
 | Financeiro, pós-venda, ponta a ponta | Pendentes, conforme as sprints correspondentes |
+| **Posicionamento na timeline** | Coberta por 9 testes de classe pura: coluna e extensão, fuso do estúdio contra fuso do navegador, aparo nas duas bordas do expediente, meia-noite como fim do dia, e sessão curta que não pode colapsar para largura zero |
+| **Recorte por intervalo na agenda** | Coberta no backend: agendamento que atravessa a borda do recorte continua aparecendo, outro dia fica de fora, meia janela e janela invertida são recusadas |
 | **Permissões de exibição** | Coberta: os quatro perfis, e o caso que justifica o arquivo — o guest **tatua**, então qualquer verificação por "atua como artista" o deixaria entrar nos orçamentos, que a RN-ORC-001 lhe nega |
 | **Aceite da M7.1.1** | ✅ Os quatro critérios exercitados contra a API: navegação por perfil, 401 devolvendo ao login, conta bloqueada perdendo acesso na requisição seguinte e logout encerrando a sessão no servidor |
 

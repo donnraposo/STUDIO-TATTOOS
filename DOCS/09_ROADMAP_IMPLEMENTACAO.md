@@ -681,8 +681,44 @@ criar a expectativa de que o financeiro já existe.
 |---|---|---|
 | M7.1.1 | Casca, acesso, cliente HTTP, componentes base e dados de demonstração | ✅ Concluída em 29/09/2026 |
 | M7.1.2 | Clientes | ✅ Concluída em 29/09/2026 |
-| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | Não iniciada |
+| M7.1.3 | ⚠️ Agenda e macas, com a timeline em CSS Grid | 🔄 Timeline de leitura entregue em 29/09/2026; decisão sobre solicitar e recusar pendente |
 | M7.1.4 | Orçamentos e imagens de referência | Não iniciada |
+
+### Evidência da etapa M7.1.3 — 29/09/2026
+
+**A timeline existe e mostra o dia.** Macas no eixo Y, horas no eixo X, em CSS
+Grid sem biblioteca (ADR-004). O maior risco de estimativa do frontend saiu do
+caminho.
+
+- Rota `/schedule`; backend ganhou recorte por intervalo em `GET /bookings`.
+- ESLint sem apontamentos, `vue-tsc` sem erro, **47 testes** no frontend, **9
+  deles** só da aritmética de posicionamento.
+
+**`BookingPlacement` é classe pura, separada do componente.** A aritmética —
+minutos desde a abertura, largura proporcional, virada do horário de verão — é o
+que tem chance real de estar errado, e testá-la não exige montar tela. Dentro do
+componente, seria testada pela aparência ou não seria testada. Os nove testes
+cobrem, entre outros:
+
+| Cenário | Por que importa |
+|---|---|
+| Mesmo instante com deslocamentos diferentes cai na mesma coluna | Agenda deslocada por uma hora **parece correta** na tela; é o erro que ninguém percebe |
+| Sessão que começou antes da abertura é **aparada**, não descartada | Ela ocupa a maca de verdade; sumir esconderia ocupação real |
+| Meia-noite lida como fim do dia | Sem isso o bloco apareceria invertido, com fim antes do começo |
+| Sessão de dez minutos nunca colapsa para largura zero | Bloco invisível faria a maca parecer livre |
+
+**Pendente e aprovado parecem diferentes, e isso não é decoração:** pendente não
+bloqueia a maca para outro artista, aprovado bloqueia (RN-AGE-004). O pendente é
+contorno âmbar; o aprovado, bloco sólido escuro.
+
+**O nome do cliente é composto no navegador**, cruzando a lista que a interface
+já consome. Não é gambiarra a desfazer: é junção sobre conjunto pequeno, e o
+gatilho para levá-la ao servidor é volume, não estética. Quem não acessa o
+cadastro de clientes — o guest — vê o bloco sem nome, em vez de tela quebrada.
+
+**O que falta para fechar a M7.1.3:** solicitar agendamento, aprovar, recusar com
+motivo e o **modal de conflito da RN-AGE-007**, aquele que não permite ignorar. O
+que existe hoje é a agenda de leitura.
 
 ### Evidência da etapa M7.1.2 — 29/09/2026
 
