@@ -4,6 +4,7 @@ import { ref } from "vue";
 import AppButton from "@/shared/components/AppButton.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
+import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
 import StatusBadge from "@/shared/components/StatusBadge.vue";
 import type { Booking, RejectionReason } from "@/shared/domain/Booking";
 
@@ -16,7 +17,7 @@ import type { Booking, RejectionReason } from "@/shared/domain/Booking";
  *
  * O componente não decide quem pode decidir: recebe `canDecide` pronto. E o que
  * ele mostra é aparência — o backend recusa com 403 de qualquer forma. */
-const REASONS: { value: RejectionReason; label: string }[] = [
+const REASONS: SelectOption[] = [
   { value: "SLOT_TAKEN", label: "Slot already taken" },
   { value: "STUDIO_CLOSED", label: "Studio closed" },
   { value: "RESCHEDULED", label: "Rescheduled" },
@@ -38,11 +39,11 @@ const emit = defineEmits<{
 }>();
 
 const rejecting = ref(false);
-const reason = ref<RejectionReason>("SLOT_TAKEN");
+const reason = ref<string>("SLOT_TAKEN");
 const note = ref("");
 
 function confirmRejection(): void {
-  emit("reject", reason.value, note.value.trim() === "" ? null : note.value);
+  emit("reject", reason.value as RejectionReason, note.value.trim() === "" ? null : note.value);
 }
 </script>
 
@@ -61,18 +62,13 @@ function confirmRejection(): void {
     </div>
 
     <template v-if="rejecting">
-      <label class="field">
-        <span>Reason</span>
-        <select v-model="reason">
-          <option
-            v-for="option in REASONS"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+      <AppSelect
+        v-model="reason"
+        label="Reason"
+        :options="REASONS"
+        :disabled="busy"
+        required
+      />
       <AppInput
         v-model="note"
         label="Note (optional)"
@@ -143,27 +139,8 @@ function confirmRejection(): void {
   color: var(--color-muted);
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
 
-.field span {
-  color: var(--color-muted);
-  font-size: var(--text-label-3);
-  font-weight: var(--weight-medium);
-}
 
-select {
-  min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-5);
-  border: var(--border-thin);
-  border-color: transparent;
-  border-radius: var(--radius-round);
-  background: var(--color-field);
-  color: var(--color-on-light);
-}
 
 .failure {
   color: var(--color-danger);

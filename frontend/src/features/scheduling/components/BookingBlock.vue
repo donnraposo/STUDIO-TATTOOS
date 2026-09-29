@@ -9,7 +9,17 @@ import type { Booking } from "@/shared/domain/Booking";
  * diferentes porque significam coisas diferentes na maca: pendente não a
  * bloqueia para outro artista, aprovado bloqueia (RN-AGE-004).
  *
- * Não busca nada e não sabe quem está logado: recebe posição e rótulos prontos. */
+ * Não busca nada e não sabe quem está logado: recebe posição e rótulos prontos.
+ *
+ * **É o único `<button>` cru do projeto, e a exceção é deliberada.** Ele não é
+ * um botão do sistema de design: é uma superfície posicionada na grade, com
+ * largura definida por `grid-column`, altura da faixa e tons ditados pelo
+ * estado do agendamento — nada disso pertence ao `AppButton`, que existe para
+ * padronizar ação, tamanho e cor. Forçá-lo aqui significaria sobrescrever tudo
+ * o que ele padroniza, que é o contrário de reaproveitar.
+ *
+ * Continua sendo `<button>` e não `<div>` porque é clicável: teclado e leitor
+ * de tela precisam alcançá-lo. */
 const STATUS_CLASS: Record<string, string> = {
   REQUESTED: "is-requested",
   APPROVED: "is-approved",

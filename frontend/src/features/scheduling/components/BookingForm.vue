@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 
 import AppButton from "@/shared/components/AppButton.vue";
+import AppCheckbox from "@/shared/components/AppCheckbox.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
 import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
@@ -137,17 +138,12 @@ function submit(): void {
       />
     </div>
 
-    <label
+    <AppCheckbox
       v-if="props.canDecide"
-      class="approve"
-    >
-      <input
-        v-model="approveImmediately"
-        type="checkbox"
-        :disabled="props.busy"
-      >
-      <span>Approve straight away</span>
-    </label>
+      v-model="approveImmediately"
+      label="Approve straight away"
+      :disabled="props.busy"
+    />
 
     <p
       v-if="props.failure"
@@ -186,13 +182,6 @@ function submit(): void {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
-}
-
-.approve {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  font-size: var(--text-label-3);
 }
 
 .failure {

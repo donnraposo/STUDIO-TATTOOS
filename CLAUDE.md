@@ -94,6 +94,10 @@ Detalhamento e motivo de cada regra em `DOCS/10_ROADMAP_FRONTEND.md`.
   tela com sufixo `View`, modal com sufixo `Modal`.
 - `<script setup lang="ts">` sempre; `defineProps<T>()` e `defineEmits<T>()` tipados.
 - Um componente por arquivo, sem exceção (ADR-015).
+- **Nenhum `<button>`, `<input>` ou `<select>` cru fora de `shared/components`.**
+  Tamanho e cor vêm do componente base; controle solto sai do padrão na primeira
+  tela. A única exceção hoje é `BookingBlock`, que é superfície posicionada na
+  grade e não controle do sistema — está documentada no próprio arquivo.
 - Variação por mapa tipado (`Record`), nunca por cadeia de `v-if` espalhada.
 - Cálculo, formatação e geometria em **classe pura**, testável sem montar tela.
 - Autorização na tela é aparência; a garantia é do backend, que recusa com 403.
@@ -115,6 +119,9 @@ grep -rnE '[0-9](px|rem|em)\b' frontend/src --include=*.vue | grep -v '@media'
 
 # Componente de apresentacao falando com a API: deve nao devolver nada
 grep -rln "shared/api" frontend/src/features --include=*.vue | grep -v "View\.vue"
+
+# Controle cru fora dos componentes base: so BookingBlock pode aparecer
+grep -rn "<button\|<input\|<select" frontend/src --include=*.vue \n  | grep -vE "shared/components/(AppButton|AppInput|AppSelect|AppCheckbox)\.vue"
 ```
 
 ## 4. Padrões estabelecidos
