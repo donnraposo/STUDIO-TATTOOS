@@ -8,7 +8,7 @@ import AppButton from "@/shared/components/AppButton.vue";
 import BookingDecision from "@/features/scheduling/components/BookingDecision.vue";
 import BookingForm, { type BookingDraft } from "@/features/scheduling/components/BookingForm.vue";
 import { LanePacker } from "@/features/scheduling/LanePacker";
-import BoothTimeline from "@/features/scheduling/components/BoothTimeline.vue";
+import BenchTimeline from "@/features/scheduling/components/BenchTimeline.vue";
 import ConflictModal from "@/features/scheduling/components/ConflictModal.vue";
 import { SchedulingClient } from "@/shared/api/SchedulingClient";
 import { useApi } from "@/shared/api/useApi";
@@ -21,7 +21,7 @@ import PageHeader from "@/shared/components/PageHeader.vue";
 import type {
   Booking,
   BookingConflict,
-  Booth,
+  Bench,
   RejectionReason,
 } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
@@ -58,7 +58,7 @@ interface PlacedBooking {
 }
 
 interface DaySchedule {
-  booths: Booth[];
+  benches: Bench[];
   bookings: Booking[];
   /** A lista inteira, e nao so um mapa de nomes: o formulario de nova reserva
    * precisa das mesmas pessoas para o seletor de cliente. Guardar as duas
@@ -148,11 +148,11 @@ function withOffset(date: string, time: string, offsetMinutes: number): string {
 async function load(): Promise<void> {
   const window = dayWindow(day.value);
   await state.run(async () => {
-    const [booths, bookings] = await Promise.all([
-      scheduling.listBooths(),
+    const [benches, bookings] = await Promise.all([
+      scheduling.listBenches(),
       scheduling.listBookings(window.startsAt, window.endsAt),
     ]);
-    return { booths, bookings, clients: await visibleClients(), artists: await bookableArtists() };
+    return { benches, bookings, clients: await visibleClients(), artists: await bookableArtists() };
   });
 }
 
@@ -183,7 +183,7 @@ const namesByClient = computed<Record<string, string>>(() =>
   Object.fromEntries((state.data.value?.clients ?? []).map((client) => [client.id, client.name])),
 );
 
-const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
+const placedByBench = computed<Record<string, PlacedBooking[]>>(() => {
   const schedule = state.data.value;
   if (!schedule) {
     return {};
@@ -195,19 +195,19 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
     if (!placement) {
       continue;
     }
-    const lane = grouped[booking.boothId] ?? [];
+    const lane = grouped[booking.benchId] ?? [];
     lane.push({
       booking,
       placement,
       clientName: namesByClient.value[booking.clientId] ?? "Client",
       timeRange: `${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`,
     });
-    grouped[booking.boothId] = lane;
+    grouped[booking.benchId] = lane;
   }
 
   return Object.fromEntries(
-    Object.entries(grouped).map(([boothId, lane]) => [
-      boothId,
+    Object.entries(grouped).map(([benchId, lane]) => [
+      benchId,
       packer
         .pack(lane, (entry) => entry.placement)
         .map(({ item, track }) => ({ ...item, track })),
@@ -216,10 +216,10 @@ const placedByBooth = computed<Record<string, PlacedBooking[]>>(() => {
 });
 
 /** Quantas trilhas cada maca precisa, para a linha crescer o suficiente. */
-const tracksByBooth = computed<Record<string, number>>(() =>
+const tracksByBench = computed<Record<string, number>>(() =>
   Object.fromEntries(
-    Object.entries(placedByBooth.value).map(([boothId, lane]) => [
-      boothId,
+    Object.entries(placedByBench.value).map(([benchId, lane]) => [
+      benchId,
       lane.reduce((highest, entry) => Math.max(highest, entry.track + 1), 1),
     ]),
   ),
@@ -290,7 +290,7 @@ async function create(draft: BookingDraft): Promise<void> {
   await decide(() =>
     scheduling.create({
       clientId: draft.clientId,
-      boothId: draft.boothId,
+      benchId: draft.benchId,
       startsAt: withOffset(day.value, draft.startTime, offsetMinutes),
       endsAt: withOffset(day.value, draft.endTime, offsetMinutes),
       artistId: draft.artistId,
@@ -326,7 +326,7 @@ async function cancel(reason: string, noShow: boolean): Promise<void> {
 async function reschedule(
   startTime: string,
   endTime: string,
-  boothId: string | null,
+  benchId: string | null,
 ): Promise<void> {
   const booking = selected.value;
   if (!booking) {
@@ -338,7 +338,7 @@ async function reschedule(
       booking.id,
       withOffset(day.value, startTime, offsetMinutes),
       withOffset(day.value, endTime, offsetMinutes),
-      boothId,
+      benchId,
     ),
   );
 }
@@ -419,17 +419,17 @@ onMounted(() => {
     />
 
     <EmptyState
-      v-else-if="state.data.value && state.data.value.booths.length === 0"
-      title="No booths yet"
-      description="The studio management adds booths before the schedule can be used."
+      v-else-if="state.data.value && state.data.value.benches.length === 0"
+      title="No benches yet"
+      description="The studio management adds benches before the schedule can be used."
     />
 
-    <BoothTimeline
+    <BenchTimeline
       v-else-if="state.data.value"
-      :booths="state.data.value.booths"
+      :benches="state.data.value.benches"
       :placer="placer"
-      :placed-by-booth="placedByBooth"
-      :tracks-by-booth="tracksByBooth"
+      :placed-by-bench="placedByBench"
+      :tracks-by-bench="tracksByBench"
       @select="selected = $event"
     />
 
@@ -437,7 +437,7 @@ onMounted(() => {
       v-if="composing && state.data.value"
       :day="day"
       :clients="state.data.value.clients"
-      :booths="state.data.value.booths"
+      :benches="state.data.value.benches"
       :artists="state.data.value.artists"
       :can-decide="canDecide"
       :busy="deciding"
@@ -452,7 +452,7 @@ onMounted(() => {
       :client-name="selectedLabel.clientName"
       :time-range="selectedLabel.timeRange"
       :requested-at="clock.dateTime(selected.requestedAt)"
-      :booths="state.data.value?.booths ?? []"
+      :benches="state.data.value?.benches ?? []"
       :can-decide="canDecide"
       :busy="deciding"
       :failure="decisionFailure"

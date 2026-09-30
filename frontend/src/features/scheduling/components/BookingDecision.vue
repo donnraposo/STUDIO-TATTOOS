@@ -11,7 +11,7 @@ import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
 import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
 import StatusBadge from "@/shared/components/StatusBadge.vue";
-import type { Booking, Booth, RejectionReason } from "@/shared/domain/Booking";
+import type { Booking, Bench, RejectionReason } from "@/shared/domain/Booking";
 
 /** Decisão sobre um agendamento: aprovar, recusar, cancelar, marcar não
  * comparecimento ou remarcar.
@@ -40,7 +40,7 @@ const props = defineProps<{
   clientName: string;
   timeRange: string;
   requestedAt: string;
-  booths: Booth[];
+  benches: Bench[];
   canDecide: boolean;
   busy: boolean;
   failure: string | null;
@@ -50,7 +50,7 @@ const emit = defineEmits<{
   approve: [];
   reject: [reason: RejectionReason, note: string | null];
   cancel: [reason: string, noShow: boolean];
-  reschedule: [startTime: string, endTime: string, boothId: string | null];
+  reschedule: [startTime: string, endTime: string, benchId: string | null];
   close: [];
 }>();
 
@@ -63,13 +63,13 @@ const cancelReason = ref("");
 const markAsNoShow = ref(false);
 const newStart = ref("");
 const newEnd = ref("");
-const newBoothId = ref("");
+const newBenchId = ref("");
 
 const isPending = computed(() => props.booking.status === "REQUESTED");
 const isApproved = computed(() => props.booking.status === "APPROVED");
 
-const boothOptions = computed<SelectOption[]>(() => [
-  ...props.booths.map((booth) => ({ value: booth.id, label: `Booth ${booth.number}` })),
+const benchOptions = computed<SelectOption[]>(() => [
+  ...props.benches.map((bench) => ({ value: bench.id, label: `Bench ${bench.number}` })),
 ]);
 
 const consequence = computed(() => {
@@ -153,10 +153,10 @@ function back(): void {
 
     <template v-if="mode === 'reschedule'">
       <AppSelect
-        v-model="newBoothId"
-        label="Booth"
-        placeholder="Keep the same booth"
-        :options="boothOptions"
+        v-model="newBenchId"
+        label="Bench"
+        placeholder="Keep the same bench"
+        :options="benchOptions"
         :disabled="props.busy"
       />
       <div class="period">
@@ -267,7 +267,7 @@ function back(): void {
           v-if="mode === 'reschedule'"
           :busy="props.busy"
           :disabled="newStart === '' || newEnd === '' || invalidPeriod"
-          @click="emit('reschedule', newStart, newEnd, newBoothId === '' ? null : newBoothId)"
+          @click="emit('reschedule', newStart, newEnd, newBenchId === '' ? null : newBenchId)"
         >
           Move booking
         </AppButton>

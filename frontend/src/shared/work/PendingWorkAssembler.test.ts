@@ -19,7 +19,7 @@ function booking(overrides: Partial<Booking> = {}): Booking {
     id: "b1",
     clientId: "c1",
     artistId: "a1",
-    boothId: "booth1",
+    benchId: "bench1",
     startsAt: "2026-10-06T10:00:00+01:00",
     endsAt: "2026-10-06T12:00:00+01:00",
     status: "REQUESTED",

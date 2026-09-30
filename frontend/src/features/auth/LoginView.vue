@@ -57,7 +57,7 @@ async function submit(): Promise<void> {
           on-dark
         />
         <h1>The studio, in order.</h1>
-        <p>Booths, clients, quotes and payouts — kept straight so the work can breathe.</p>
+        <p>Benches, clients, quotes and payouts — kept straight so the work can breathe.</p>
       </div>
 
       <p class="edition">

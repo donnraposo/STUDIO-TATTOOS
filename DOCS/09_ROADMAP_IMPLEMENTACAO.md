@@ -21,7 +21,7 @@ frontend, bem atrás.
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `reporting` (só auditoria) |
 | Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*`, `/quotes/*` incluindo as imagens de referência |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` incluindo as imagens de referência |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
 | Testes | 145 no backend e 47 no frontend, todos aprovados |
 | Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
@@ -382,7 +382,7 @@ transações paralelas reais; modal de conflito sem opção de ignorar.
 
 ### Evidência das etapas M3.2 e M3.3 — 26/09/2026
 
-- Endpoints: `GET/POST /booths`, `GET/POST /bookings`, e as ações
+- Endpoints: `GET/POST /benches`, `GET/POST /bookings`, e as ações
   `/approve`, `/reject`, `/cancel` e `/reschedule` sobre `/bookings/{id}`.
 - Ruff sem apontamentos; **93 testes aprovados**, sendo 24 de agenda.
 
@@ -420,7 +420,7 @@ banco e comprovadas por 8 testes, entre eles a corrida com transações paralela
 
 ```sql
 -- Maca: apenas aprovado bloqueia (RN-AGE-004, RN-AGE-007)
-EXCLUDE USING gist (booth_id WITH =, period WITH &&) WHERE (status = 'APPROVED')
+EXCLUDE USING gist (bench_id WITH =, period WITH &&) WHERE (status = 'APPROVED')
 
 -- Artista: pendente e aprovado bloqueiam, mesmo entre macas (RN-AGE-014)
 EXCLUDE USING gist (artist_id WITH =, period WITH &&)
@@ -1193,6 +1193,37 @@ agendamento de 1 de outubro, estando o estúdio em 30 de setembro, abriu
 |---|---|
 | Cada dia consultado viraria uma entrada de histórico | `replace` e não `push`: sair da agenda passaria a exigir um toque em voltar para cada dia que se olhou. Voltar leva de onde se veio — o painel, quando foi ele que trouxe |
 | `?day=ontem` caía no dia de hoje, mas a barra continuava exibindo `ontem` | O endereço é acertado também na montagem. Um endereço que mente sobre o que está na tela leva outra pessoa ao mesmo engano quando é copiado |
+
+### Renomeação de `booth` para `bench` — 30/09/2026
+
+**O estúdio corrigiu o termo em inglês.** A unidade reservável é uma **bench**;
+`booth` descreve uma cabine fechada, que não é o que existe no salão. O nome em
+português nas regras de negócio continua **maca**, e o documento `01` não foi
+tocado.
+
+**Renomeado no banco, e não só rotulado na tela.** Nome errado em tabela
+sobrevive a qualquer correção de interface: reaparece em cada consulta, cada log
+e cada migração futura, e a próxima pessoa a ler o esquema aprende o termo
+errado. A migração `0007` renomeia tabela, a coluna `booking.bench_id`, os
+índices e as duas restrições.
+
+**As restrições precisavam ir junto, e isso não é cosmético.** O
+`BookingRepository` traduz a violação de `booking_bench_no_overlap` no `scope`
+que alimenta o modal da RN-AGE-007 — o nome é contrato entre o banco e a
+aplicação. Deixá-lo para trás faria o código procurar um nome que o banco não usa
+mais, e o conflito voltaria como erro genérico: a agenda funcionando em tudo,
+menos na regra que ela existe para garantir.
+
+**A migração `0004` não foi editada.** Ela cria `booth` porque foi isso que ela
+criou; reescrevê-la faria um banco novo nascer com `bench` e a `0007` falhar ao
+renomear o que já teria outro nome. Migração aplicada é histórico, não rascunho.
+
+| Onde | O que mudou |
+|---|---|
+| Banco | Tabela, coluna, três índices e duas restrições |
+| Backend | 5 arquivos renomeados, `BenchRepository`, `CreateBench`, rota `/benches`, e o `scope` do conflito passou de `booth` para `bench` |
+| Frontend | `Bench`, `BenchTimeline.vue`, `benchId`, e o rótulo "Bench 1" na tela |
+| Documentação | `05`, `06`, `09` e `10`. O `01` não foi tocado: lá o termo é maca |
 
 ## Sprint M8 — Implantação mínima
 

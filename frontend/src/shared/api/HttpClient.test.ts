@@ -68,12 +68,12 @@ describe("HttpClient", () => {
 
   it("marks a scheduling conflict so the screen can open the modal", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      respondWith(409, '{"detail":"This booth is already booked."}'),
+      respondWith(409, '{"detail":"This bench is already booked."}'),
     );
 
     await expect(clientWithCsrf(null).post("/bookings", {})).rejects.toMatchObject({
       status: 409,
-      message: "This booth is already booked.",
+      message: "This bench is already booked.",
     });
   });
 

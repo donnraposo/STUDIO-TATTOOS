@@ -17,6 +17,7 @@
 | `booth`, `booking` com as duas restrições `EXCLUDE` | `0004` | M3.1 |
 | `quote`, `quote_reference_image`, `tattoo_session` e `booking.session_id` | `0005` | M4.1 |
 | `payment` e `payment_refund` | `0006` | M5 |
+| `booth` → `bench`, com colunas, índices e restrições | `0007` | M7.2.1 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -44,7 +45,7 @@ teste de concorrência** desde 26/09/2026.
 
 | Extensão | Uso |
 |---|---|
-| `btree_gist` | Permite combinar igualdade (`booth_id`, `artist_id`) com sobreposição de intervalo na mesma restrição `EXCLUDE` |
+| `btree_gist` | Permite combinar igualdade (`bench_id`, `artist_id`) com sobreposição de intervalo na mesma restrição `EXCLUDE` |
 | `citext` | E-mail único sem diferenciar maiúsculas |
 
 ## 3. Identidade e acesso
@@ -115,7 +116,14 @@ Instagram, projeção feita na camada de aplicação a partir do agendamento.
 
 ## 5. Agenda
 
-### `booth` (maca)
+### `bench` (maca)
+
+> **Chamava-se `booth` até 30/09/2026.** O estúdio corrigiu o termo em inglês: a
+> unidade reservável é uma bench, e `booth` descreve uma cabine fechada, que não
+> é o que existe no salão. A migração `0007` renomeou tabela, coluna
+> `booking.bench_id`, índices e as duas restrições — inclusive
+> `booking_bench_no_overlap`, cujo nome é contrato entre o banco e o
+> `BookingRepository`, que o traduz no `scope` do modal da RN-AGE-007.
 
 `id`, `number` (int UNIQUE), `label`, `active` (boolean), `created_at`.
 
@@ -126,7 +134,7 @@ Padrão: terça a domingo 10h–20h, segunda fechado.
 
 ### `schedule_exception`
 
-`id`, `date`, `booth_id` (NULL = todas as macas), `opens_at`, `closes_at`,
+`id`, `date`, `bench_id` (NULL = todas as macas), `opens_at`, `closes_at`,
 `blocked` (boolean), `reason`, `actor_id`, `created_at`, `removed_at`.
 
 Cobre abertura excepcional e bloqueio de maca ou do estúdio inteiro (RN-AGE-011).
@@ -139,7 +147,7 @@ Uma exceção prevalece sobre `studio_hours` na data afetada.
 | `id` | uuid PK | |
 | `client_id` | uuid FK NOT NULL | |
 | `artist_id` | uuid FK NOT NULL | |
-| `booth_id` | uuid FK NOT NULL | |
+| `bench_id` | uuid FK NOT NULL | |
 | `period` | tstzrange NOT NULL | Início e fim; sem blocos fixos |
 | `status` | enum NOT NULL | `REQUESTED`, `APPROVED`, `REJECTED`, `DONE`, `CANCELLED`, `NO_SHOW` |
 | `session_id` | uuid FK NULL | Liga à sessão do orçamento. Acrescentado na migração `0005`, quando a tabela `session` passou a existir |
@@ -157,8 +165,8 @@ semânticas diferentes**, e ambos precisam ser garantidos pelo banco.
 pendentes de artistas diferentes podem concorrer pelo mesmo horário:
 
 ```sql
-ALTER TABLE booking ADD CONSTRAINT booking_booth_no_overlap
-EXCLUDE USING gist (booth_id WITH =, period WITH &&)
+ALTER TABLE booking ADD CONSTRAINT booking_bench_no_overlap
+EXCLUDE USING gist (bench_id WITH =, period WITH &&)
 WHERE (status = 'APPROVED');
 ```
 
@@ -463,7 +471,7 @@ session      1 ── 0..1 aftercare
 payment      1 ── N payment_refund
 payout       1 ── N payout_item ── 1 session
 payout       1 ── N payout_adjustment
-booth        1 ── N booking
+bench        1 ── N booking
 ```
 
 ## 13. Decisões de modelagem que merecem destaque

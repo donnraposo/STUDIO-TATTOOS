@@ -10,7 +10,7 @@
 > `quotes` e a tabela de auditoria de `reporting`. Em `quotes`, a M4.2 entregou o
 > ciclo do orçamento e a M4.3 as imagens de referência; as sessões entram na M4.4. Os
 > contratos da seção 4 descrevem o destino final da API; hoje existem `/health`,
-> `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/booths`, `/bookings/*` e
+> `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*` e
 > `/quotes/*`.
 >
 > **Peça compartilhada nova:** `app/shared/storage/` guarda a porta `ObjectStorage` e
@@ -177,7 +177,7 @@ macas × horário será construída com CSS Grid próprio, sem licença paga.
 
 ```text
 features/scheduling/components/
-├── BoothTimeline.vue        grade: macas no eixo Y, horas no eixo X
+├── BenchTimeline.vue        grade: macas no eixo Y, horas no eixo X
 ├── BookingBlock.vue         bloco posicionado por início e duração
 ├── ConflictModal.vue        modal de RN-AGE-007, sem opção de ignorar
 └── AvailabilityFilter.vue
@@ -232,7 +232,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Usuários | `GET/POST /users`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock` |
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
-| Macas | `GET/POST /booths`, `POST /schedule-exceptions` |
+| Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
 | Agenda | `GET /bookings` (filtros `starts_at`/`ends_at` e `status`), `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
 | Orçamentos | `GET /quotes` (filtro `status`), `POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |

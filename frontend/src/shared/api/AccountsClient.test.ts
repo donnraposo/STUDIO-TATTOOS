@@ -82,7 +82,7 @@ describe("AccountsClient", () => {
     expect(artist).toEqual({ id: "1", displayName: "Nyx", role: "OWNER", tattoos: true });
   });
 
-  it("includes a guest, who tattoos and books booths", async () => {
+  it("includes a guest, who tattoos and books benches", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       respondWith([account({ role: "GUEST", artist_name: "Lu" })]),
     );

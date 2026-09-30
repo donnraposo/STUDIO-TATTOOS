@@ -39,17 +39,17 @@ def _setup(session: Session) -> dict[str, str]:
     }
 
 
-def _create_booth(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
-    response = client.post(f"{api_prefix}/booths", json={"label": "Window"}, headers=headers)
+def _create_bench(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
+    response = client.post(f"{api_prefix}/benches", json={"label": "Window"}, headers=headers)
     assert response.status_code == 201, response.text
     return response.json()["id"]
 
 
-def _booking_payload(client_id: str, booth_id: str, hours_offset: int = 0) -> dict:
+def _booking_payload(client_id: str, bench_id: str, hours_offset: int = 0) -> dict:
     start = START + timedelta(hours=hours_offset)
     return {
         "client_id": client_id,
-        "booth_id": booth_id,
+        "bench_id": bench_id,
         "starts_at": start.isoformat(),
         "ends_at": (start + timedelta(hours=2)).isoformat(),
     }
@@ -85,12 +85,12 @@ def test_artist_request_starts_as_pending(
     """RN-AGE-005: residente sempre cria em Solicitada."""
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, owner_headers)
+    bench_id = _create_bench(client, api_prefix, owner_headers)
 
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
     response = artist.post(
-        f"{api_prefix}/bookings", json=_booking_payload(ids["client"], booth_id), headers=headers
+        f"{api_prefix}/bookings", json=_booking_payload(ids["client"], bench_id), headers=headers
     )
 
     assert response.status_code == 201
@@ -102,13 +102,13 @@ def test_artist_cannot_create_an_already_approved_booking(
 ) -> None:
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, owner_headers)
+    bench_id = _create_bench(client, api_prefix, owner_headers)
 
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
     response = artist.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "approve_immediately": True},
+        json={**_booking_payload(ids["client"], bench_id), "approve_immediately": True},
         headers=headers,
     )
 
@@ -124,12 +124,12 @@ def test_management_cannot_create_an_approved_booking_before_the_deposit(
     recusado com a instrucao do caminho certo."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
 
     response = client.post(
         f"{api_prefix}/bookings",
         json={
-            **_booking_payload(ids["client"], booth_id),
+            **_booking_payload(ids["client"], bench_id),
             "artist_id": ids["artist"],
             "approve_immediately": True,
         },
@@ -148,12 +148,12 @@ def test_management_creates_an_approved_booking_for_a_guest_own_client(
     e o atalho continua aberto exatamente ali."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
 
     response = client.post(
         f"{api_prefix}/bookings",
         json={
-            **_booking_payload(ids["client"], booth_id),
+            **_booking_payload(ids["client"], bench_id),
             "artist_id": ids["guest"],
             "approve_immediately": True,
         },
@@ -169,13 +169,13 @@ def test_artist_cannot_book_on_behalf_of_another_artist(
 ) -> None:
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, owner_headers)
+    bench_id = _create_bench(client, api_prefix, owner_headers)
 
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
     response = artist.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["other"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["other"]},
         headers=headers,
     )
 
@@ -188,12 +188,12 @@ def test_artist_cannot_approve_a_booking(
     """RN-AGE-005: apenas proprietário e gerente decidem."""
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, owner_headers)
+    bench_id = _create_bench(client, api_prefix, owner_headers)
 
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
     created = artist.post(
-        f"{api_prefix}/bookings", json=_booking_payload(ids["client"], booth_id), headers=headers
+        f"{api_prefix}/bookings", json=_booking_payload(ids["client"], bench_id), headers=headers
     ).json()
 
     response = artist.post(f"{api_prefix}/bookings/{created['id']}/approve", headers=headers)
@@ -206,10 +206,10 @@ def test_management_approves_a_pending_request(
 ) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     created = client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     ).json()
     DepositConfirmer(client, api_prefix).confirm_for(created["id"], headers)
@@ -227,17 +227,17 @@ def test_approving_an_overlapping_request_returns_conflict(
     aprovada. A segunda aprovação devolve 409 para alimentar o modal."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
 
     first = client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     ).json()
     second = client.post(
         f"{api_prefix}/bookings",
         json={
-            **_booking_payload(ids["client"], booth_id, hours_offset=1),
+            **_booking_payload(ids["client"], bench_id, hours_offset=1),
             "artist_id": ids["other"],
         },
         headers=headers,
@@ -262,10 +262,10 @@ def test_rejection_requires_one_of_the_listed_reasons(
     """RN-AGE-006: motivo de lista fechada."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     created = client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     ).json()
 
@@ -291,10 +291,10 @@ def test_rejecting_frees_the_artist_agenda(
     """RN-AGE-014: recusado sai da agenda, preservando o registro."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     created = client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     ).json()
 
@@ -305,7 +305,7 @@ def test_rejecting_frees_the_artist_agenda(
     )
     again = client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     )
 
@@ -317,12 +317,12 @@ def test_cancelling_closes_the_booking(
 ) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     created = _approved_booking(
         client,
         api_prefix,
         headers,
-        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        {**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
     )
 
     response = client.post(
@@ -342,12 +342,12 @@ def test_no_show_is_recorded_separately_from_cancellation(
     tratada pelo módulo financeiro."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     created = _approved_booking(
         client,
         api_prefix,
         headers,
-        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        {**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
     )
 
     response = client.post(
@@ -365,12 +365,12 @@ def test_artist_cannot_cancel_directly(
     """RN-AGE-008: o artista solicita à administração, não cancela."""
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, owner_headers)
+    bench_id = _create_bench(client, api_prefix, owner_headers)
     created = _approved_booking(
         client,
         api_prefix,
         owner_headers,
-        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        {**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
     )
 
     artist = TestClient(client.app)
@@ -389,20 +389,20 @@ def test_rescheduling_onto_an_occupied_slot_returns_conflict(
 ) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
 
     _approved_booking(
         client,
         api_prefix,
         headers,
-        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        {**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
     )
     movable = _approved_booking(
         client,
         api_prefix,
         headers,
         {
-            **_booking_payload(ids["client"], booth_id, hours_offset=5),
+            **_booking_payload(ids["client"], bench_id, hours_offset=5),
             "artist_id": ids["other"],
         },
     )
@@ -424,16 +424,16 @@ def test_artist_only_lists_their_own_bookings(
 ) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
     client.post(
         f"{api_prefix}/bookings",
-        json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+        json={**_booking_payload(ids["client"], bench_id), "artist_id": ids["artist"]},
         headers=headers,
     )
     client.post(
         f"{api_prefix}/bookings",
         json={
-            **_booking_payload(ids["client"], booth_id, hours_offset=5),
+            **_booking_payload(ids["client"], bench_id, hours_offset=5),
             "artist_id": ids["other"],
         },
         headers=headers,
@@ -451,13 +451,13 @@ def test_artist_only_lists_their_own_bookings(
 def test_end_before_start_is_refused(client: TestClient, session: Session, api_prefix: str) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
+    bench_id = _create_bench(client, api_prefix, headers)
 
     response = client.post(
         f"{api_prefix}/bookings",
         json={
             "client_id": ids["client"],
-            "booth_id": booth_id,
+            "bench_id": bench_id,
             "artist_id": ids["artist"],
             "starts_at": START.isoformat(),
             "ends_at": (START - timedelta(hours=1)).isoformat(),
@@ -468,11 +468,13 @@ def test_end_before_start_is_refused(client: TestClient, session: Session, api_p
     assert response.status_code == 422
 
 
-def test_artist_cannot_create_booths(client: TestClient, session: Session, api_prefix: str) -> None:
+def test_artist_cannot_create_benches(
+    client: TestClient, session: Session, api_prefix: str
+) -> None:
     _setup(session)
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
 
-    response = artist.post(f"{api_prefix}/booths", json={"label": "Mine"}, headers=headers)
+    response = artist.post(f"{api_prefix}/benches", json={"label": "Mine"}, headers=headers)
 
     assert response.status_code == 403

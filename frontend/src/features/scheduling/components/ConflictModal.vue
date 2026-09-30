@@ -19,8 +19,8 @@ import type { Booking } from "@/shared/domain/Booking";
  * maca está ocupada, ou o artista já está comprometido em outro lugar
  * (RN-AGE-014). */
 const SCOPE_EXPLANATION: Record<string, string> = {
-  booth: "This booth is already taken for that period.",
-  artist: "This artist is already committed in that period, in this or another booth.",
+  bench: "This bench is already taken for that period.",
+  artist: "This artist is already committed in that period, in this or another bench.",
 };
 
 defineProps<{
@@ -58,7 +58,7 @@ defineEmits<{ acknowledge: [] }>();
     </p>
 
     <p class="rule">
-      Pick another time or booth. The conflict cannot be overridden.
+      Pick another time or bench. The conflict cannot be overridden.
     </p>
 
     <template #actions>

@@ -4,11 +4,11 @@ import type {
   Booking,
   BookingConflict,
   BookingStatus,
-  Booth,
+  Bench,
   RejectionReason,
 } from "@/shared/domain/Booking";
 
-interface BoothPayload {
+interface BenchPayload {
   id: string;
   number: number;
   label: string | null;
@@ -19,7 +19,7 @@ interface BookingPayload {
   id: string;
   client_id: string;
   artist_id: string;
-  booth_id: string;
+  bench_id: string;
   starts_at: string;
   ends_at: string;
   status: string;
@@ -28,7 +28,7 @@ interface BookingPayload {
   rejection_note: string | null;
 }
 
-/** Macas e agenda (`/booths` e `/bookings`).
+/** Macas e agenda (`/benches` e `/bookings`).
  *
  * Um cliente para os dois porque são um recurso só do ponto de vista da tela:
  * a timeline não existe sem as macas, e pedir as duas coisas a objetos
@@ -40,8 +40,8 @@ export class SchedulingClient {
     this.http = http;
   }
 
-  async listBooths(): Promise<Booth[]> {
-    return this.http.get<BoothPayload[]>("/booths");
+  async listBenches(): Promise<Bench[]> {
+    return this.http.get<BenchPayload[]>("/benches");
   }
 
   /** Agendamentos que **tocam** o intervalo informado.
@@ -75,7 +75,7 @@ export class SchedulingClient {
    * esperada, nao falha da interface. */
   async create(booking: {
     clientId: string;
-    boothId: string;
+    benchId: string;
     startsAt: string;
     endsAt: string;
     artistId: string | null;
@@ -84,7 +84,7 @@ export class SchedulingClient {
     return SchedulingClient.toBooking(
       await this.http.post<BookingPayload>("/bookings", {
         client_id: booking.clientId,
-        booth_id: booking.boothId,
+        bench_id: booking.benchId,
         starts_at: booking.startsAt,
         ends_at: booking.endsAt,
         artist_id: booking.artistId,
@@ -128,13 +128,13 @@ export class SchedulingClient {
     bookingId: string,
     startsAt: string,
     endsAt: string,
-    boothId: string | null,
+    benchId: string | null,
   ): Promise<Booking> {
     return SchedulingClient.toBooking(
       await this.http.post<BookingPayload>(`/bookings/${bookingId}/reschedule`, {
         starts_at: startsAt,
         ends_at: endsAt,
-        booth_id: boothId,
+        bench_id: benchId,
       }),
     );
   }
@@ -151,7 +151,7 @@ export class SchedulingClient {
     }
 
     const payload = error.payload as { scope?: unknown; conflicting_booking_id?: unknown } | null;
-    if (payload?.scope !== "booth" && payload?.scope !== "artist") {
+    if (payload?.scope !== "bench" && payload?.scope !== "artist") {
       return null;
     }
 
@@ -170,7 +170,7 @@ export class SchedulingClient {
       id: payload.id,
       clientId: payload.client_id,
       artistId: payload.artist_id,
-      boothId: payload.booth_id,
+      benchId: payload.bench_id,
       startsAt: payload.starts_at,
       endsAt: payload.ends_at,
       status: payload.status as BookingStatus,

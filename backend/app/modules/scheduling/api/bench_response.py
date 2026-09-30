@@ -2,10 +2,10 @@ import uuid
 
 from pydantic import BaseModel
 
-from app.modules.scheduling.infrastructure.models.booth import Booth
+from app.modules.scheduling.infrastructure.models.bench import Bench
 
 
-class BoothResponse(BaseModel):
+class BenchResponse(BaseModel):
     """Maca. Maca e bancada são um único recurso reservável (RN-AGE-001)."""
 
     id: uuid.UUID
@@ -14,7 +14,7 @@ class BoothResponse(BaseModel):
     active: bool
 
     @classmethod
-    def from_model(cls, booth: Booth) -> "BoothResponse":
+    def from_model(cls, bench: Bench) -> "BenchResponse":
         return cls(
-            id=booth.id, number=booth.number, label=booth.label, active=booth.active
+            id=bench.id, number=bench.number, label=bench.label, active=bench.active
         )

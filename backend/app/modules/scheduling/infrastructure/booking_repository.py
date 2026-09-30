@@ -19,12 +19,12 @@ class BookingRepository:
     agendamento conflitante junto — o que a RN-AGE-007 exige para o modal."""
 
     _CONSTRAINT_SCOPE = {
-        "booking_booth_no_overlap": "booth",
+        "booking_bench_no_overlap": "bench",
         "booking_artist_no_overlap": "artist",
     }
 
     _CONFLICT_MESSAGE = {
-        "booth": "This booth is already booked for an overlapping period.",
+        "bench": "This bench is already booked for an overlapping period.",
         "artist": "This artist already has an overlapping request or booking.",
     }
 
@@ -112,9 +112,9 @@ class BookingRepository:
 
         A transação está abortada após a violação, então a consulta roda em
         `SAVEPOINT` próprio; sem isso o PostgreSQL recusaria qualquer comando."""
-        column = "booth_id" if scope == "booth" else "artist_id"
+        column = "bench_id" if scope == "bench" else "artist_id"
         statuses = (
-            "('APPROVED')" if scope == "booth" else "('REQUESTED', 'APPROVED')"
+            "('APPROVED')" if scope == "bench" else "('REQUESTED', 'APPROVED')"
         )
         self._session.rollback()
         found = self._session.execute(
@@ -123,7 +123,7 @@ class BookingRepository:
                 f" AND status IN {statuses} AND period && CAST(:period AS tstzrange) LIMIT 1"
             ),
             {
-                "owner": booking.booth_id if scope == "booth" else booking.artist_id,
+                "owner": booking.bench_id if scope == "bench" else booking.artist_id,
                 "period": self._period_literal(booking),
             },
         ).scalar_one_or_none()

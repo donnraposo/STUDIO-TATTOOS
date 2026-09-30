@@ -8,12 +8,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.orm_base import OrmBase
 
 
-class Booth(OrmBase):
+class Bench(OrmBase):
     """Maca. Maca e bancada formam um único recurso reservável (RN-AGE-001).
 
     O estúdio começa com quatro; gerente e proprietário podem acrescentar."""
 
-    __tablename__ = "booth"
+    __tablename__ = "bench"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     number: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)

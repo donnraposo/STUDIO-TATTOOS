@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.clients.infrastructure.models.client import Client
 from app.modules.identity.domain.user_role import UserRole
-from app.modules.scheduling.infrastructure.models.booth import Booth
+from app.modules.scheduling.infrastructure.models.bench import Bench
 from tests.support.account_builder import AccountBuilder
 
 PERFORMED_AT = datetime(2026, 10, 6, 10, 0, tzinfo=UTC)
@@ -81,22 +81,22 @@ def _insert_booking(
     fx: dict[str, uuid.UUID],
     session_id: uuid.UUID | None,
     status: str = "APPROVED",
-    booth: str = "booth_one",
+    bench: str = "bench_one",
     start: datetime = PERFORMED_AT,
 ) -> uuid.UUID:
     booking_id = uuid.uuid4()
     period = f"[{start.isoformat()},{(start + timedelta(hours=2)).isoformat()})"
     session.execute(
         text(
-            "INSERT INTO booking (id, client_id, artist_id, booth_id, period, status, session_id)"
-            " VALUES (:id, :client, :artist, :booth, CAST(:period AS tstzrange), :status,"
+            "INSERT INTO booking (id, client_id, artist_id, bench_id, period, status, session_id)"
+            " VALUES (:id, :client, :artist, :bench, CAST(:period AS tstzrange), :status,"
             " :session_id)"
         ),
         {
             "id": booking_id,
             "client": fx["client"],
             "artist": fx["artist"],
-            "booth": fx[booth],
+            "bench": fx[bench],
             "period": period,
             "status": status,
             "session_id": session_id,
@@ -111,10 +111,10 @@ def quote_fixtures(session: Session) -> dict[str, uuid.UUID]:
     artist = builder.create(email="artist@studio.ie", role=UserRole.RESIDENT)
     manager = builder.create(email="manager@studio.ie", role=UserRole.MANAGER)
 
-    booth_one = Booth(number=1)
-    booth_two = Booth(number=2)
+    bench_one = Bench(number=1)
+    bench_two = Bench(number=2)
     client = Client(name="Aoife", phone="+353 87 111 1111", registered_by_artist_id=artist.id)
-    session.add_all([booth_one, booth_two, client])
+    session.add_all([bench_one, bench_two, client])
     session.flush()
     session.commit()
 
@@ -122,8 +122,8 @@ def quote_fixtures(session: Session) -> dict[str, uuid.UUID]:
         "artist": artist.id,
         "manager": manager.id,
         "client": client.id,
-        "booth_one": booth_one.id,
-        "booth_two": booth_two.id,
+        "bench_one": bench_one.id,
+        "bench_two": bench_two.id,
     }
 
 
@@ -266,7 +266,7 @@ def test_a_session_cannot_have_two_live_bookings(
             quote_fixtures,
             session_id,
             status="REQUESTED",
-            booth="booth_two",
+            bench="bench_two",
             start=PERFORMED_AT + timedelta(days=1),
         )
         session.flush()
@@ -316,7 +316,7 @@ def test_bookings_without_a_session_are_not_limited_by_the_index(
         quote_fixtures,
         None,
         status="APPROVED",
-        booth="booth_two",
+        bench="bench_two",
         start=PERFORMED_AT + timedelta(days=1),
     )
     session.flush()

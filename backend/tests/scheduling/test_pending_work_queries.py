@@ -48,8 +48,8 @@ def _setup(session: Session) -> dict[str, str]:
     }
 
 
-def _booth(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
-    response = client.post(f"{api_prefix}/booths", json={"label": None}, headers=headers)
+def _bench(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
+    response = client.post(f"{api_prefix}/benches", json={"label": None}, headers=headers)
     assert response.status_code == 201, response.text
     return response.json()["id"]
 
@@ -59,14 +59,14 @@ def _book(
     api_prefix: str,
     headers: dict[str, str],
     ids: dict[str, str],
-    booth_id: str,
+    bench_id: str,
     hours_offset: int,
     artist_id: str | None = None,
 ) -> str:
     start = START + timedelta(hours=hours_offset)
     payload: dict[str, object] = {
         "client_id": ids["client"],
-        "booth_id": booth_id,
+        "bench_id": bench_id,
         "starts_at": start.isoformat(),
         "ends_at": (start + timedelta(hours=2)).isoformat(),
     }
@@ -106,9 +106,9 @@ def test_pending_bookings_come_without_a_date_window(
     certo -- exigir janela de data devolveria a dor ao gestor."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _booth(client, api_prefix, headers)
-    pending = _book(client, api_prefix, headers, ids, booth_id, 0, ids["artist"])
-    decided = _book(client, api_prefix, headers, ids, booth_id, 5, ids["other"])
+    bench_id = _bench(client, api_prefix, headers)
+    pending = _book(client, api_prefix, headers, ids, bench_id, 0, ids["artist"])
+    decided = _book(client, api_prefix, headers, ids, bench_id, 5, ids["other"])
     DepositConfirmer(client, api_prefix).confirm_for(decided, headers)
     client.post(f"{api_prefix}/bookings/{decided}/approve", headers=headers)
 
@@ -124,9 +124,9 @@ def test_the_status_filter_keeps_the_artist_scope(
     """O filtro se soma ao recorte por perfil, nao o substitui."""
     ids = _setup(session)
     owner = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _booth(client, api_prefix, owner)
-    mine = _book(client, api_prefix, owner, ids, booth_id, 0, ids["artist"])
-    _book(client, api_prefix, owner, ids, booth_id, 5, ids["other"])
+    bench_id = _bench(client, api_prefix, owner)
+    mine = _book(client, api_prefix, owner, ids, bench_id, 0, ids["artist"])
+    _book(client, api_prefix, owner, ids, bench_id, 5, ids["other"])
 
     artist = TestClient(client.app)
     _sign_in(artist, api_prefix, "artist@studio.ie")
@@ -142,9 +142,9 @@ def test_the_status_filter_and_the_date_window_are_independent(
     """Um pergunta quando, o outro em que situacao. Juntos, recortam os dois."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _booth(client, api_prefix, headers)
-    inside = _book(client, api_prefix, headers, ids, booth_id, 0, ids["artist"])
-    _book(client, api_prefix, headers, ids, booth_id, 100, ids["other"])
+    bench_id = _bench(client, api_prefix, headers)
+    inside = _book(client, api_prefix, headers, ids, bench_id, 0, ids["artist"])
+    _book(client, api_prefix, headers, ids, bench_id, 100, ids["other"])
 
     response = client.get(
         f"{api_prefix}/bookings",
@@ -199,9 +199,9 @@ def test_payments_awaiting_confirmation_come_from_the_whole_studio(
     esquecer um pagamento trava a agenda."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _booth(client, api_prefix, headers)
-    waiting = _book(client, api_prefix, headers, ids, booth_id, 0, ids["artist"])
-    settled = _book(client, api_prefix, headers, ids, booth_id, 5, ids["other"])
+    bench_id = _bench(client, api_prefix, headers)
+    waiting = _book(client, api_prefix, headers, ids, bench_id, 0, ids["artist"])
+    settled = _book(client, api_prefix, headers, ids, bench_id, 5, ids["other"])
     deposits = DepositConfirmer(client, api_prefix)
     reported = deposits.register_for(waiting, headers)
     deposits.confirm_for(settled, headers)
@@ -218,8 +218,8 @@ def test_the_artist_cannot_see_the_studio_payment_queue(
     """Confirmar recebimento e do gestor (RN-PAG-002), e a fila e dele."""
     ids = _setup(session)
     owner = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _booth(client, api_prefix, owner)
-    booking_id = _book(client, api_prefix, owner, ids, booth_id, 0, ids["artist"])
+    bench_id = _bench(client, api_prefix, owner)
+    booking_id = _book(client, api_prefix, owner, ids, bench_id, 0, ids["artist"])
     DepositConfirmer(client, api_prefix).register_for(booking_id, owner)
 
     artist = TestClient(client.app)

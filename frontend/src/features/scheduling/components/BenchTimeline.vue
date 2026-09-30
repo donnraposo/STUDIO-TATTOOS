@@ -3,7 +3,7 @@ import { computed } from "vue";
 
 import BookingBlock from "@/features/scheduling/components/BookingBlock.vue";
 import type { BookingPlacement, Placement } from "@/features/scheduling/BookingPlacement";
-import type { Booking, Booth } from "@/shared/domain/Booking";
+import type { Booking, Bench } from "@/shared/domain/Booking";
 
 /** A timeline: macas no eixo Y, horas no eixo X (ADR-004).
  *
@@ -24,10 +24,10 @@ interface PlacedBooking {
 }
 
 const props = defineProps<{
-  booths: Booth[];
+  benches: Bench[];
   placer: BookingPlacement;
-  placedByBooth: Record<string, PlacedBooking[]>;
-  tracksByBooth: Record<string, number>;
+  placedByBench: Record<string, PlacedBooking[]>;
+  tracksByBench: Record<string, number>;
 }>();
 
 defineEmits<{ select: [booking: Booking] }>();
@@ -38,10 +38,10 @@ const gridStyle = computed(() => ({
 
 /** A maca cresce em altura quando há solicitações concorrentes: cada trilha é
  * uma linha da grade, e todas ficam visíveis (RN-AGE-004). */
-function laneStyle(boothId: string): Record<string, string> {
+function laneStyle(benchId: string): Record<string, string> {
   return {
     ...gridStyle.value,
-    gridTemplateRows: `repeat(${props.tracksByBooth[boothId] ?? 1}, auto)`,
+    gridTemplateRows: `repeat(${props.tracksByBench[benchId] ?? 1}, auto)`,
   };
 }
 
@@ -50,8 +50,8 @@ function laneStyle(boothId: string): Record<string, string> {
  * O modelo tem um campo `label`, mas nenhuma regra pede apelido de maca, e
  * mostrar "Window" ao lado do numero convida cada pessoa a inventar o seu --
  * ate duas macas terem nomes que so uma parte da equipe reconhece. */
-function boothName(booth: Booth): string {
-  return `Booth ${booth.number}`;
+function benchName(bench: Bench): string {
+  return `Bench ${bench.number}`;
 }
 </script>
 
@@ -75,17 +75,17 @@ function boothName(booth: Booth): string {
       </div>
 
       <div
-        v-for="booth in booths"
-        :key="booth.id"
+        v-for="bench in benches"
+        :key="bench.id"
         class="lane"
       >
-        <span class="booth">{{ boothName(booth) }}</span>
+        <span class="bench">{{ benchName(bench) }}</span>
         <div
           class="slots"
-          :style="laneStyle(booth.id)"
+          :style="laneStyle(bench.id)"
         >
           <BookingBlock
-            v-for="placed in placedByBooth[booth.id] ?? []"
+            v-for="placed in placedByBench[bench.id] ?? []"
             :key="placed.booking.id"
             :booking="placed.booking"
             :placement="placed.placement"
@@ -158,7 +158,7 @@ function boothName(booth: Booth): string {
   min-height: var(--touch-target);
 }
 
-.booth {
+.bench {
   color: var(--color-on-light);
   font-size: var(--text-label-3);
   font-weight: var(--weight-medium);

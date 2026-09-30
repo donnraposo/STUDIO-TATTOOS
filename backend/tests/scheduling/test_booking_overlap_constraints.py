@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.container import Container
 from app.modules.clients.infrastructure.models.client import Client
 from app.modules.identity.domain.user_role import UserRole
-from app.modules.scheduling.infrastructure.models.booth import Booth
+from app.modules.scheduling.infrastructure.models.bench import Bench
 from tests.support.account_builder import AccountBuilder
 
 START = datetime(2026, 10, 6, 10, 0, tzinfo=UTC)
@@ -33,7 +33,7 @@ def _period(start: datetime, hours: int = 2) -> str:
 def _insert_booking(
     session: Session,
     artist_id: uuid.UUID,
-    booth_id: uuid.UUID,
+    bench_id: uuid.UUID,
     client_id: uuid.UUID,
     status: str,
     start: datetime = START,
@@ -42,14 +42,14 @@ def _insert_booking(
     booking_id = uuid.uuid4()
     session.execute(
         text(
-            "INSERT INTO booking (id, client_id, artist_id, booth_id, period, status)"
-            " VALUES (:id, :client, :artist, :booth, CAST(:period AS tstzrange), :status)"
+            "INSERT INTO booking (id, client_id, artist_id, bench_id, period, status)"
+            " VALUES (:id, :client, :artist, :bench, CAST(:period AS tstzrange), :status)"
         ),
         {
             "id": booking_id,
             "client": client_id,
             "artist": artist_id,
-            "booth": booth_id,
+            "bench": bench_id,
             "period": _period(start, hours),
             "status": status,
         },
@@ -63,39 +63,39 @@ def scheduling_fixtures(session: Session) -> dict[str, uuid.UUID]:
     first = builder.create(email="a1@studio.ie", role=UserRole.RESIDENT)
     second = builder.create(email="a2@studio.ie", role=UserRole.RESIDENT)
 
-    booth_one = Booth(number=1)
-    booth_two = Booth(number=2)
+    bench_one = Bench(number=1)
+    bench_two = Bench(number=2)
     client = Client(
         name="Aoife", phone="+353 87 111 1111", registered_by_artist_id=first.id
     )
-    session.add_all([booth_one, booth_two, client])
+    session.add_all([bench_one, bench_two, client])
     session.flush()
     session.commit()
 
     return {
         "artist_one": first.id,
         "artist_two": second.id,
-        "booth_one": booth_one.id,
-        "booth_two": booth_two.id,
+        "bench_one": bench_one.id,
+        "bench_two": bench_two.id,
         "client": client.id,
     }
 
 
-def test_two_approved_bookings_cannot_overlap_on_the_same_booth(
+def test_two_approved_bookings_cannot_overlap_on_the_same_bench(
     session: Session, scheduling_fixtures: dict[str, uuid.UUID]
 ) -> None:
     """RN-AGE-007: nunca dois aprovados sobrepostos na mesma maca."""
     fx = scheduling_fixtures
     _insert_booking(
-        session, fx["artist_one"], fx["booth_one"], fx["client"], "APPROVED"
+        session, fx["artist_one"], fx["bench_one"], fx["client"], "APPROVED"
     )
     session.flush()
 
-    with pytest.raises(IntegrityError, match="booking_booth_no_overlap"):
+    with pytest.raises(IntegrityError, match="booking_bench_no_overlap"):
         _insert_booking(
             session,
             fx["artist_two"],
-            fx["booth_one"],
+            fx["bench_one"],
             fx["client"],
             "APPROVED",
             start=START + timedelta(hours=1),
@@ -103,14 +103,14 @@ def test_two_approved_bookings_cannot_overlap_on_the_same_booth(
         session.flush()
 
 
-def test_pending_requests_from_different_artists_may_compete_for_a_booth(
+def test_pending_requests_from_different_artists_may_compete_for_a_bench(
     session: Session, scheduling_fixtures: dict[str, uuid.UUID]
 ) -> None:
     """RN-AGE-004: pendente não bloqueia a maca. Duas solicitações concorrentes
     coexistem até a decisão administrativa."""
     fx = scheduling_fixtures
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "REQUESTED")
-    _insert_booking(session, fx["artist_two"], fx["booth_one"], fx["client"], "REQUESTED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "REQUESTED")
+    _insert_booking(session, fx["artist_two"], fx["bench_one"], fx["client"], "REQUESTED")
     session.flush()
 
     total = session.execute(
@@ -119,19 +119,19 @@ def test_pending_requests_from_different_artists_may_compete_for_a_booth(
     assert total == 2
 
 
-def test_the_same_artist_cannot_overlap_even_on_different_booths(
+def test_the_same_artist_cannot_overlap_even_on_different_benches(
     session: Session, scheduling_fixtures: dict[str, uuid.UUID]
 ) -> None:
     """RN-AGE-014: o artista não se compromete em dois lugares ao mesmo tempo."""
     fx = scheduling_fixtures
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "APPROVED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "APPROVED")
     session.flush()
 
     with pytest.raises(IntegrityError, match="booking_artist_no_overlap"):
         _insert_booking(
             session,
             fx["artist_one"],
-            fx["booth_two"],
+            fx["bench_two"],
             fx["client"],
             "APPROVED",
             start=START + timedelta(hours=1),
@@ -144,14 +144,14 @@ def test_a_pending_request_already_occupies_the_artist_agenda(
 ) -> None:
     """Pendente não bloqueia a maca, mas bloqueia o próprio artista."""
     fx = scheduling_fixtures
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "REQUESTED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "REQUESTED")
     session.flush()
 
     with pytest.raises(IntegrityError, match="booking_artist_no_overlap"):
         _insert_booking(
             session,
             fx["artist_one"],
-            fx["booth_two"],
+            fx["bench_two"],
             fx["client"],
             "REQUESTED",
             start=START + timedelta(hours=1),
@@ -164,9 +164,9 @@ def test_rejected_and_cancelled_bookings_release_the_agenda(
 ) -> None:
     """RN-AGE-014: recusado e cancelado saem da agenda, preservando o histórico."""
     fx = scheduling_fixtures
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "REJECTED")
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "CANCELLED")
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "APPROVED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "REJECTED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "CANCELLED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "APPROVED")
     session.flush()
 
     stored = session.execute(text("SELECT count(*) FROM booking")).scalar_one()
@@ -178,11 +178,11 @@ def test_adjacent_bookings_are_allowed_without_a_gap(
 ) -> None:
     """RN-AGE-001: não há pausa obrigatória. Um termina 12h, o outro começa 12h."""
     fx = scheduling_fixtures
-    _insert_booking(session, fx["artist_one"], fx["booth_one"], fx["client"], "APPROVED")
+    _insert_booking(session, fx["artist_one"], fx["bench_one"], fx["client"], "APPROVED")
     _insert_booking(
         session,
         fx["artist_one"],
-        fx["booth_one"],
+        fx["bench_one"],
         fx["client"],
         "APPROVED",
         start=START + timedelta(hours=2),
@@ -202,7 +202,7 @@ def test_empty_period_is_refused(
 
     with pytest.raises(IntegrityError, match="ck_booking_period_not_empty"):
         _insert_booking(
-            session, fx["artist_one"], fx["booth_one"], fx["client"], "APPROVED", hours=0
+            session, fx["artist_one"], fx["bench_one"], fx["client"], "APPROVED", hours=0
         )
         session.flush()
 
@@ -225,12 +225,12 @@ def test_concurrent_approvals_cannot_both_win(
         second.begin()
 
         statement = text(
-            "INSERT INTO booking (id, client_id, artist_id, booth_id, period, status)"
-            " VALUES (:id, :client, :artist, :booth, CAST(:period AS tstzrange), 'APPROVED')"
+            "INSERT INTO booking (id, client_id, artist_id, bench_id, period, status)"
+            " VALUES (:id, :client, :artist, :bench, CAST(:period AS tstzrange), 'APPROVED')"
         )
         common = {
             "client": fx["client"],
-            "booth": fx["booth_one"],
+            "bench": fx["bench_one"],
             "period": _period(START),
         }
 
@@ -241,7 +241,7 @@ def test_concurrent_approvals_cannot_both_win(
 
         # A segunda transação começou antes do commit da primeira e ainda assim
         # não pode vencer: a restrição decide, não a ordem de leitura.
-        with pytest.raises(IntegrityError, match="booking_booth_no_overlap"):
+        with pytest.raises(IntegrityError, match="booking_bench_no_overlap"):
             second.execute(
                 statement, {**common, "id": uuid.uuid4(), "artist": fx["artist_two"]}
             )

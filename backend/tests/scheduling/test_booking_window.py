@@ -45,7 +45,7 @@ def _create_booking(
     api_prefix: str,
     headers: dict[str, str],
     client_id: str,
-    booth_id: str,
+    bench_id: str,
     start: datetime,
     hours: int = 2,
 ) -> None:
@@ -53,7 +53,7 @@ def _create_booking(
         f"{api_prefix}/bookings",
         json={
             "client_id": client_id,
-            "booth_id": booth_id,
+            "bench_id": bench_id,
             "starts_at": start.isoformat(),
             "ends_at": (start + timedelta(hours=hours)).isoformat(),
         },
@@ -62,8 +62,8 @@ def _create_booking(
     assert response.status_code == 201, response.text
 
 
-def _create_booth(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
-    response = client.post(f"{api_prefix}/booths", json={"label": "Window"}, headers=headers)
+def _create_bench(client: TestClient, api_prefix: str, headers: dict[str, str]) -> str:
+    response = client.post(f"{api_prefix}/benches", json={"label": "Window"}, headers=headers)
     assert response.status_code == 201, response.text
     return response.json()["id"]
 
@@ -83,8 +83,8 @@ def test_the_window_keeps_a_booking_that_crosses_its_edge(
     daquele dia. O filtro usa sobreposicao, nao comparacao com o inicio."""
     client_id = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
-    _create_booking(client, api_prefix, headers, client_id, booth_id, TUESDAY, hours=3)
+    bench_id = _create_bench(client, api_prefix, headers)
+    _create_booking(client, api_prefix, headers, client_id, bench_id, TUESDAY, hours=3)
 
     late = client.get(
         f"{api_prefix}/bookings",
@@ -103,10 +103,10 @@ def test_the_window_leaves_out_another_day(
 ) -> None:
     client_id = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = _create_booth(client, api_prefix, headers)
-    _create_booking(client, api_prefix, headers, client_id, booth_id, TUESDAY)
+    bench_id = _create_bench(client, api_prefix, headers)
+    _create_booking(client, api_prefix, headers, client_id, bench_id, TUESDAY)
     _create_booking(
-        client, api_prefix, headers, client_id, booth_id, TUESDAY + timedelta(days=1)
+        client, api_prefix, headers, client_id, bench_id, TUESDAY + timedelta(days=1)
     )
 
     today = client.get(f"{api_prefix}/bookings", params=_day_window(TUESDAY))

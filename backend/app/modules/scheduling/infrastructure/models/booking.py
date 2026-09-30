@@ -35,8 +35,8 @@ class Booking(OrmBase):
     artist_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("user_account.id"), nullable=False, index=True
     )
-    booth_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("booth.id"), nullable=False, index=True
+    bench_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("bench.id"), nullable=False, index=True
     )
     period: Mapped[object] = mapped_column(TSTZRANGE, nullable=False)
     status: Mapped[BookingStatus] = mapped_column(String(16), nullable=False, index=True)

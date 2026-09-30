@@ -84,7 +84,7 @@ describe("LanePacker", () => {
     expect(packed[0].item.name).toBe("early");
   });
 
-  it("reports one track for an empty booth, so the lane keeps its height", () => {
+  it("reports one track for an empty bench, so the lane keeps its height", () => {
     expect(packer.trackCount(packer.pack([], extent))).toBe(1);
   });
 });

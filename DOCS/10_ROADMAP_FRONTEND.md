@@ -369,7 +369,7 @@ pré-requisito da agenda — sem cliente não há reserva.
 
 | Peça | Papel |
 |---|---|
-| `BoothTimeline.vue` | Grade em CSS Grid: macas no eixo Y, horas no eixo X |
+| `BenchTimeline.vue` | Grade em CSS Grid: macas no eixo Y, horas no eixo X |
 | `BookingBlock.vue` | Bloco posicionado por início e duração |
 | `ConflictModal.vue` | Modal da RN-AGE-007, **sem opção de ignorar** |
 | `AvailabilityFilter.vue` | Dia, maca e artista |
@@ -531,7 +531,7 @@ autenticado.
 |---|---|---|
 | Login | Todos | `POST /auth/login`, `GET /auth/me`, `POST /auth/logout` |
 | Clientes | Gestor vê todos; residente, os próprios | `GET/POST /clients`, `GET/PUT /clients/{id}`, `POST /clients/merge` |
-| Agenda | Todos os perfis, com recortes diferentes | `GET /booths`, `GET/POST /bookings`, `/approve`, `/reject`, `/cancel`, `/reschedule` |
+| Agenda | Todos os perfis, com recortes diferentes | `GET /benches`, `GET/POST /bookings`, `/approve`, `/reject`, `/cancel`, `/reschedule` |
 | Orçamentos | Gestor e residente; **guest não** | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `/approve`, `/reject` |
 | Imagens de referência | Quem vê o orçamento | `GET/POST /quotes/{id}/reference-images`, `DELETE .../{image_id}`, `GET .../{image_id}/content` |
 

@@ -29,8 +29,8 @@ from app.modules.quotes.infrastructure.models.quote import Quote
 from app.modules.quotes.infrastructure.models.quote_reference_image import QuoteReferenceImage
 from app.modules.quotes.infrastructure.models.tattoo_session import TattooSession
 from app.modules.reporting.infrastructure.models.audit_log import AuditLog
+from app.modules.scheduling.infrastructure.models.bench import Bench
 from app.modules.scheduling.infrastructure.models.booking import Booking
-from app.modules.scheduling.infrastructure.models.booth import Booth
 
 #: Tudo o que esta mapeado. A lista e explicita para que o import nao pareca
 #: acidental e nenhuma ferramenta de limpeza a remova por "nao estar em uso".
@@ -47,7 +47,7 @@ REGISTERED_MODELS = (
     TattooSession,
     AuditLog,
     Booking,
-    Booth,
+    Bench,
 )
 
 #: Metadados completos, prontos para o Alembic comparar contra o banco.

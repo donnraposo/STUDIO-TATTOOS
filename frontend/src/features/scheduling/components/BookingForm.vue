@@ -6,7 +6,7 @@ import AppCheckbox from "@/shared/components/AppCheckbox.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
 import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
-import type { Booth } from "@/shared/domain/Booking";
+import type { Bench } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 
@@ -26,7 +26,7 @@ import type { StudioMember } from "@/shared/domain/StudioMember";
  * daria uma resposta que pode estar desatualizada no instante seguinte. */
 export interface BookingDraft {
   clientId: string;
-  boothId: string;
+  benchId: string;
   startTime: string;
   endTime: string;
   artistId: string | null;
@@ -36,7 +36,7 @@ export interface BookingDraft {
 const props = defineProps<{
   day: string;
   clients: Client[];
-  booths: Booth[];
+  benches: Bench[];
   artists: StudioMember[];
   canDecide: boolean;
   busy: boolean;
@@ -46,7 +46,7 @@ const props = defineProps<{
 const emit = defineEmits<{ submit: [draft: BookingDraft]; close: [] }>();
 
 const clientId = ref("");
-const boothId = ref(props.booths[0]?.id ?? "");
+const benchId = ref(props.benches[0]?.id ?? "");
 const artistId = ref("");
 const startTime = ref("10:00");
 const endTime = ref("12:00");
@@ -56,8 +56,8 @@ const clientOptions = computed<SelectOption[]>(() =>
   props.clients.map((client) => ({ value: client.id, label: client.name })),
 );
 
-const boothOptions = computed<SelectOption[]>(() =>
-  props.booths.map((booth) => ({ value: booth.id, label: `Booth ${booth.number}` })),
+const benchOptions = computed<SelectOption[]>(() =>
+  props.benches.map((bench) => ({ value: bench.id, label: `Bench ${bench.number}` })),
 );
 
 const artistOptions = computed<SelectOption[]>(() =>
@@ -70,13 +70,13 @@ const artistOptions = computed<SelectOption[]>(() =>
 const invalidPeriod = computed(() => endTime.value <= startTime.value);
 
 const incomplete = computed(
-  () => clientId.value === "" || boothId.value === "" || invalidPeriod.value,
+  () => clientId.value === "" || benchId.value === "" || invalidPeriod.value,
 );
 
 function submit(): void {
   emit("submit", {
     clientId: clientId.value,
-    boothId: boothId.value,
+    benchId: benchId.value,
     startTime: startTime.value,
     endTime: endTime.value,
     artistId: artistId.value === "" ? null : artistId.value,
@@ -104,9 +104,9 @@ function submit(): void {
     />
 
     <AppSelect
-      v-model="boothId"
-      label="Booth"
-      :options="boothOptions"
+      v-model="benchId"
+      label="Bench"
+      :options="benchOptions"
       :disabled="props.busy"
       required
     />

@@ -15,7 +15,7 @@ class BookingResponse(BaseModel):
     id: uuid.UUID
     client_id: uuid.UUID
     artist_id: uuid.UUID
-    booth_id: uuid.UUID
+    bench_id: uuid.UUID
     starts_at: datetime
     ends_at: datetime
     status: str
@@ -29,7 +29,7 @@ class BookingResponse(BaseModel):
             id=booking.id,
             client_id=booking.client_id,
             artist_id=booking.artist_id,
-            booth_id=booking.booth_id,
+            bench_id=booking.bench_id,
             starts_at=booking.period.lower,
             ends_at=booking.period.upper,
             status=str(booking.status),

@@ -53,14 +53,14 @@ def _booking(
     ids: dict[str, str],
     hours_offset: int = 0,
 ) -> str:
-    booth = client.post(f"{api_prefix}/booths", json={"label": None}, headers=headers)
-    assert booth.status_code == 201, booth.text
+    bench = client.post(f"{api_prefix}/benches", json={"label": None}, headers=headers)
+    assert bench.status_code == 201, bench.text
     start = START + timedelta(hours=hours_offset)
     created = client.post(
         f"{api_prefix}/bookings",
         json={
             "client_id": ids["client"],
-            "booth_id": booth.json()["id"],
+            "bench_id": bench.json()["id"],
             "artist_id": ids["artist"],
             "starts_at": start.isoformat(),
             "ends_at": (start + timedelta(hours=2)).isoformat(),

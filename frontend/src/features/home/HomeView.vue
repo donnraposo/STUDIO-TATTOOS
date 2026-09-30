@@ -100,7 +100,7 @@ function open(item: PendingWorkItem): void {
     <HeroBanner
       kicker="Studio edition"
       title="The right space for remarkable work."
-      description="Booths, clients and quotes in one place — with double booking made impossible."
+      description="Benches, clients and quotes in one place — with double booking made impossible."
     >
       <template #action>
         <AppButton
@@ -118,7 +118,7 @@ function open(item: PendingWorkItem): void {
 
       <div class="cards">
         <AppCard title="Schedule">
-          <p>Booth timeline, requests and conflict prevention.</p>
+          <p>Bench timeline, requests and conflict prevention.</p>
           <template #footer>
             <AppButton
               tone="ghost"

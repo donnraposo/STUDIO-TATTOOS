@@ -19,7 +19,7 @@ export interface Booking {
   id: string;
   clientId: string;
   artistId: string;
-  boothId: string;
+  benchId: string;
   startsAt: string;
   endsAt: string;
   status: BookingStatus;
@@ -29,7 +29,7 @@ export interface Booking {
 }
 
 /** Maca. Maca e bancada são um único recurso reservável (RN-AGE-001). */
-export interface Booth {
+export interface Bench {
   id: string;
   number: number;
   label: string | null;
@@ -41,7 +41,7 @@ export interface Booth {
  * Vem no corpo do 409 e é o que alimenta o modal da RN-AGE-007 — aquele que
  * **não** oferece a opção de ignorar. */
 export interface BookingConflict {
-  scope: "booth" | "artist";
+  scope: "bench" | "artist";
   message: string;
   conflictingBookingId: string | null;
 }

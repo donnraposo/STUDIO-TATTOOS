@@ -41,7 +41,7 @@ class DatabaseProvisioner:
         tables = (
             "audit_log",
             "booking",
-            "booth",
+            "bench",
             "client",
             "password_reset_token",
             "user_status_history",

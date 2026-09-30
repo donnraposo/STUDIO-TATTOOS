@@ -47,7 +47,7 @@ def _book_and_approve(
     api_prefix: str,
     headers: dict[str, str],
     ids: dict[str, str],
-    booth_id: str,
+    bench_id: str,
     hours_offset: int,
     artist_id: str | None = None,
 ):
@@ -59,7 +59,7 @@ def _book_and_approve(
     start = START + timedelta(hours=hours_offset)
     payload = {
         "client_id": ids["client"],
-        "booth_id": booth_id,
+        "bench_id": bench_id,
         "starts_at": start.isoformat(),
         "ends_at": (start + timedelta(hours=2)).isoformat(),
     }
@@ -80,20 +80,20 @@ def test_the_conflict_response_carries_the_existing_booking(
 ) -> None:
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
-    booth_id = client.post(f"{api_prefix}/booths", json={"label": None}, headers=headers).json()[
+    bench_id = client.post(f"{api_prefix}/benches", json={"label": None}, headers=headers).json()[
         "id"
     ]
 
-    first, approved = _book_and_approve(client, api_prefix, headers, ids, booth_id, 0)
+    first, approved = _book_and_approve(client, api_prefix, headers, ids, bench_id, 0)
     _, clash = _book_and_approve(
-        client, api_prefix, headers, ids, booth_id, 1, artist_id=ids["artist"]
+        client, api_prefix, headers, ids, bench_id, 1, artist_id=ids["artist"]
     )
 
     assert approved.status_code == 200, approved.text
     assert clash.status_code == 409
 
     body = clash.json()
-    assert body["scope"] == "booth"
+    assert body["scope"] == "bench"
     assert body["conflicting_booking_id"] == first.json()["id"]
     assert body["detail"]
 

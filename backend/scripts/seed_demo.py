@@ -35,8 +35,8 @@ from app.modules.quotes.domain.quote_origin import QuoteOrigin
 from app.modules.quotes.domain.quote_status import QuoteStatus
 from app.modules.quotes.infrastructure.models.quote import Quote
 from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.infrastructure.models.bench import Bench
 from app.modules.scheduling.infrastructure.models.booking import Booking
-from app.modules.scheduling.infrastructure.models.booth import Booth
 
 
 class DemoSeeder:
@@ -59,7 +59,7 @@ class DemoSeeder:
 
     # Quatro macas, identificadas apenas pelo numero (RN-AGE-001). Sem apelido:
     # nenhuma regra pede, e nome inventado aqui vira nome inventado na operacao.
-    _BOOTHS = [1, 2, 3, 4]
+    _BENCHS = [1, 2, 3, 4]
 
     _CLIENTS = [
         ("Niamh O'Sullivan", "+353 87 111 1111", "@niamh.os", "resident@studio.ie"),
@@ -84,16 +84,16 @@ class DemoSeeder:
 
     def run(self) -> None:
         accounts = self._seed_accounts()
-        booths = self._seed_booths()
+        benches = self._seed_benches()
         clients = self._seed_clients(accounts)
         self._seed_quote(accounts, clients)
-        self._seed_bookings(accounts, booths, clients)
+        self._seed_bookings(accounts, benches, clients)
         self._session.commit()
 
     def _seed_bookings(
         self,
         accounts: dict[str, UserAccount],
-        booths: list[Booth],
+        benches: list[Bench],
         clients: list[Client],
     ) -> None:
         """Agenda do dia corrente, para a timeline abrir com conteudo.
@@ -105,13 +105,13 @@ class DemoSeeder:
             return
 
         today = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
-        for hour, duration, booth_index, artist_email, status in self._BOOKINGS:
+        for hour, duration, bench_index, artist_email, status in self._BOOKINGS:
             start = today.replace(hour=hour)
             self._session.add(
                 Booking(
-                    client_id=clients[booth_index % len(clients)].id,
+                    client_id=clients[bench_index % len(clients)].id,
                     artist_id=accounts[artist_email].id,
-                    booth_id=booths[booth_index].id,
+                    bench_id=benches[bench_index].id,
                     period=Range(start, start + timedelta(hours=duration), bounds="[)"),
                     status=status,
                     decided_at=today if status == BookingStatus.APPROVED else None,
@@ -148,15 +148,15 @@ class DemoSeeder:
         self._session.flush()
         return created
 
-    def _seed_booths(self) -> list[Booth]:
-        for number in self._BOOTHS:
+    def _seed_benches(self) -> list[Bench]:
+        for number in self._BENCHS:
             existing = self._session.execute(
-                select(Booth).where(Booth.number == number)
+                select(Bench).where(Bench.number == number)
             ).scalar_one_or_none()
             if existing is None:
-                self._session.add(Booth(number=number))
+                self._session.add(Bench(number=number))
         self._session.flush()
-        return list(self._session.execute(select(Booth).order_by(Booth.number)).scalars())
+        return list(self._session.execute(select(Bench).order_by(Bench.number)).scalars())
 
     def _seed_clients(self, accounts: dict[str, UserAccount]) -> list[Client]:
         clients: list[Client] = []
