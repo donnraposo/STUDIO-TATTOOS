@@ -18,6 +18,7 @@ from app.core.settings import Settings
 from app.modules.clients.infrastructure.models.client import Client
 from app.modules.identity.domain.user_role import UserRole
 from tests.support.account_builder import AccountBuilder
+from tests.support.deposit_confirmer import DepositConfirmer
 
 PASSWORD = "correct horse battery staple"
 START = datetime(2026, 10, 6, 10, 0, tzinfo=UTC)
@@ -41,7 +42,7 @@ def _setup(session: Session) -> dict[str, str]:
     return {"artist": str(artist.id), "client": str(subject.id)}
 
 
-def _book(
+def _book_and_approve(
     client: TestClient,
     api_prefix: str,
     headers: dict[str, str],
@@ -50,17 +51,28 @@ def _book(
     hours_offset: int,
     artist_id: str | None = None,
 ):
+    """Cria, confirma o sinal e tenta aprovar; devolve as duas respostas.
+
+    **O conflito de maca aparece na aprovacao, nao na criacao** (RN-AGE-004):
+    uma solicitacao pendente nao bloqueia a maca, entao duas podem conviver no
+    mesmo horario. E ao aprovar a segunda que a restricao `EXCLUDE` recusa."""
     start = START + timedelta(hours=hours_offset)
     payload = {
         "client_id": ids["client"],
         "booth_id": booth_id,
         "starts_at": start.isoformat(),
         "ends_at": (start + timedelta(hours=2)).isoformat(),
-        "approve_immediately": True,
     }
     if artist_id:
         payload["artist_id"] = artist_id
-    return client.post(f"{api_prefix}/bookings", json=payload, headers=headers)
+
+    created = client.post(f"{api_prefix}/bookings", json=payload, headers=headers)
+    assert created.status_code == 201, created.text
+    DepositConfirmer(client, api_prefix).confirm_for(created.json()["id"], headers)
+    approved = client.post(
+        f"{api_prefix}/bookings/{created.json()['id']}/approve", headers=headers
+    )
+    return created, approved
 
 
 def test_the_conflict_response_carries_the_existing_booking(
@@ -72,10 +84,12 @@ def test_the_conflict_response_carries_the_existing_booking(
         "id"
     ]
 
-    first = _book(client, api_prefix, headers, ids, booth_id, 0)
-    clash = _book(client, api_prefix, headers, ids, booth_id, 1, artist_id=ids["artist"])
+    first, approved = _book_and_approve(client, api_prefix, headers, ids, booth_id, 0)
+    _, clash = _book_and_approve(
+        client, api_prefix, headers, ids, booth_id, 1, artist_id=ids["artist"]
+    )
 
-    assert first.status_code == 201
+    assert approved.status_code == 200, approved.text
     assert clash.status_code == 409
 
     body = clash.json()

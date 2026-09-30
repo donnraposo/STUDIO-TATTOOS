@@ -19,6 +19,8 @@ esta mapeado. Acrescentar tabela e acrescentar uma linha aqui.
 
 from app.core.orm_base import OrmBase
 from app.modules.clients.infrastructure.models.client import Client
+from app.modules.finance.infrastructure.models.payment import Payment
+from app.modules.finance.infrastructure.models.payment_refund import PaymentRefund
 from app.modules.identity.infrastructure.models.password_reset_token import PasswordResetToken
 from app.modules.identity.infrastructure.models.user_account import UserAccount
 from app.modules.identity.infrastructure.models.user_session import UserSession
@@ -34,6 +36,8 @@ from app.modules.scheduling.infrastructure.models.booth import Booth
 #: acidental e nenhuma ferramenta de limpeza a remova por "nao estar em uso".
 REGISTERED_MODELS = (
     Client,
+    Payment,
+    PaymentRefund,
     PasswordResetToken,
     UserAccount,
     UserSession,

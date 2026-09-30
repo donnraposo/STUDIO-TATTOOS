@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
+from app.modules.scheduling.domain.booking_outcome import BookingOutcome
+from app.modules.scheduling.domain.booking_settlement_gate import BookingSettlementGate
 from app.modules.scheduling.domain.booking_status import BookingStatus
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
 from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
@@ -14,10 +16,15 @@ from app.shared.errors.permission_denied_error import PermissionDeniedError
 class CancelBooking:
     """Cancela ou marca não comparecimento (RN-AGE-009 e RN-AGE-010).
 
-    Ambos os estados liberam a agenda e preservam o registro. A consequência
-    financeira — estúdio retém o sinal de €50 e devolve o excedente — é
-    executada pelo módulo de pagamentos na sprint M5. Aqui fica o estado, que é
-    o que aquele módulo vai consultar."""
+    Ambos os estados liberam a agenda e preservam o registro, e ambos têm a
+    mesma consequência sobre o dinheiro: o estúdio retém o sinal de €50 — mesmo
+    com aviso de 24 horas — e devolve o que foi pago acima dele (RN-AGE-009 e
+    RN-AGE-010). Quem aplica isso é o financeiro, avisado pela porta; a agenda
+    diz o que aconteceu, não o que fazer com o caixa.
+
+    O aviso vem **depois** de gravar o estado, dentro da mesma transação: se a
+    retenção falhar, o cancelamento não acontece, e não sobra um horário
+    liberado com o sinal ainda valendo."""
 
     _FINAL_STATES = frozenset(
         {BookingStatus.CANCELLED, BookingStatus.NO_SHOW, BookingStatus.REJECTED}
@@ -27,10 +34,12 @@ class CancelBooking:
         self,
         bookings: BookingRepository,
         policy: SchedulingPolicy,
+        settlement: BookingSettlementGate,
         audit: AuditRecorder,
     ) -> None:
         self._bookings = bookings
         self._policy = policy
+        self._settlement = settlement
         self._audit = audit
 
     def execute(
@@ -57,6 +66,11 @@ class CancelBooking:
         booking.decided_at = datetime.now(UTC)
         booking.decided_by = actor.id
         self._bookings.persist(booking)
+        self._settlement.settle(
+            actor,
+            booking.id,
+            BookingOutcome.NO_SHOW if no_show else BookingOutcome.CANCELLED,
+        )
 
         self._audit.record(
             actor_id=actor.id,

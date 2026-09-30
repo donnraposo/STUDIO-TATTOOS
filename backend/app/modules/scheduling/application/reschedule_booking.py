@@ -3,7 +3,9 @@ from datetime import UTC, datetime
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
+from app.modules.scheduling.domain.booking_settlement_gate import BookingSettlementGate
 from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.domain.reschedule_notice import RescheduleNotice
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
 from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
 from app.modules.scheduling.infrastructure.booth_repository import BoothRepository
@@ -21,18 +23,27 @@ class RescheduleBooking:
 
     A regra das 24 horas define o destino do sinal, não a permissão de remarcar:
     dentro do prazo os valores seguem para o novo horário, fora dele o cliente
-    perde o sinal (RN-AGE-008). Esse efeito é do módulo de pagamentos, na M5."""
+    perde o sinal e precisa pagar um novo (RN-AGE-008).
+
+    **O prazo é medido contra o horário original**, antes de ele ser
+    substituído. Medir depois compararia o aviso com o horário novo, que é
+    justamente o que ainda não aconteceu — e um cliente que remarcasse de hoje
+    para o mês que vem apareceria sempre dentro do prazo."""
 
     def __init__(
         self,
         bookings: BookingRepository,
         booths: BoothRepository,
         policy: SchedulingPolicy,
+        notice: RescheduleNotice,
+        settlement: BookingSettlementGate,
         audit: AuditRecorder,
     ) -> None:
         self._bookings = bookings
         self._booths = booths
         self._policy = policy
+        self._notice = notice
+        self._settlement = settlement
         self._audit = audit
 
     def execute(
@@ -60,6 +71,7 @@ class RescheduleBooking:
             "period": str(booking.period),
             "booth_id": str(booking.booth_id),
         }
+        outcome = self._notice.outcome(booking.period.lower, datetime.now(UTC))
 
         if booth_id is not None:
             booth = self._booths.find_by_id(booth_id)
@@ -71,6 +83,7 @@ class RescheduleBooking:
         booking.decided_at = datetime.now(UTC)
         booking.decided_by = actor.id
         self._bookings.persist(booking)
+        self._settlement.settle(actor, booking.id, outcome)
 
         self._audit.record(
             actor_id=actor.id,
@@ -82,6 +95,7 @@ class RescheduleBooking:
             new_values={
                 "period": f"{starts_at.isoformat()}/{ends_at.isoformat()}",
                 "booth_id": str(booking.booth_id),
+                "notice": str(outcome),
             },
         )
         return booking

@@ -3,6 +3,7 @@ from fastapi import APIRouter, FastAPI
 from app.core.container import Container
 from app.core.error_handlers import ErrorHandlers
 from app.modules.clients.api.client_router import ClientRouter
+from app.modules.finance.api.payment_router import PaymentRouter
 from app.modules.health.api.health_router import HealthRouter
 from app.modules.identity.api.account_router import AccountRouter
 from app.modules.identity.api.auth_router import AuthRouter
@@ -40,4 +41,5 @@ class Application:
             SchedulingRouter(self._container).build(),
             QuoteRouter(self._container).build(),
             SessionRouter(self._container).build(),
+            PaymentRouter(self._container).build(),
         ]

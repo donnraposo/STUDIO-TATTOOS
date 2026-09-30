@@ -16,6 +16,7 @@
 | `client` | `0003` | M2 |
 | `booth`, `booking` com as duas restrições `EXCLUDE` | `0004` | M3.1 |
 | `quote`, `quote_reference_image`, `tattoo_session` e `booking.session_id` | `0005` | M4.1 |
+| `payment` e `payment_refund` | `0006` | M5 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -300,8 +301,9 @@ executar a mesma sessão duas vezes em horários diferentes não.
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | |
-| `session_id` | uuid FK NULL | Nulo em taxa de guest |
-| `guest_week_id` | uuid FK NULL | Nulo em pagamento de sessão |
+| `booking_id` | uuid FK NULL | **Acrescentado na migração `0006`.** O sinal pertence ao agendamento |
+| `session_id` | uuid FK NULL | Nulo em sinal e em taxa de guest |
+| `guest_week_id` | uuid FK NULL | Entra com a tabela `guest_week`, na sprint do guest |
 | `client_id` | uuid FK NULL | |
 | `amount` | numeric(12,2) NOT NULL | |
 | `kind` | enum NOT NULL | `DEPOSIT` (sinal €50), `BALANCE`, `FULL_PREPAY`, `GUEST_WEEK` |
@@ -310,7 +312,25 @@ executar a mesma sessão duas vezes em horários diferentes não.
 | `confirmed_at` / `confirmed_by` | | Só gerente/proprietário |
 | `receipt_object_key` | text NULL | Comprovante privado |
 
-`CHECK` garantindo exatamente uma origem: `session_id` ou `guest_week_id` preenchido.
+`CHECK` garantindo exatamente uma origem preenchida.
+
+**Por que `booking_id` entrou.** O desenho original previa só `session_id` ou
+`guest_week_id`. A RN-PAG-001 diz "**todo agendamento** exigirá um sinal de €50",
+e `booking.session_id` é nulo em todo horário que não pertence a um trabalho
+orçado — o caso de toda a agenda entregue na M3 e de qualquer reserva de guest,
+que não acessa orçamento (RN-ORC-001). Sem a coluna, o sinal desses agendamentos
+não tinha onde ser gravado e a RN-AGE-005 não tinha o que conferir antes de
+aprovar. O saldo continua pendurado na sessão, que é o que é quitado
+(RN-PAG-008) e a unidade do repasse (RN-REP-003).
+
+| Campo acrescentado | Motivo |
+|---|---|
+| `retained_at` / `retained_reason` | A RN-AGE-008 diz que, fora do prazo de 24 horas, o cliente **perde** o sinal e paga um novo. O sinal perdido continua `CONFIRMED` — o estúdio ficou com ele, não foi devolvido —, mas deixa de valer para a aprovação daquele horário. Sem marcar a retirada, o sinal velho continuaria satisfazendo o portão da RN-AGE-005 |
+
+`uq_payment_live_deposit`: índice parcial sobre `payment (booking_id)` com
+`WHERE kind = 'DEPOSIT' AND retained_at IS NULL AND status IN ('REPORTED',
+'CONFIRMED')`. Um sinal vivo por agendamento (RN-PAG-001); recusado e retido
+saem da conta, porque em ambos os casos o cliente paga outro.
 
 **Imutabilidade:** sem `UPDATE` de valor. Correção entra como `payment_refund` ou
 `payout_adjustment` vinculado (RN-PAG-007).
@@ -437,7 +457,8 @@ user_account 1 ── N guest_week
 client       1 ── N quote
 quote        1 ── N session
 session      1 ── 0..1 booking
-session      1 ── N payment
+booking      1 ── N payment          (sinal, RN-PAG-001)
+session      1 ── N payment          (saldo, RN-PAG-008)
 session      1 ── 0..1 aftercare
 payment      1 ── N payment_refund
 payout       1 ── N payout_item ── 1 session
@@ -453,6 +474,8 @@ booth        1 ── N booking
 | Acesso do guest derivado das semanas | Elimina divergência entre flag e realidade quando a semana vence |
 | "Atrasado" derivado no pós-venda | Dispensa job só para trocar rótulo de estado |
 | `artist_percentage` copiado em `quote` e `session` | Congela o percentual da aprovação; mudança de padrão não afeta o passado |
+| Sinal pendurado no `booking`, saldo na `session` | A RN-PAG-001 exige sinal de todo agendamento, inclusive os que não vêm de orçamento; o saldo é da sessão porque é ela que é quitada e é a unidade do repasse |
+| `retained_at` separado de `REFUNDED` | Retido e devolvido são coisas diferentes: num o estúdio ficou com o dinheiro, no outro ele saiu do caixa. Um estado só esconderia qual dos dois aconteceu |
 | Outbox em tabela, sem Redis | Durabilidade sem infraestrutura adicional no porte atual |
 | `audit_log` append-only por gatilho | Imutabilidade garantida pelo banco, resistente inclusive à role dona da tabela |
 | Estados como texto com `CHECK` | Mesma garantia do `ENUM` nativo, sem `ALTER TYPE` a cada novo estado |

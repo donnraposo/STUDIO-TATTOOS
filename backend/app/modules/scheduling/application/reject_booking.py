@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
+from app.modules.scheduling.domain.booking_outcome import BookingOutcome
+from app.modules.scheduling.domain.booking_settlement_gate import BookingSettlementGate
 from app.modules.scheduling.domain.booking_status import BookingStatus
 from app.modules.scheduling.domain.rejection_reason import RejectionReason
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
@@ -25,10 +27,12 @@ class RejectBooking:
         self,
         bookings: BookingRepository,
         policy: SchedulingPolicy,
+        settlement: BookingSettlementGate,
         audit: AuditRecorder,
     ) -> None:
         self._bookings = bookings
         self._policy = policy
+        self._settlement = settlement
         self._audit = audit
 
     def execute(
@@ -54,6 +58,7 @@ class RejectBooking:
         booking.decided_at = datetime.now(UTC)
         booking.decided_by = actor.id
         self._bookings.persist(booking)
+        self._settlement.settle(actor, booking.id, BookingOutcome.REJECTED)
 
         self._audit.record(
             actor_id=actor.id,

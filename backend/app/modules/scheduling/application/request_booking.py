@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
 from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.domain.deposit_gate import DepositGate
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
 from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
 from app.modules.scheduling.infrastructure.booth_repository import BoothRepository
@@ -21,18 +22,28 @@ class RequestBooking:
 
     Nenhuma verificação de conflito acontece aqui de propósito — quem decide é a
     restrição `EXCLUDE`, no momento da gravação. Conferir antes e gravar depois
-    abriria a janela de corrida que o ADR-011 fecha."""
+    abriria a janela de corrida que o ADR-011 fecha.
+
+    **Criar já aprovado só vale onde não há sinal a confirmar.** A RN-AGE-005
+    permite ao gestor criar em `APPROVED` *"desde que confirmem o sinal"*, e o
+    sinal pertence ao agendamento (RN-PAG-001) — que ainda não existe no instante
+    da criação. Não há, portanto, sinal confirmado a apresentar: o gestor cria em
+    `REQUESTED`, registra e confirma os €50, e aprova. O atalho continua aberto
+    exatamente onde a regra não pede sinal: cliente próprio do guest
+    (RN-GST-004)."""
 
     def __init__(
         self,
         bookings: BookingRepository,
         booths: BoothRepository,
         policy: SchedulingPolicy,
+        deposits: DepositGate,
         audit: AuditRecorder,
     ) -> None:
         self._bookings = bookings
         self._booths = booths
         self._policy = policy
+        self._deposits = deposits
         self._audit = audit
 
     def execute(
@@ -56,7 +67,7 @@ class RequestBooking:
             raise BusinessRuleError("Booth not found or inactive.")
 
         target_artist = self._resolve_artist(actor, artist_id)
-        status = self._resolve_status(actor, approve_immediately)
+        status = self._resolve_status(actor, target_artist, approve_immediately)
 
         booking = Booking(
             client_id=client_id,
@@ -90,10 +101,20 @@ class RequestBooking:
         return artist_id
 
     def _resolve_status(
-        self, actor: AuthenticatedUser, approve_immediately: bool
+        self, actor: AuthenticatedUser, artist_id: uuid.UUID, approve_immediately: bool
     ) -> BookingStatus:
-        if approve_immediately:
-            if not self._policy.can_create_already_approved(actor):
-                raise PermissionDeniedError("You cannot create an approved booking.")
-            return BookingStatus.APPROVED
-        return BookingStatus.REQUESTED
+        """O agendamento nasce sem sessão ligada, então nunca pertence a um
+        trabalho orçado no instante da criação — é por isso que a pergunta ao
+        portão passa `False`."""
+        if not approve_immediately:
+            return BookingStatus.REQUESTED
+
+        if not self._policy.can_create_already_approved(actor):
+            raise PermissionDeniedError("You cannot create an approved booking.")
+
+        if self._deposits.is_required_for(artist_id, belongs_to_quoted_work=False):
+            raise BusinessRuleError(
+                "This booking needs the €50 deposit confirmed before approval."
+                " Create the request, confirm the deposit, then approve it."
+            )
+        return BookingStatus.APPROVED

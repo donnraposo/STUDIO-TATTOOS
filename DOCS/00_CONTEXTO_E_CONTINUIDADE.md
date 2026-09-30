@@ -3,7 +3,7 @@
 **Última atualização:** 30/09/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4 e a fatia vertical de interface M7.1 concluídas. A próxima é a M5 — pagamentos e sinal. O desenho funcional está fechado desde 24/09/2026.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5 e a fatia vertical de interface M7.1 concluídas. A próxima é a M6 — repasses e fechamento semanal. O desenho funcional está fechado desde 24/09/2026.
 
 > **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
 > sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),
@@ -415,9 +415,45 @@ teste montava um engine que ninguém devolvia, e o PostgreSQL passou a recusar
 conexão com `too many clients`, derrubando treze testes sadios. `Database.dispose()`
 existe por causa disso.
 
-**Próximo passo:** sprint M5 — pagamentos e sinal. Sinal de €50, confirmação
-manual pelo gestor, estados do pagamento, devoluções, e as consequências
-financeiras de cancelamento, remarcação e não comparecimento.
+**A sprint M5 fechou em 30/09/2026, e com ela o portão do sinal.** Até então a
+RN-AGE-005 e a RN-PAG-002 estavam escritas mas não valiam: `ApproveBooking` tinha
+um `_deposit_is_confirmed` que devolvia `True` sempre. Aprovar um agendamento
+agora exige pagamento confirmado.
+
+**O sinal pertence ao agendamento, não à sessão.** Foi a pergunta que a
+documentação não fechava: a RN-PAG-001 diz "todo agendamento exigirá €50" e o
+modelo só previa pagamento ligado a sessão ou a semana de guest — mas
+`booking.session_id` é nulo em todo horário que não vem de orçamento. Decidido
+com o usuário: o sinal é pago e recebido pelo estúdio para que o horário possa
+ser confirmado, e a solicitação fica pendente até o gestor confirmar no sistema
+que recebeu. `payment.booking_id` entrou no modelo por isso.
+
+**Cliente próprio do guest não exige sinal** (RN-GST-004): esses valores não
+passam pelo estúdio. O sistema reconhece o caso sem campo novo — o guest não
+acessa orçamento (RN-ORC-001), então um agendamento de guest sem sessão ligada é
+necessariamente cliente próprio dele.
+
+**O sistema retém sozinho, mas nunca devolve sozinho.** Reter é escrituração: o
+estúdio já está com o dinheiro e a RN-AGE-009 diz que ele fica, mesmo com aviso
+de 24 horas. Devolver é movimento de caixa, e a RN-PAG-009 manda o gestor
+registrar a devolução **depois de realizá-la**. O sistema aponta o que deve
+voltar; não lança a saída por conta própria.
+
+**Criar agendamento já aprovado mudou.** A RN-AGE-005 permite ao gestor criar em
+Aprovada *"desde que confirmem o sinal"*, e o sinal pertence ao agendamento, que
+não existe no instante da criação. O atalho passa a ser recusado onde há sinal a
+confirmar e continua aberto onde a regra não o pede. O caminho é: criar,
+confirmar o sinal, aprovar.
+
+> **Pendência desta entrega.** A suíte inteira não completou num só comando: a VM
+> do Docker desta máquina passou a somente-leitura no meio da execução e derrubou
+> o container da API. As suítes de agenda (31 testes) e de financeiro (32)
+> passaram depois da última alteração, com Ruff limpo. Falta rodar `pytest`
+> inteiro depois de reiniciar o Docker.
+
+**Próximo passo:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
+fechamento de sexta às 20h `Europe/Dublin`, demonstrativo do artista e ajustes
+negativos de devolução posterior (RN-REP-003 a RN-REP-007).
 
 ## Estado de aprovação e limite de trabalho
 

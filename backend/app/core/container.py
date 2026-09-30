@@ -10,6 +10,7 @@ from app.core.database import Database
 from app.core.orm_registry import METADATA  # noqa: F401
 from app.core.settings import Settings
 from app.modules.clients.clients_factory import ClientsFactory
+from app.modules.finance.finance_factory import FinanceFactory
 from app.modules.identity.identity_factory import IdentityFactory
 from app.modules.quotes.quotes_factory import QuotesFactory
 from app.modules.scheduling.scheduling_factory import SchedulingFactory
@@ -36,7 +37,13 @@ class Container:
         )
         self._identity = IdentityFactory(self._settings)
         self._clients = ClientsFactory()
-        self._scheduling = SchedulingFactory()
+        self._finance = FinanceFactory()
+        # A agenda recebe as portas, nao o modulo financeiro: e aqui, na raiz de
+        # composicao, que os dois se encontram (ADR-016).
+        self._scheduling = SchedulingFactory(
+            deposit_gate=self._finance.deposit_gate,
+            settlement_gate=self._finance.settlement_gate,
+        )
         self._storage: ObjectStorage = FilesystemObjectStorage(self._settings.storage_root)
         self._quotes = QuotesFactory(settings=self._settings, storage=self._storage)
 
@@ -74,6 +81,10 @@ class Container:
     @property
     def scheduling(self) -> SchedulingFactory:
         return self._scheduling
+
+    @property
+    def finance(self) -> FinanceFactory:
+        return self._finance
 
     @property
     def quotes(self) -> QuotesFactory:

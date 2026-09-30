@@ -5,9 +5,14 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1, M2, M3, M4 e M7.1 — a fatia vertical de interface.
-**Próxima:** M5 — pagamentos e sinal. A M4 saiu da pausa e fechou em 30/09/2026,
-com as sessões da M4.4.
+**Concluído:** sprint 01, M1, M2, M3, M4, M5 e M7.1 — a fatia vertical de interface.
+**Próxima:** M6 — repasses e fechamento semanal.
+
+> **O portão do sinal estava aberto e foi fechado na M5.** A RN-AGE-005 e a
+> RN-PAG-002 dizem que uma solicitação não pode ser aprovada sem sinal
+> confirmado, e até 30/09/2026 o `ApproveBooking` tinha um `_deposit_is_confirmed`
+> que devolvia `True` sempre — declarado como costura, mas na prática uma regra
+> escrita que o sistema não cumpria.
 **Progresso do MVP:** 4 de 8 sprints em número; o backend está adiante disso e o
 frontend, bem atrás.
 
@@ -113,8 +118,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M3 | ⚠️ Agenda e macas | Backend | ✅ Concluída em 26/09/2026 |
 | M4 | Orçamentos e sessões | Backend | ✅ Concluída em 30/09/2026 |
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
-| M5 | Pagamentos e sinal | Backend | ⬅️ Próxima |
-| M6 | Repasses e fechamento semanal | Backend | Não iniciada |
+| M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
+| M6 | Repasses e fechamento semanal | Backend | ⬅️ Próxima |
 | M7.2 | Restante da interface do MVP | Frontend | Não iniciada |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
@@ -659,6 +664,49 @@ devoluções e as regras de cancelamento, remarcação e não comparecimento.
 
 **Resultado esperado:** nenhum pagamento é apagado; correção sempre por ajuste
 vinculado com histórico.
+
+### Evidência da sprint M5 — 30/09/2026
+
+**O sinal existe e o portão fechou.** Aprovar um agendamento passa a exigir
+pagamento confirmado (RN-AGE-005 e RN-PAG-002), e os desfechos do horário têm
+consequência registrada sobre o dinheiro.
+
+| Regra | Como o backend cumpre |
+|---|---|
+| **RN-PAG-001** | €50 por agendamento, e um sinal vivo por vez, garantido pelo índice parcial `uq_payment_live_deposit` |
+| **RN-PAG-002** | Informar e confirmar são atos separados; confirmado não existe sem quem confirmou e quando, por restrição de banco |
+| **RN-PAG-006** | Só gerente e proprietário lançam e confirmam; depósito, dinheiro e cartão são registros manuais, sem gateway |
+| **RN-PAG-007** | `Informado → Confirmado ou Recusado → Devolvido ou Estornado` num mapa de dados; recusado é final e não volta a confirmado; não há rota de exclusão |
+| **RN-PAG-009** | Devolução é linha própria vinculada ao original, com forma que pode diferir da do pagamento |
+| **RN-PAG-003** | Recusa pelo estúdio aponta o sinal para devolução integral |
+| **RN-AGE-009 / 010** | Cancelamento e não comparecimento retêm o sinal, mesmo com aviso de 24 horas |
+| **RN-AGE-008** | Dentro do prazo os valores acompanham o horário; fora dele o sinal é retido e o agendamento passa a exigir um novo |
+| **RN-GST-004** | Cliente próprio do guest não exige sinal — esses valores não passam pelo estúdio |
+
+**Duas perguntas que a documentação não fechava foram decididas com o usuário:**
+
+| Pergunta | Decisão |
+|---|---|
+| Onde grava o sinal de um agendamento sem sessão? | **No agendamento.** O sinal é pago e recebido pelo estúdio para que o horário possa ser confirmado; a solicitação fica pendente até o gestor confirmar no sistema que recebeu. `payment.booking_id` entrou no modelo por isso |
+| Cliente próprio do guest exige sinal? | **Não.** A RN-GST-004 prevalece: esses valores não passam pelo estúdio |
+
+**Decisões tomadas durante a implementação:**
+
+| Tema | Decisão |
+|---|---|
+| Retém sozinho, devolve nunca | Reter é escrituração — o estúdio já está com o dinheiro e a RN-AGE-009 diz que ele fica. Devolver é movimento de caixa, e a RN-PAG-009 manda o gestor registrar **depois de realizá-la**. O sistema aponta o que deve voltar; não lança a saída sozinho |
+| `retained_at` separado de `REFUNDED` | Um sinal retido continua confirmado. Um estado só esconderia se o dinheiro ficou ou saiu |
+| Criar já aprovado | A RN-AGE-005 permite *"desde que confirmem o sinal"*, e o sinal pertence ao agendamento — que não existe no instante da criação. O atalho passa a ser recusado onde há sinal a confirmar, e continua aberto onde a regra não o pede (RN-GST-004). O caminho é: criar, confirmar o sinal, aprovar |
+| Fronteira entre os módulos | A agenda declara as portas `DepositGate` e `BookingSettlementGate`; o financeiro as implementa; o `Container` liga. A agenda continua sem saber o que é um pagamento (ADR-016) |
+| `guest_week_id` | Fora da `0006`: a tabela `guest_week` ainda não existe, e chave estrangeira para tabela inexistente quebra a migração. Entra na sprint do guest |
+
+> **Estado dos testes nesta entrega.** Ruff limpo e uma classe por arquivo sem
+> apontamento. As suítes de agenda (31) e de financeiro (32) passaram no
+> container depois da última alteração. **A execução da suíte inteira num só
+> comando não completou**: a VM do Docker desta máquina passou a sistema de
+> arquivos somente-leitura no meio da execução e derrubou o container da API —
+> a mesma instabilidade já registrada nas entregas anteriores. Falta rodar
+> `pytest` inteiro depois de reiniciar o Docker.
 
 ## Sprint M6 — Repasses e fechamento semanal
 

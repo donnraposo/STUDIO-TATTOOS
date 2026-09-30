@@ -186,6 +186,24 @@ features/scheduling/components/
 O posicionamento usa `grid-column` calculado a partir do intervalo, evitando
 cálculo manual de pixels.
 
+### 3.1.1 Fronteira entre agenda e financeiro
+
+A RN-AGE-005 exige sinal confirmado antes de aprovar, e a RN-AGE-008, a
+RN-AGE-009 e a RN-AGE-010 dão destino ao sinal em cada desfecho. As duas metades
+se encontram por **portas declaradas pela agenda**, não por importação direta:
+
+```text
+scheduling/domain/deposit_gate.py            porta: o sinal está confirmado?
+scheduling/domain/booking_settlement_gate.py porta: o desfecho mudou
+finance/application/payment_deposit_gate.py     adaptador que responde
+finance/application/payment_settlement_gate.py  adaptador que aplica
+```
+
+A direção importa. Se a agenda importasse o financeiro, a regra de aprovação
+passaria a depender do desenho interno de pagamento, e trocar aquele desenho
+quebraria esta. Com a porta na agenda, quem liga os dois é o `Container`
+(ADR-016), e a agenda continua sem saber o que é um pagamento.
+
 ### 3.2 Componentes de orçamento
 
 ```text
@@ -219,7 +237,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Orçamentos | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
 | Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
-| Pagamentos | `GET/POST /payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
+| Pagamentos | `POST /payments`, `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
 | Pós-venda | `GET /aftercare`, `POST /aftercare/{id}/complete`, `/reopen`, `/photos` |
@@ -227,6 +245,13 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**Pagamento não tem rota de exclusão nem `PATCH` de estado.** A RN-PAG-007 diz
+que um pagamento nunca é apagado e que correção entra como ajuste vinculado ao
+registro original. Confirmar, recusar e devolver são ações próprias porque
+registram coisas diferentes — quem confirmou, o motivo da recusa, a forma da
+devolução — e um `PATCH` genérico permitiria o caminho que a regra proíbe: voltar
+um recusado a confirmado, apagando a recusa do histórico.
 
 **Sessões não têm rota de criação.** Elas nascem da aprovação do orçamento, na
 mesma transação (RN-ORC-005). Um `POST /sessions` permitiria criar sessão sem

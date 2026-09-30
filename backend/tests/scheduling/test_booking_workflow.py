@@ -7,6 +7,7 @@ from app.core.settings import Settings
 from app.modules.clients.infrastructure.models.client import Client
 from app.modules.identity.domain.user_role import UserRole
 from tests.support.account_builder import AccountBuilder
+from tests.support.deposit_confirmer import DepositConfirmer
 
 PASSWORD = "correct horse battery staple"
 START = datetime(2026, 10, 6, 10, 0, tzinfo=UTC)
@@ -24,6 +25,7 @@ def _setup(session: Session) -> dict[str, str]:
     owner = builder.create(email="owner@studio.ie", password=PASSWORD)
     artist = builder.create(email="artist@studio.ie", password=PASSWORD, role=UserRole.RESIDENT)
     other = builder.create(email="other@studio.ie", password=PASSWORD, role=UserRole.RESIDENT)
+    guest = builder.create(email="guest@studio.ie", password=PASSWORD, role=UserRole.GUEST)
     subject = Client(name="Aoife", phone="+353 87 111 1111", registered_by_artist_id=artist.id)
     session.add(subject)
     session.flush()
@@ -32,6 +34,7 @@ def _setup(session: Session) -> dict[str, str]:
         "owner": str(owner.id),
         "artist": str(artist.id),
         "other": str(other.id),
+        "guest": str(guest.id),
         "client": str(subject.id),
     }
 
@@ -50,6 +53,30 @@ def _booking_payload(client_id: str, booth_id: str, hours_offset: int = 0) -> di
         "starts_at": start.isoformat(),
         "ends_at": (start + timedelta(hours=2)).isoformat(),
     }
+
+
+def _approved_booking(
+    caller: TestClient,
+    api_prefix: str,
+    headers: dict[str, str],
+    payload: dict,
+) -> dict:
+    """Cria, confirma o sinal e aprova.
+
+    Desde a M5 a aprovacao exige sinal confirmado (RN-AGE-005 e RN-PAG-002), e
+    `approve_immediately` deixou de dar conta: nao existe sinal confirmado para
+    um agendamento que ainda nao foi gravado. Os tres passos ficam aqui, num
+    lugar so, em vez de repetidos em cada cenario que precisa de um agendamento
+    aprovado para testar outra coisa."""
+    created = caller.post(f"{api_prefix}/bookings", json=payload, headers=headers)
+    assert created.status_code == 201, created.text
+    booking = created.json()
+
+    DepositConfirmer(caller, api_prefix).confirm_for(booking["id"], headers)
+
+    approved = caller.post(f"{api_prefix}/bookings/{booking['id']}/approve", headers=headers)
+    assert approved.status_code == 200, approved.text
+    return approved.json()
 
 
 def test_artist_request_starts_as_pending(
@@ -88,9 +115,13 @@ def test_artist_cannot_create_an_already_approved_booking(
     assert response.status_code == 403
 
 
-def test_management_can_create_an_approved_booking(
+def test_management_cannot_create_an_approved_booking_before_the_deposit(
     client: TestClient, session: Session, api_prefix: str
 ) -> None:
+    """RN-AGE-005: criar ja aprovado vale *"desde que confirmem o sinal"*, e o
+    sinal pertence ao agendamento (RN-PAG-001) -- que ainda nao existe no
+    instante da criacao. Nao ha sinal confirmado a apresentar, entao o atalho e
+    recusado com a instrucao do caminho certo."""
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
     booth_id = _create_booth(client, api_prefix, headers)
@@ -105,7 +136,31 @@ def test_management_can_create_an_approved_booking(
         headers=headers,
     )
 
-    assert response.status_code == 201
+    assert response.status_code == 422
+    assert "deposit" in response.json()["detail"].lower()
+
+
+def test_management_creates_an_approved_booking_for_a_guest_own_client(
+    client: TestClient, session: Session, api_prefix: str
+) -> None:
+    """RN-GST-004: o guest recebe diretamente dos clientes proprios e esses
+    valores nao passam pelo estudio, entao esse agendamento nao exige sinal --
+    e o atalho continua aberto exatamente ali."""
+    ids = _setup(session)
+    headers = _sign_in(client, api_prefix, "owner@studio.ie")
+    booth_id = _create_booth(client, api_prefix, headers)
+
+    response = client.post(
+        f"{api_prefix}/bookings",
+        json={
+            **_booking_payload(ids["client"], booth_id),
+            "artist_id": ids["guest"],
+            "approve_immediately": True,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 201, response.text
     assert response.json()["status"] == "APPROVED"
 
 
@@ -157,6 +212,7 @@ def test_management_approves_a_pending_request(
         json={**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
         headers=headers,
     ).json()
+    DepositConfirmer(client, api_prefix).confirm_for(created["id"], headers)
 
     response = client.post(f"{api_prefix}/bookings/{created['id']}/approve", headers=headers)
 
@@ -186,6 +242,10 @@ def test_approving_an_overlapping_request_returns_conflict(
         },
         headers=headers,
     ).json()
+
+    deposits = DepositConfirmer(client, api_prefix)
+    deposits.confirm_for(first["id"], headers)
+    deposits.confirm_for(second["id"], headers)
 
     assert (
         client.post(f"{api_prefix}/bookings/{first['id']}/approve", headers=headers).status_code
@@ -258,15 +318,12 @@ def test_cancelling_closes_the_booking(
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
     booth_id = _create_booth(client, api_prefix, headers)
-    created = client.post(
-        f"{api_prefix}/bookings",
-        json={
-            **_booking_payload(ids["client"], booth_id),
-            "artist_id": ids["artist"],
-            "approve_immediately": True,
-        },
-        headers=headers,
-    ).json()
+    created = _approved_booking(
+        client,
+        api_prefix,
+        headers,
+        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+    )
 
     response = client.post(
         f"{api_prefix}/bookings/{created['id']}/cancel",
@@ -286,15 +343,12 @@ def test_no_show_is_recorded_separately_from_cancellation(
     ids = _setup(session)
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
     booth_id = _create_booth(client, api_prefix, headers)
-    created = client.post(
-        f"{api_prefix}/bookings",
-        json={
-            **_booking_payload(ids["client"], booth_id),
-            "artist_id": ids["artist"],
-            "approve_immediately": True,
-        },
-        headers=headers,
-    ).json()
+    created = _approved_booking(
+        client,
+        api_prefix,
+        headers,
+        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+    )
 
     response = client.post(
         f"{api_prefix}/bookings/{created['id']}/cancel",
@@ -312,15 +366,12 @@ def test_artist_cannot_cancel_directly(
     ids = _setup(session)
     owner_headers = _sign_in(client, api_prefix, "owner@studio.ie")
     booth_id = _create_booth(client, api_prefix, owner_headers)
-    created = client.post(
-        f"{api_prefix}/bookings",
-        json={
-            **_booking_payload(ids["client"], booth_id),
-            "artist_id": ids["artist"],
-            "approve_immediately": True,
-        },
-        headers=owner_headers,
-    ).json()
+    created = _approved_booking(
+        client,
+        api_prefix,
+        owner_headers,
+        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
+    )
 
     artist = TestClient(client.app)
     headers = _sign_in(artist, api_prefix, "artist@studio.ie")
@@ -340,24 +391,21 @@ def test_rescheduling_onto_an_occupied_slot_returns_conflict(
     headers = _sign_in(client, api_prefix, "owner@studio.ie")
     booth_id = _create_booth(client, api_prefix, headers)
 
-    client.post(
-        f"{api_prefix}/bookings",
-        json={
-            **_booking_payload(ids["client"], booth_id),
-            "artist_id": ids["artist"],
-            "approve_immediately": True,
-        },
-        headers=headers,
+    _approved_booking(
+        client,
+        api_prefix,
+        headers,
+        {**_booking_payload(ids["client"], booth_id), "artist_id": ids["artist"]},
     )
-    movable = client.post(
-        f"{api_prefix}/bookings",
-        json={
+    movable = _approved_booking(
+        client,
+        api_prefix,
+        headers,
+        {
             **_booking_payload(ids["client"], booth_id, hours_offset=5),
             "artist_id": ids["other"],
-            "approve_immediately": True,
         },
-        headers=headers,
-    ).json()
+    )
 
     response = client.post(
         f"{api_prefix}/bookings/{movable['id']}/reschedule",
