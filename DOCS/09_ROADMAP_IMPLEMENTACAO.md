@@ -1183,12 +1183,16 @@ fila — que é o caso comum, porque um sinal por confirmar é justamente o que
 impede aquela aprovação (RN-AGE-005). Não estando, o item vai à agenda sem data:
 melhor abrir no dia de hoje do que num dia errado.
 
-> **O que ficou por conferir na tela.** Os sete testes novos cobrem a decisão —
-> inclusive o caso relatado, um agendamento de outra semana devolvendo o dia
-> certo — mas a ligação entre o endereço e a agenda **não foi clicada na
-> aplicação**: a VM do Docker desta máquina passou a somente-leitura de novo e
-> derrubou o container do frontend. ESLint e `vue-tsc` limpos. Falta abrir um
-> item do painel com o Docker de pé.
+**Conferido na aplicação rodando**, com o Docker de volta: clicar em `Open` num
+agendamento de 1 de outubro, estando o estúdio em 30 de setembro, abriu
+`/schedule?day=2026-10-01` com o campo de data naquele dia e a reserva na grade.
+
+**Dois acabamentos saíram dessa conferência:**
+
+| O que apareceu | Decisão |
+|---|---|
+| Cada dia consultado viraria uma entrada de histórico | `replace` e não `push`: sair da agenda passaria a exigir um toque em voltar para cada dia que se olhou. Voltar leva de onde se veio — o painel, quando foi ele que trouxe |
+| `?day=ontem` caía no dia de hoje, mas a barra continuava exibindo `ontem` | O endereço é acertado também na montagem. Um endereço que mente sobre o que está na tela leva outra pessoa ao mesmo engano quando é copiado |
 
 ## Sprint M8 — Implantação mínima
 

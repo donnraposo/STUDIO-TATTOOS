@@ -348,16 +348,22 @@ function startComposing(): void {
   composing.value = true;
 }
 
-/** Trocar o dia recarrega e **fica no endereço**.
+/** O dia aberto fica no endereço, para que recarregar não perca a página e o
+ * endereço possa ser copiado para outra pessoa.
  *
- * Sem isso, voltar pelo botão do navegador devolveria o dia de hoje em vez do
- * dia que estava aberto — e o endereço de uma agenda deixaria de poder ser
- * copiado para outra pessoa. */
-watch(day, (current) => {
-  void load();
+ * `replace` e não `push` **de propósito**: cada dia consultado viraria uma
+ * entrada no histórico, e sair da agenda passaria a exigir um toque em voltar
+ * para cada dia que se olhou. Com `replace`, voltar leva de onde se veio — o
+ * painel, quando foi ele que trouxe. */
+function rememberDay(current: string): void {
   if (route.query.day !== current) {
     void router.replace({ query: { ...route.query, day: current } });
   }
+}
+
+watch(day, (current) => {
+  void load();
+  rememberDay(current);
 });
 
 /** Chegar por um item do painel com a tela já aberta também muda o dia. */
@@ -371,7 +377,15 @@ watch(
   },
 );
 
-onMounted(load);
+/** Na montagem o endereço também é acertado.
+ *
+ * Um `?day=ontem` cai no dia de hoje, e sem isto a barra continuaria exibindo
+ * `ontem` sobre uma agenda que é de hoje — o endereço passaria a mentir sobre o
+ * que está na tela, e copiá-lo levaria outra pessoa ao mesmo engano. */
+onMounted(() => {
+  void load();
+  rememberDay(day.value);
+});
 </script>
 
 <template>
