@@ -43,8 +43,17 @@ seguinte fecha sem saber tudo o que tinha de fechar.
 
 | Ponto no código | O que falta | Fecha em |
 |---|---|---|
-| `ApproveBooking._deposit_is_confirmed` | Consultar o sinal confirmado; hoje devolve verdadeiro fixo (RN-AGE-005) | M5 |
-| `CancelBooking`, `RescheduleBooking` | Destino do sinal em cancelamento, não comparecimento e remarcação fora de 24h; hoje só o estado é gravado | M5 |
+| `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008) | M6 |
+| `payment.guest_week_id` | Coluna e origem da taxa semanal; a tabela `guest_week` ainda não existe (RN-GST-001) | Sprint do guest |
+| `BookingForm` — caixa "Approve straight away" | Criar já aprovado passou a ser recusado onde há sinal a confirmar (ADR-027); a tela ainda oferece a caixa | M7.2 |
+| Tela de sinal e pagamentos | O backend do financeiro existe e nenhuma tela o consome (RN-PAG-002) | M7.2 |
+
+**Fechadas na M5, em 30/09/2026:**
+
+| Ponto no código | Como fechou |
+|---|---|
+| `ApproveBooking._deposit_is_confirmed` | Substituído pela porta `DepositGate`, respondida pelo financeiro (ADR-028). O método devolvia verdadeiro fixo |
+| `CancelBooking`, `RejectBooking`, `RescheduleBooking` | Passam o desfecho pela porta `BookingSettlementGate`; a retenção é gravada e a devolução é apontada (ADR-029) |
 
 ### Riscos abertos
 
@@ -391,12 +400,17 @@ proprietário e gerente **decidem**. O gestor pode criar já aprovado (RN-AGE-00
 Conferir e depois gravar reabriria exatamente a janela de corrida que o ADR-011
 fecha. Quem decide é a restrição, no momento da gravação.
 
-**Dependência declarada:** a RN-AGE-005 exige sinal confirmado para aprovar, e o
-módulo de pagamentos é a sprint M5. A costura está pronta em
-`ApproveBooking._deposit_is_confirmed`, que hoje devolve verdadeiro. Travar agora
-impediria qualquer uso da agenda. O mesmo vale para o destino do sinal em
-cancelamento, não comparecimento e remarcação fora de 24h: o estado fica
-registrado aqui, e o efeito financeiro é executado na M5.
+**Dependência declarada, resolvida em 30/09/2026:** a RN-AGE-005 exige sinal
+confirmado para aprovar, e o módulo de pagamentos era a sprint M5. A costura
+estava pronta em
+`ApproveBooking._deposit_is_confirmed`, que devolvia verdadeiro fixo, porque
+travar naquele momento impediria qualquer uso da agenda. O mesmo valia para o
+destino do sinal em cancelamento, não comparecimento e remarcação fora de 24h: o
+estado ficava registrado aqui e o efeito financeiro esperava a M5.
+
+> **A M5 fechou os dois pontos.** O método deu lugar à porta `DepositGate`
+> (ADR-028), e os desfechos passam pela `BookingSettlementGate`. Aprovar
+> agendamento agora exige sinal confirmado, como a regra sempre disse.
 
 ### Evidência da etapa M3.1 — 26/09/2026
 

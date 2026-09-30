@@ -420,6 +420,10 @@ RN-AGE-005 e a RN-PAG-002 estavam escritas mas não valiam: `ApproveBooking` tin
 um `_deposit_is_confirmed` que devolvia `True` sempre. Aprovar um agendamento
 agora exige pagamento confirmado.
 
+As decisões desta sprint estão registradas como **ADR-027** (o sinal pertence ao
+agendamento), **ADR-028** (agenda e financeiro se falam por portas declaradas pela
+agenda) e **ADR-029** (o sistema retém sozinho e nunca devolve sozinho).
+
 **O sinal pertence ao agendamento, não à sessão.** Foi a pergunta que a
 documentação não fechava: a RN-PAG-001 diz "todo agendamento exigirá €50" e o
 modelo só previa pagamento ligado a sessão ou a semana de guest — mas

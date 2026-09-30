@@ -444,6 +444,12 @@ tira a maior incerteza de prazo do que resta.
 exigir sinal confirmado, e a tela de agenda ganhará o indicador correspondente. É
 acréscimo, não reescrita, e está na tabela de pendências de costura do roadmap.
 
+> **Concretizou-se em 30/09/2026, e maior do que o previsto.** Além do indicador,
+> a caixa "Approve straight away" do formulário de reserva deixou de funcionar
+> para residente: criar já aprovado passou a ser recusado onde há sinal a
+> confirmar (ADR-027). Continua sendo acréscimo e não reescrita, mas é mudança de
+> comportamento numa tela entregue, não só de aparência.
+
 **Consequência de processo:** a M4 fica aberta em três quartos durante a M7.1. Para
 que isso não vire divergência entre código e documentação, a M4.4 está declarada
 como a retomada imediata ao fim da M7.1, e o roadmap marca a sprint como pausada, e
@@ -479,6 +485,116 @@ Recusada porque não resolve o caso que causou o defeito: a chave estrangeira
 cruza módulos, e o módulo que precisa da tabela registrada não é o dono dela.
 
 **Data:** 29/09/2026.
+
+## ADR-027 — O sinal pertence ao agendamento, não à sessão
+
+**Decisão:** `payment` ganha `booking_id` como origem possível, ao lado de
+`session_id`. O sinal de €50 é gravado contra o **agendamento**; o saldo continua
+contra a sessão. A restrição garante exatamente uma origem preenchida.
+
+**Motivo:** a RN-PAG-001 diz "**todo agendamento** exigirá um sinal de €50 para
+confirmação", e a RN-AGE-005 condiciona a aprovação do horário a esse sinal. A
+seção 7 do `05_MODELO_DADOS.md` previa apenas `session_id` ou `guest_week_id` —
+mas `booking.session_id` é nulo em todo horário que não pertence a um trabalho
+orçado, que é o caso de toda a agenda entregue na M3 e de qualquer reserva feita
+por guest, que não acessa orçamento (RN-ORC-001). Sem a coluna, o sinal desses
+agendamentos não tinha onde ser gravado e o portão da RN-AGE-005 não tinha o que
+conferir.
+
+**A decisão é do responsável**, tomada em 30/09/2026 quando a documentação se
+mostrou incompleta: o sinal é pago e recebido pelo estúdio para que o horário
+possa ser confirmado, e a solicitação fica pendente até o gestor confirmar no
+sistema que recebeu.
+
+**Consequência:** criar agendamento já em `APPROVED` passa a ser recusado onde há
+sinal a confirmar. A RN-AGE-005 permite o atalho *"desde que confirmem o sinal"*,
+e não existe sinal confirmado para uma linha que ainda não foi gravada. O caminho
+é criar, confirmar o sinal, aprovar. O atalho continua aberto exatamente onde a
+regra não pede sinal: cliente próprio do guest (RN-GST-004).
+
+**Consequência de modelagem:** `retained_at` e `retained_reason` entram junto. A
+RN-AGE-008 diz que, fora do prazo de 24 horas, o cliente **perde** o sinal e paga
+um novo. O sinal perdido continua `CONFIRMED` — o estúdio ficou com ele —, mas
+precisa sair de cena como sinal daquele horário, senão continuaria satisfazendo o
+portão e o cliente aprovaria de novo sem pagar nada.
+
+**Alternativas consideradas:** exigir que todo agendamento nasça de um orçamento,
+o que manteria o modelo intacto mas quebraria a agenda da M3 e o guest; ou exigir
+sinal só onde há sessão, o que manteria um caminho de aprovação sem portão e
+contrariaria a RN-PAG-001 na letra. Ambas recusadas pelo responsável.
+
+**Data:** 30/09/2026.
+
+## ADR-028 — Agenda e financeiro se falam por portas declaradas pela agenda
+
+**Decisão:** a agenda declara `DepositGate` e `BookingSettlementGate` no próprio
+domínio; o financeiro as implementa em `PaymentDepositGate` e
+`PaymentSettlementGate`; o `Container` liga os dois (ADR-016). A agenda não
+importa o módulo financeiro.
+
+**Motivo:** a RN-AGE-005 exige sinal confirmado antes de aprovar, e a RN-PAG-003,
+a RN-AGE-008, a RN-AGE-009 e a RN-AGE-010 dão destino ao sinal em cada desfecho.
+São regras da agenda que dependem de uma resposta do financeiro. Se a agenda
+importasse o financeiro, a regra de aprovação passaria a depender do desenho
+interno de pagamento, e trocar aquele desenho quebraria esta — a dependência
+ficaria na direção errada, porque quem precisa da resposta é quem deve declarar a
+pergunta.
+
+**A porta de desfecho tem um método só**, com o desfecho como dado
+(`BookingOutcome`). Uma porta com um método por evento cresceria a cada regra
+nova e obrigaria o financeiro a implementar método vazio para o que ainda não
+trata.
+
+**Os dois vocabulários ficam separados de propósito.** A agenda fala em
+`BookingOutcome` — o que aconteceu com o horário; o financeiro fala em
+`SettlementEvent` — o destino do dinheiro. A tradução mora no adaptador, na
+fronteira. Um enum compartilhado faria a agenda importar o vocabulário do
+financeiro para poder chamá-lo, que é exatamente a dependência que a porta
+existe para evitar.
+
+**Consequência:** a `SchedulingFactory` passa a receber fábricas das portas, e
+não instâncias prontas — as portas carregam repositórios, e repositório pertence
+à transação em curso.
+
+**Alternativa considerada:** o roteador orquestrar os dois módulos, chamando a
+agenda e depois o financeiro. Recusada porque põe regra de negócio na rota, o que
+o protocolo proíbe, e porque quebraria a atomicidade: um cancelamento gravado com
+a retenção falhando deixaria o horário livre e o sinal ainda valendo.
+
+**Data:** 30/09/2026.
+
+## ADR-029 — O sistema retém sozinho e nunca devolve sozinho
+
+**Decisão:** quando o desfecho do agendamento manda o estúdio ficar com o sinal,
+o sistema marca a retenção por conta própria. Quando manda devolver, o sistema
+**aponta** o que deve voltar e não lança nada: a devolução é registrada pelo
+gestor, com valor, forma, motivo e responsável.
+
+**Motivo:** a diferença não é de estilo, é da regra. Reter é escrituração — o
+estúdio já está com o dinheiro e a RN-AGE-009 diz que ele fica, mesmo com aviso
+de 24 horas; nada se move, só se registra. Devolver é movimento de caixa, e a
+RN-PAG-009 é explícita: *"gerente ou proprietário registrará manualmente a
+devolução **depois de realizá-la**"*. Um sistema que lançasse a devolução sozinho
+estaria afirmando que o dinheiro saiu quando ninguém o mandou sair — e o registro
+financeiro é de seis anos (RN-CLI-007).
+
+**Consequência:** `SettleBooking` devolve a lista de pagamentos que a regra manda
+devolver, e a grava na auditoria. A interface mostra a lista; o `RefundPayment`
+executa quando o gestor o fizer. Um pagamento que deveria ter voltado e não
+voltou continua visível, em vez de sumir num lançamento automático que ninguém
+conferiu.
+
+**Consequência de modelagem:** `retained_at` é separado de `REFUNDED`. Um sinal
+retido continua confirmado. Um estado único esconderia qual dos dois aconteceu, e
+os dois são a diferença entre o estúdio ter ficado com o dinheiro e o dinheiro
+ter saído do caixa.
+
+**Alternativa considerada:** lançar a devolução automaticamente e deixar o gestor
+corrigir. Recusada porque a RN-PAG-007 proíbe apagar pagamento e manda corrigir
+por ajuste vinculado — um lançamento automático errado viraria mais um lançamento
+no histórico, não um erro desfeito.
+
+**Data:** 30/09/2026.
 
 ## Processo de alteração
 

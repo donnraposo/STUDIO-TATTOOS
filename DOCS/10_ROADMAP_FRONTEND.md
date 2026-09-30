@@ -37,25 +37,35 @@ compartilhado algum, nenhuma tela de negócio.
 ## 3. O teto: até onde a API deixa ir
 
 O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
-**hoje**, e ele muda quando a M5 e a M6 entrarem.
+**hoje**, e ele muda a cada sprint de backend.
 
-| Área | API pronta | Cabe na fatia antecipada |
+| Área | API pronta | Tela existe |
 |---|---|---|
-| Autenticação e sessão | ✅ | Sim |
-| Contas e permissões | ✅ | Sim, mas fica para a M7.2 por não ser preciso à demonstração |
-| Clientes | ✅ | Sim |
-| Macas e agenda | ✅ | Sim |
-| Orçamentos e imagens de referência | ✅ | Sim |
-| Sessões | ❌ M4.4 | Não |
-| Pagamentos e sinal | ❌ M5 | Não |
-| Repasses | ❌ M6 | Não |
-| Pós-venda, relatórios, guest | ❌ Fase 2 | Não |
+| Autenticação e sessão | ✅ | ✅ M7.1.1 |
+| Contas e permissões | ✅ | ❌ M7.2 — adiada por não ser precisa à demonstração |
+| Clientes | ✅ | ✅ M7.1.2 |
+| Macas e agenda | ✅ | ✅ M7.1.3 |
+| Orçamentos e imagens de referência | ✅ | ✅ M7.1.4 |
+| Sessões | ✅ M4.4 | ❌ M7.2 |
+| Pagamentos e sinal | ✅ M5 | ❌ M7.2 |
+| Repasses | ❌ M6 | ❌ M7.2 |
+| Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
 
-**A leitura honesta para a demonstração:** das duas dores que justificam o sistema,
-a fatia antecipada resolve **uma inteira** — impedir choque de horário nas macas,
-com o modal de conflito que não permite ignorar — e **nenhuma parte da outra**,
-saber quem recebe quanto. O percentual congelado no orçamento é o mais perto que a
-demonstração chega de dinheiro.
+**O teto deixou de ser o backend.** Até 29/09/2026 a coluna da API era o limite;
+hoje o backend está à frente da interface em duas sprints inteiras. Sessões e
+pagamentos existem e nenhuma tela os consome.
+
+**A leitura honesta para a demonstração:** das duas dores que justificam o
+sistema, a interface resolve **uma inteira** — impedir choque de horário nas
+macas, com o modal de conflito que não permite ignorar — e **nenhuma parte da
+outra**, saber quem recebe quanto. O percentual congelado no orçamento é o mais
+perto que a demonstração chega de dinheiro.
+
+> **Uma tela entregue mudou de comportamento sem mudar de código.** A M5 fechou o
+> portão da RN-AGE-005, e a caixa "Approve straight away" do `BookingForm` passou
+> a ser recusada pelo backend para residente: criar já aprovado só vale onde não
+> há sinal a confirmar (ADR-027). A tela ainda oferece a caixa. É a primeira
+> pendência da M7.2.
 
 ## 4. Princípios
 
@@ -407,17 +417,21 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 
 ## 7. O que fica para a M7.2
 
-Depende da M5 e da M6, e entra depois delas.
+| Tela | Depende de | Situação da dependência |
+|---|---|---|
+| Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ Pronta — a tela é que ficou para trás |
+| Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
+| Sessões e atendimentos | M4.4 | ✅ Pronta |
+| Repasses semanais e demonstrativo | M6 | ❌ Não iniciada |
+| Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
+| Painel do residente | M6 | ❌ Não iniciada |
+| Usuários e permissões | Nada — a API está pronta, foi adiada por não ser precisa à demonstração | ✅ Pronta |
+| Configuração de macas e horários | RN-AGE-011, que está na F3 | ❌ Fase 3 |
 
-| Tela | Depende de |
-|---|---|
-| Sessões e atendimentos | M4.4 |
-| Pagamentos, devoluções e estornos | M5 |
-| Repasses semanais e demonstrativo | M6 |
-| Painel do proprietário e do gerente | M5 e M6 |
-| Painel do residente | M6 |
-| Usuários e permissões | Nada — a API está pronta, foi adiada por não ser precisa à demonstração |
-| Configuração de macas e horários | RN-AGE-011, que está na F3 |
+**A ordem mudou de critério.** Quando a M7.2 foi planejada, ela esperava o
+backend. Agora espera só a M6 — e as três primeiras linhas da tabela podem
+começar a qualquer momento. A primeira delas é correção de defeito, não tela
+nova: o `BookingForm` oferece uma ação que o servidor recusa.
 
 ## 8. Fase 2
 
@@ -456,7 +470,8 @@ com motivo, não por antecipação.
 | Risco | Resposta |
 |---|---|
 | A timeline é o maior esforço sem biblioteca do projeto | Antecipada para a M7.1.3, com a aritmética isolada e testada. Antecipar é o que tira o risco da estimativa da M7.2 |
-| A M5 fará a aprovação de agendamento exigir sinal confirmado | Acréscimo de indicador na tela de agenda, não reescrita. Está na tabela de pendências de costura do `09` |
+| A M5 fará a aprovação de agendamento exigir sinal confirmado | ⚠️ **Concretizado em 30/09/2026, e maior do que o previsto.** Não é só indicador: a caixa "Approve straight away" deixou de funcionar para residente (ADR-027). Registrado nas pendências de costura do `09` |
+| O backend andar mais rápido que a interface | Aconteceu: M4.4 e M5 entregues sem tela. O risco não é técnico, é de expectativa — quem vê a demonstração não sabe o que existe por trás. A seção 3 deste documento serve de roteiro na reunião |
 | A demonstração criar a expectativa de que o financeiro existe | Dizer na reunião, com todas as letras, o que não está lá. A seção 3 deste documento serve de roteiro |
 | Pausar o backend com a M4 em três quartos | A M4.4 é pequena e está declarada como retomada imediatamente após a M7.1 |
 | Tokens de design nunca exercitados em tela real | A M7.1.1 constrói os componentes base antes de qualquer tela de negócio, e é ali que a paleta ouro sobre preto é testada de verdade |

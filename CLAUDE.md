@@ -138,6 +138,7 @@ grep -rnE '^\s*<(button|input|select|textarea)([ >/]|$)' frontend/src --include=
 | Autenticação de requisição em peça única | `SessionAuthenticator` | ADR-022 |
 | Políticas de permissão como funções puras de decisão | `*/domain/*_policy.py` | — |
 | Integridade crítica garantida pelo banco, não só pela aplicação | migrações | ADR-011, ADR-012 |
+| Módulo que precisa de resposta de outro **declara a porta**; o outro implementa; o `Container` liga | `scheduling/domain/*_gate.py` | ADR-028 |
 
 Módulo novo segue esse desenho: `domain/`, `application/`, `infrastructure/`,
 `api/` e uma `XFactory` registrada no `Container`.
