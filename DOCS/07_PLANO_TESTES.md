@@ -19,7 +19,7 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**90 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**97 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
 tradução de erro da API e ciclo de sessão.
@@ -36,7 +36,7 @@ tradução de erro da API e ciclo de sessão.
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | **Integridade de orçamento e sessão** | Coberta por 11 testes de restrição na migração `0005`: aprovado sem percentual congelado, rejeitado sem motivo, sequência duplicada, parcial sem valor cobrado, realizada sem data real, quitada sem confirmação do gestor e dois agendamentos vivos na mesma sessão |
 | **Consultas do painel do gestor** | Coberta: pendentes sem janela de data, filtro somado ao recorte por artista, filtro e janela independentes, estado desconhecido recusado, orçamentos pendentes, pagamentos aguardando confirmação vindos do estúdio inteiro, e o artista recusado na fila do gestor |
-| **Fila do painel** | Coberta por 7 testes de classe pura: as três origens numa lista só, **ordenadas do mais antigo para o mais recente** qualquer que seja a origem, item que continua aparecendo quando o nome do cliente é desconhecido, e cada origem levando à tela que a decide |
+| **Fila do painel** | Coberta por 11 testes de classe pura: o item abre a agenda **no dia do agendamento** e não no de hoje, o sinal segue o agendamento que ele trava, e o dia fica de fora quando não se conhece; as três origens numa lista só, **ordenadas do mais antigo para o mais recente** qualquer que seja a origem, item que continua aparecendo quando o nome do cliente é desconhecido, e cada origem levando à tela que a decide |
 | **Portão do sinal** | Coberta: sinal apenas informado **não** libera a aprovação, confirmado libera, artista não lança nem confirma pagamento, sinal recusado deixa o cliente pagar outro, dois sinais vivos no mesmo agendamento são recusados, e sinal sem agendamento é recusado |
 | **Estados do pagamento** | Coberta por classe pura: o fluxo da RN-PAG-007 inteiro, recusado que nunca volta a confirmado, e devolvido e estornado como estados finais |
 | **Desfecho financeiro do agendamento** | Coberta: recusa pelo estúdio devolve tudo, cancelamento e não comparecimento retêm o sinal mesmo com aviso, remarcação dentro do prazo leva os valores junto, fora do prazo retém — e a regra das 24 horas conferida na borda exata, inclusive nas 24 horas cheias |
@@ -48,7 +48,7 @@ tradução de erro da API e ciclo de sessão.
 | **Ciclo do orçamento** | Coberta: guest sem acesso, residente não aprova, percentual congelado em 70 e em 50 conforme a origem, correção de percentual pelo gestor registrada na auditoria, edição de aprovado voltando a pendente e limpando o percentual, recusa sem motivo, reaprovação bloqueada e visibilidade entre artistas |
 | **Imagens de referência** | Coberta: leitura sem sessão devolvendo 401, artista de fora recebendo 403 em listar, ler e anexar, imagem de um orçamento não saindo por outro, tipo não aceito, arquivo acima de 10 MB, arquivo vazio, limite de 10 por orçamento, anexar não reabrindo aprovação, residente sem anexar em aprovado e remoção apagando o arquivo |
 | **Armazenamento em sistema de arquivos** | Coberta no adaptador: ida e volta dos bytes, criação da árvore de diretórios, sobrescrita sem deixar o temporário, leitura de chave ausente como erro de domínio, remoção repetida sem erro e chave tentando escapar da raiz nos três formatos |
-| **Fuso do estúdio no frontend** | Coberta: horário de verão e horário padrão, mesmo instante escrito com deslocamentos diferentes, e minutos desde a meia-noite atravessando a virada. Uma agenda deslocada por uma hora parece correta na tela, e é por isso que tem teste |
+| **Fuso do estúdio no frontend** | Coberta: horário de verão e horário padrão, mesmo instante escrito com deslocamentos diferentes, minutos desde a meia-noite atravessando a virada, e **o dia de uma reserva das 00h30 de Dublin**, que em UTC cairia no dia anterior. Uma agenda deslocada por uma hora parece correta na tela, e é por isso que tem teste |
 | **Cliente HTTP do frontend** | Coberta: CSRF ausente na leitura e presente na escrita, cookie de sessão enviado, 401 avisando a aplicação, 409 marcado para o modal de conflito, mensagem de campo extraída do erro de validação, corpo de erro que não é JSON e resposta vazia no `DELETE` |
 | **Sessão no frontend** | Coberta: reconhecimento pelo cookie, sessão expirada, API fora do ar sem impedir a aplicação de montar, e saída que só esquece o usuário depois de o servidor encerrar |
 | **Cliente de API de clientes** | Coberta: tradução da listagem, alerta de duplicidade vindo junto do cliente criado, e o reconhecimento das **duas** formas que o detalhe devolve conforme a RN-CLI-004 |

@@ -19,6 +19,7 @@ export class StudioClock {
   private readonly dateFormat: Intl.DateTimeFormat;
   private readonly dateTimeFormat: Intl.DateTimeFormat;
   private readonly partsFormat: Intl.DateTimeFormat;
+  private readonly dayFormat: Intl.DateTimeFormat;
 
   constructor(timeZone: string = StudioClock.TIME_ZONE) {
     const locale = StudioClock.LOCALE;
@@ -49,6 +50,15 @@ export class StudioClock {
       minute: "2-digit",
       hour12: false,
     });
+    /** `en-CA` porque é o único locale corrente que formata data como
+     * `YYYY-MM-DD` nativamente. Montar a partir das partes daria o mesmo
+     * resultado com três linhas a mais e um `padStart` a esquecer. */
+    this.dayFormat = new Intl.DateTimeFormat("en-CA", {
+      timeZone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
   }
 
   /** `14:30` */
@@ -64,6 +74,22 @@ export class StudioClock {
   /** `06 Oct 2026, 14:30` */
   dateTime(iso: string): string {
     return this.dateTimeFormat.format(new Date(iso));
+  }
+
+  /** `2026-10-06` — o dia **no estúdio**, na forma que um campo de data usa.
+   *
+   * É o que liga um instante a uma agenda: a reserva das 00h30 de terça em
+   * Dublin pertence a terça, e `toISOString().slice(0, 10)` a colocaria na
+   * segunda, porque aquele instante ainda é segunda em UTC. O erro tem uma hora
+   * de largura e aparece só de madrugada e só em parte do ano — o tipo de
+   * defeito que ninguém reproduz quando é relatado. */
+  dayKey(iso: string): string {
+    return this.dayFormat.format(new Date(iso));
+  }
+
+  /** O dia de hoje no estúdio, pela mesma régua. */
+  today(now: Date = new Date()): string {
+    return this.dayFormat.format(now);
   }
 
   /** Minutos desde a meia-noite **no estúdio**.

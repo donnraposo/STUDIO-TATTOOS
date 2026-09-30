@@ -141,6 +141,55 @@ describe("PendingWorkAssembler", () => {
     expect(items[0]?.detail).toContain("Deposit");
   });
 
+  /** O critério da etapa é "sem o gestor procurar". Levar à agenda de hoje uma
+   * solicitação da semana que vem devolve a procura a ele. */
+  it("opens a booking on its own day, not on today", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ startsAt: "2026-11-20T14:00:00+00:00" })],
+      payments: [],
+      quotes: [],
+      clientNames: NAMES,
+    });
+
+    expect(items[0]?.query).toEqual({ day: "2026-11-20" });
+  });
+
+  it("opens a deposit on the day of the booking it is holding up", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ id: "b9", startsAt: "2026-11-20T14:00:00+00:00" })],
+      payments: [payment({ bookingId: "b9" })],
+      quotes: [],
+      clientNames: NAMES,
+    });
+
+    const deposit = items.find((item) => item.kind === "PAYMENT");
+    expect(deposit?.query).toEqual({ day: "2026-11-20" });
+  });
+
+  /** Melhor abrir no dia de hoje do que num dia errado: o sinal de um
+   * agendamento que não está na fila não tem data conhecida aqui. */
+  it("leaves the day out when the booking is not among the pending ones", () => {
+    const items = assembler.assemble({
+      bookings: [],
+      payments: [payment({ bookingId: "somewhere-else" })],
+      quotes: [],
+      clientNames: NAMES,
+    });
+
+    expect(items[0]?.query).toBeUndefined();
+  });
+
+  it("does not send a day to the quotes screen, which has none", () => {
+    const items = assembler.assemble({
+      bookings: [],
+      payments: [],
+      quotes: [quote()],
+      clientNames: NAMES,
+    });
+
+    expect(items[0]?.query).toBeUndefined();
+  });
+
   it("sends each origin to the screen that decides it", () => {
     const items = assembler.assemble({
       bookings: [booking()],

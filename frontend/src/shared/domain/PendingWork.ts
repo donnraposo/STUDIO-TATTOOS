@@ -23,4 +23,10 @@ export interface PendingWorkItem {
   /** Nome da rota que decide este item. A lista não navega: devolve a intenção
    * e a tela decide, como manda a fronteira entre camadas. */
   route: string;
+  /** O que a rota precisa para abrir no lugar certo — hoje, o dia da agenda.
+   *
+   * Sem isto, abrir uma solicitação de outra semana deixava o gestor no dia de
+   * hoje, procurando. O item que existe para acabar com a procura não pode
+   * terminar nela. */
+  query?: Record<string, string>;
 }

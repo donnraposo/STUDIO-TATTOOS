@@ -44,8 +44,13 @@ const waitingLabel = computed(() => {
   return total === 1 ? "1 item waiting" : `${total} items waiting`;
 });
 
+/** Abre o item no lugar exato, e não só na tela certa.
+ *
+ * A agenda de um agendamento de outra semana é a daquela semana: levar ao dia
+ * de hoje devolveria a procura ao gestor, que é justamente o que esta área
+ * existe para acabar. */
 function open(item: PendingWorkItem): void {
-  void router.push({ name: item.route });
+  void router.push({ name: item.route, query: item.query });
 }
 </script>
 

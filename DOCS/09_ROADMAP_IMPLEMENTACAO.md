@@ -1156,8 +1156,39 @@ origens pelo mesmo desenho, em vez de um método próprio para cada pergunta.
 "Coming next" em três cartões cujas telas já existiam desde a M7.1. Foi corrigido
 junto, porque a etapa reescreve essa tela de qualquer forma.
 
-- ESLint e `vue-tsc` limpos; **90 testes** no frontend e **212** no backend;
+- ESLint e `vue-tsc` limpos; **97 testes** no frontend e **212** no backend;
   quatro verificações de convenção sem apontamento.
+
+#### Correção, no mesmo dia — o item abria a agenda no dia errado
+
+**O critério dizia "sem o gestor procurar", e a entrega não cumpria.** Clicar em
+`Open` numa solicitação de outra semana levava à agenda do **dia de hoje**, e o
+gestor tinha de achar a data. O item que existe para acabar com a procura
+terminava nela.
+
+| O que mudou | Por quê |
+|---|---|
+| `PendingWorkItem` ganha `query` | O item passa a dizer **para onde** ir, não só em que tela |
+| `SchedulingView` lê `?day=` do endereço | E o devolve ao endereço ao trocar de dia, para que voltar pelo navegador não perca o dia aberto e o endereço possa ser copiado |
+| `StudioClock.dayKey` e `today` | O dia no fuso do estúdio |
+
+**Um segundo defeito apareceu no caminho, e era mais antigo.** A agenda calculava
+o dia de hoje com `toISOString().slice(0, 10)` — isto é, em **UTC**. Às 00h30 de
+Dublin no horário de verão, ela abria no dia anterior. Uma hora de largura, só de
+madrugada e só em parte do ano: o tipo de defeito que ninguém reproduz quando é
+relatado. Está desde a M7.1.3 e tem teste agora.
+
+**O sinal segue o agendamento que ele trava**, quando esse agendamento está na
+fila — que é o caso comum, porque um sinal por confirmar é justamente o que
+impede aquela aprovação (RN-AGE-005). Não estando, o item vai à agenda sem data:
+melhor abrir no dia de hoje do que num dia errado.
+
+> **O que ficou por conferir na tela.** Os sete testes novos cobrem a decisão —
+> inclusive o caso relatado, um agendamento de outra semana devolvendo o dia
+> certo — mas a ligação entre o endereço e a agenda **não foi clicada na
+> aplicação**: a VM do Docker desta máquina passou a somente-leitura de novo e
+> derrubou o container do frontend. ESLint e `vue-tsc` limpos. Falta abrir um
+> item do painel com o Docker de pé.
 
 ## Sprint M8 — Implantação mínima
 

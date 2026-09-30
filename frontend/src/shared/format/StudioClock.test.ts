@@ -34,4 +34,23 @@ describe("StudioClock", () => {
   it("formats a date the way the studio reads it", () => {
     expect(clock.date("2026-10-06T10:00:00+01:00")).toContain("Oct");
   });
+
+  it("gives the day key a date field understands", () => {
+    expect(clock.dayKey("2026-10-06T10:00:00+01:00")).toBe("2026-10-06");
+  });
+
+  it("keeps a late booking on the studio's day, not on UTC's", () => {
+    /** 00h30 de terça em Dublin, no horário de verão, ainda é segunda em UTC.
+     * `toISOString().slice(0, 10)` colocaria essa reserva no dia anterior — uma
+     * hora de largura, só de madrugada e só em parte do ano, que é o tipo de
+     * defeito que ninguém reproduz quando é relatado. */
+    const lateBooking = "2026-07-14T00:30:00+01:00";
+
+    expect(new Date(lateBooking).toISOString().slice(0, 10)).toBe("2026-07-13");
+    expect(clock.dayKey(lateBooking)).toBe("2026-07-14");
+  });
+
+  it("reads today by the same ruler", () => {
+    expect(clock.today(new Date("2026-07-14T00:30:00+01:00"))).toBe("2026-07-14");
+  });
 });

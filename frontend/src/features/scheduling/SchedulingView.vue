@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import { BookingPlacement, type Placement } from "@/features/scheduling/BookingPlacement";
 import { ApiError } from "@/shared/api/ApiError";
@@ -66,14 +67,33 @@ interface DaySchedule {
   artists: StudioMember[];
 }
 
+const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Aceita só o que é uma data, e ignora o resto em silêncio.
+ *
+ * O endereço é digitável, e `?day=ontem` não pode virar uma agenda vazia sem
+ * explicação: o dia de hoje é resposta melhor do que uma tela que não carrega. */
+function readDay(value: unknown): string | null {
+  return typeof value === "string" && DAY_PATTERN.test(value) ? value : null;
+}
+
 const { scheduling, clients: clientsApi, accounts } = useApi();
 const { session, permissions } = useSession();
+const route = useRoute();
+const router = useRouter();
 const clock = new StudioClock();
 const placer = new BookingPlacement(OPENING_HOUR, CLOSING_HOUR, SLOT_MINUTES, clock);
 const packer = new LanePacker();
 
 const state = useAsyncState<DaySchedule>();
-const day = ref(new Date().toISOString().slice(0, 10));
+/** O dia aberto. Vem do endereço quando alguém chega por um item do painel, e
+ * é o dia do estúdio quando não vem — nunca o do navegador.
+ *
+ * `toISOString().slice(0, 10)` dava o dia em **UTC**: às 00h30 de Dublin no
+ * verão irlandês, a agenda abria no dia anterior. Uma hora de largura, só de
+ * madrugada e só em parte do ano — o tipo de defeito que ninguém reproduz
+ * quando é relatado. */
+const day = ref(readDay(route.query.day) ?? clock.today());
 const selected = ref<Booking | null>(null);
 const conflict = ref<BookingConflict | null>(null);
 const composing = ref(false);
@@ -328,7 +348,29 @@ function startComposing(): void {
   composing.value = true;
 }
 
-watch(day, load);
+/** Trocar o dia recarrega e **fica no endereço**.
+ *
+ * Sem isso, voltar pelo botão do navegador devolveria o dia de hoje em vez do
+ * dia que estava aberto — e o endereço de uma agenda deixaria de poder ser
+ * copiado para outra pessoa. */
+watch(day, (current) => {
+  void load();
+  if (route.query.day !== current) {
+    void router.replace({ query: { ...route.query, day: current } });
+  }
+});
+
+/** Chegar por um item do painel com a tela já aberta também muda o dia. */
+watch(
+  () => route.query.day,
+  (value) => {
+    const requested = readDay(value);
+    if (requested && requested !== day.value) {
+      day.value = requested;
+    }
+  },
+);
+
 onMounted(load);
 </script>
 
