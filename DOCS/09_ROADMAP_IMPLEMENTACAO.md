@@ -6,8 +6,8 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2, M3, M4, M5 e M7.1 — a fatia vertical de interface.
-**Próxima:** M7.2.1 — painel do gestor com o que está esperando decisão,
-antecipada a pedido do estúdio. A M6 vem em seguida.
+**Próxima:** M6 — repasses e fechamento semanal. A etapa M7.2.1 fechou em
+30/09/2026.
 
 > **O portão do sinal estava aberto e foi fechado na M5.** A RN-AGE-005 e a
 > RN-PAG-002 dizem que uma solicitação não pode ser aprovada sem sinal
@@ -47,7 +47,7 @@ seguinte fecha sem saber tudo o que tinha de fechar.
 | `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008) | M6 |
 | `payment.guest_week_id` | Coluna e origem da taxa semanal; a tabela `guest_week` ainda não existe (RN-GST-001) | Sprint do guest |
 | `BookingForm` — caixa "Approve straight away" | Criar já aprovado passou a ser recusado onde há sinal a confirmar (ADR-027); a tela ainda oferece a caixa | M7.2 |
-| Tela de sinal e pagamentos | O backend do financeiro existe e nenhuma tela o consome (RN-PAG-002) | M7.2 |
+| Tela de sinal e pagamentos | Registrar, confirmar, recusar e devolver. O painel **mostra** o que aguarda confirmação desde a M7.2.1, mas quem decide ainda precisa da tela | M7.2.3 |
 
 **Fechadas na M5, em 30/09/2026:**
 
@@ -129,8 +129,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M4 | Orçamentos e sessões | Backend | ✅ Concluída em 30/09/2026 |
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
-| M6 | Repasses e fechamento semanal | Backend | Não iniciada |
-| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Próxima, pela etapa M7.2.1** |
+| **M6** | Repasses e fechamento semanal | Backend | ⬅️ **Próxima** |
+| M7.2 | Restante da interface do MVP | Frontend | Em andamento: M7.2.1 concluída |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1060,7 +1060,7 @@ backend.
 
 | Etapa | Escopo | Situação |
 |---|---|---|
-| **M7.2.1** | ⚠️ Painel do gestor: o que está esperando decisão | ⬅️ **Próxima** |
+| **M7.2.1** | ⚠️ Painel do gestor: o que está esperando decisão | ✅ Concluída em 30/09/2026 |
 | M7.2.2 | Sessões e atendimentos | Não iniciada |
 | M7.2.3 | Pagamentos, sinal e devoluções | Não iniciada |
 | M7.2.4 | Repasses e demonstrativo do artista | Não iniciada |
@@ -1120,6 +1120,44 @@ com e-mail — não é o que esta etapa precisa.
 - Cada item leva à tela onde a decisão é tomada, sem o gestor procurar.
 - A área se atualiza sozinha a cada minuto, sem recarregar a página.
 - Zero pendências mostra estado vazio explícito, não área em branco.
+
+### Evidência da etapa M7.2.1 — 30/09/2026
+
+**Os cinco critérios foram exercitados contra a aplicação rodando**, não só em
+teste:
+
+| Critério | Como foi conferido |
+|---|---|
+| Contador em toda tela | Com quatro pendências no painel, navegado para `/clients`: o contador continua na barra, com `aria-label` para leitor de tela |
+| As três origens, ordenadas | Duas solicitações, um sinal informado e um orçamento pendente apareceram na mesma fila, do mais antigo para o mais recente |
+| Atualização sozinha | Um sinal foi confirmado **pela API**, sem tocar na tela; o contador caiu de 4 para 3 em 20 segundos |
+| Recorte por perfil | Entrando como residente: sem área, sem contador, e **zero requisições** em 15 segundos de observação — a fila do estúdio não é pedida por quem não decide |
+| Celular | Em 375px o contador acompanha a navegação horizontal e cada item vira bloco |
+
+**A ordem da fila é o ponto, e tem teste.** Do mais antigo para o mais recente,
+qualquer que seja a origem. Ordenar pelo mais recente mostraria primeiro o que
+acabou de chegar e empurraria para o fim o que está parado — o contrário do que a
+área existe para fazer. É defeito que ninguém vê numa tela com três itens e que
+custa uma solicitação esquecida numa com trinta.
+
+**O ciclo de atualização mora no estado compartilhado, não na tela do painel.**
+Se a tela carregasse, o contador só saberia de algo novo enquanto o gestor
+estivesse no painel — justamente onde ele não está quando o problema acontece.
+
+**Ligar e desligar o ciclo é decidido na casca**, que é onde se sabe quem entrou.
+O residente não vê a fila do estúdio, e buscá-la para ele seria pedir ao servidor
+um 403 por minuto.
+
+**Código morto encontrado e removido:** `BookingRepository.list_pending` existia
+desde a M3 e nunca foi chamado. Virou o filtro por estado, que serve às três
+origens pelo mesmo desenho, em vez de um método próprio para cada pergunta.
+
+**Alcance maior que o previsto, e é honesto dizer:** o `HomeView` mostrava
+"Coming next" em três cartões cujas telas já existiam desde a M7.1. Foi corrigido
+junto, porque a etapa reescreve essa tela de qualquer forma.
+
+- ESLint e `vue-tsc` limpos; **90 testes** no frontend e **212** no backend;
+  quatro verificações de convenção sem apontamento.
 
 ## Sprint M8 — Implantação mínima
 

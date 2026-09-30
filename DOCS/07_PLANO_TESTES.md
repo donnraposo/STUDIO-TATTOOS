@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**205 testes aprovados** no backend, executados em container contra PostgreSQL
+**212 testes aprovados** no backend, executados em container contra PostgreSQL
 real no banco isolado `tattoo_studio_test`. Conferido em 30/09/2026, com a suíte
 inteira num só comando.
 
@@ -19,7 +19,7 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**83 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**90 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
 tradução de erro da API e ciclo de sessão.
@@ -35,6 +35,8 @@ tradução de erro da API e ciclo de sessão.
 | Fluxo de agenda | Coberta: solicitar, aprovar, rejeitar, cancelar, não comparecer, remarcar, com conflito devolvendo 409 |
 | Visibilidade de clientes | Coberta: os três níveis da RN-CLI-004, alerta de duplicidade e união preservando histórico |
 | **Integridade de orçamento e sessão** | Coberta por 11 testes de restrição na migração `0005`: aprovado sem percentual congelado, rejeitado sem motivo, sequência duplicada, parcial sem valor cobrado, realizada sem data real, quitada sem confirmação do gestor e dois agendamentos vivos na mesma sessão |
+| **Consultas do painel do gestor** | Coberta: pendentes sem janela de data, filtro somado ao recorte por artista, filtro e janela independentes, estado desconhecido recusado, orçamentos pendentes, pagamentos aguardando confirmação vindos do estúdio inteiro, e o artista recusado na fila do gestor |
+| **Fila do painel** | Coberta por 7 testes de classe pura: as três origens numa lista só, **ordenadas do mais antigo para o mais recente** qualquer que seja a origem, item que continua aparecendo quando o nome do cliente é desconhecido, e cada origem levando à tela que a decide |
 | **Portão do sinal** | Coberta: sinal apenas informado **não** libera a aprovação, confirmado libera, artista não lança nem confirma pagamento, sinal recusado deixa o cliente pagar outro, dois sinais vivos no mesmo agendamento são recusados, e sinal sem agendamento é recusado |
 | **Estados do pagamento** | Coberta por classe pura: o fluxo da RN-PAG-007 inteiro, recusado que nunca volta a confirmado, e devolvido e estornado como estados finais |
 | **Desfecho financeiro do agendamento** | Coberta: recusa pelo estúdio devolve tudo, cancelamento e não comparecimento retêm o sinal mesmo com aviso, remarcação dentro do prazo leva os valores junto, fora do prazo retém — e a regra das 24 horas conferida na borda exata, inclusive nas 24 horas cheias |

@@ -3,6 +3,7 @@ from datetime import datetime
 from psycopg.types.range import Range
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
+from app.modules.scheduling.domain.booking_status import BookingStatus
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
 from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
 from app.modules.scheduling.infrastructure.models.booking import Booking
@@ -19,7 +20,12 @@ class ListBookings:
     **A janela de tempo é o que torna a tela de agenda viável.** Sem ela, abrir
     um único dia traria o histórico inteiro do estúdio, e o custo cresceria toda
     semana até a tela ficar lenta sem ninguém ter mudado nada. O intervalo é
-    opcional porque consultar histórico continua sendo um uso legítimo."""
+    opcional porque consultar histórico continua sendo um uso legítimo.
+
+    **O estado é o recorte do painel do gestor** (RN-AGE-012): as solicitações
+    esperando decisão, sem data, porque uma solicitação esquecida é justamente a
+    que ninguém foi procurar no dia certo. Os dois filtros são independentes —
+    um pergunta *quando*, o outro *em que situação*."""
 
     def __init__(self, bookings: BookingRepository, policy: SchedulingPolicy) -> None:
         self._bookings = bookings
@@ -30,6 +36,7 @@ class ListBookings:
         actor: AuthenticatedUser,
         starts_at: datetime | None = None,
         ends_at: datetime | None = None,
+        status: BookingStatus | None = None,
     ) -> list[Booking]:
         if not (actor.is_staff or actor.tattoos):
             raise PermissionDeniedError("You cannot list bookings.")
@@ -37,8 +44,8 @@ class ListBookings:
         window = self._build_window(starts_at, ends_at)
 
         if actor.is_staff:
-            return self._bookings.list_all(window)
-        return self._bookings.list_for_artist(actor.id, window)
+            return self._bookings.list_all(window, status)
+        return self._bookings.list_for_artist(actor.id, window, status)
 
     @staticmethod
     def _build_window(starts_at: datetime | None, ends_at: datetime | None) -> Range | None:

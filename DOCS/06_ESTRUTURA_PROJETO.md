@@ -233,11 +233,11 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /booths`, `POST /schedule-exceptions` |
-| Agenda | `GET /bookings`, `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
-| Orçamentos | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
+| Agenda | `GET /bookings` (filtros `starts_at`/`ends_at` e `status`), `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
+| Orçamentos | `GET /quotes` (filtro `status`), `POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
 | Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
-| Pagamentos | `POST /payments`, `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
+| Pagamentos | `POST /payments`, `GET /payments` (filtro `status`, só gestor), `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
 | Pós-venda | `GET /aftercare`, `POST /aftercare/{id}/complete`, `/reopen`, `/photos` |
@@ -245,6 +245,12 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**Os três filtros por estado servem ao painel do gestor** (RN-AGE-012 e seção
+10.1). A pergunta do painel é "o que está esperando decisão", sem data e sem
+agendamento em mão; sem o filtro, cada uma dessas perguntas traria o histórico
+inteiro do estúdio para o navegador filtrar. `GET /payments` é o único dos três
+restrito ao gestor: confirmar recebimento é dele (RN-PAG-002), e a fila é dele.
 
 **Pagamento não tem rota de exclusão nem `PATCH` de estado.** A RN-PAG-007 diz
 que um pagamento nunca é apagado e que correção entra como ajuste vinculado ao

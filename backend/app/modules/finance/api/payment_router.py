@@ -8,6 +8,7 @@ from app.modules.finance.api.refund_payment_request import RefundPaymentRequest
 from app.modules.finance.api.refund_response import RefundResponse
 from app.modules.finance.api.refuse_payment_request import RefusePaymentRequest
 from app.modules.finance.api.register_payment_request import RegisterPaymentRequest
+from app.modules.finance.domain.payment_status import PaymentStatus
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
 
 
@@ -36,6 +37,12 @@ class PaymentRouter:
             methods=["POST"],
             response_model=PaymentResponse,
             status_code=status.HTTP_201_CREATED,
+        )
+        router.add_api_route(
+            "/payments",
+            self.list_by_status,
+            methods=["GET"],
+            response_model=list[PaymentResponse],
         )
         router.add_api_route(
             "/bookings/{booking_id}/payments",
@@ -81,6 +88,18 @@ class PaymentRouter:
                 note=payload.note,
             )
             return PaymentResponse.from_model(payment)
+
+    def list_by_status(
+        self, request: Request, status: PaymentStatus = PaymentStatus.REPORTED
+    ) -> list[PaymentResponse]:
+        """O padrão é `REPORTED` porque é a pergunta que o painel faz: o que
+        está aguardando confirmação (seção 10.1)."""
+        actor = self._authenticator.require_user(request)
+        with self._container.database.session() as session:
+            payments = self._container.finance.list_payments_by_status(session).execute(
+                actor, status
+            )
+            return [PaymentResponse.from_model(payment) for payment in payments]
 
     def list_payments(self, booking_id: uuid.UUID, request: Request) -> list[PaymentResponse]:
         actor = self._authenticator.require_user(request)

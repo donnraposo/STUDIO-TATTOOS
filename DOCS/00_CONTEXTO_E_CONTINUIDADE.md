@@ -455,8 +455,8 @@ confirmar o sinal, aprovar.
 > passaram depois da última alteração, com Ruff limpo. Falta rodar `pytest`
 > inteiro depois de reiniciar o Docker.
 
-**Próximo passo:** etapa **M7.2.1 — painel do gestor com o que está esperando
-decisão**, antecipada a pedido do estúdio em 30/09/2026.
+**A etapa M7.2.1 fechou em 30/09/2026** — painel do gestor com o que está
+esperando decisão, antecipada a pedido do estúdio.
 
 O problema relatado: o gerente precisa abrir o calendário para descobrir se existe
 solicitação de agendamento; se não abrir, não sabe, e se abrir e não reparar, passa
@@ -474,11 +474,22 @@ em `REQUESTED`, pagamento em `REPORTED`, orçamento em `PENDING`. A tabela
 `notification` do modelo de dados serve à caixa interna com e-mail e é da sprint
 F2, junto do worker.
 
-Falta no backend, e é pequeno: filtro por estado em `GET /bookings` e em
-`GET /quotes`, e uma consulta dos pagamentos aguardando confirmação no estúdio —
-hoje só existe listagem por agendamento.
+No backend entraram três filtros por estado — `GET /bookings`, `GET /quotes` e o
+novo `GET /payments` — e nada além disso. `BookingRepository.list_pending`, que
+existia desde a M3 e nunca fora chamado, deu lugar ao filtro genérico.
 
-**Depois dela:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
+**O ciclo de atualização mora no estado compartilhado**, e não na tela do painel:
+se a tela carregasse, o contador só saberia de algo novo enquanto o gestor
+estivesse no painel — justamente onde ele não está quando o problema acontece.
+Quem liga e desliga o ciclo é a casca, que é onde se sabe quem entrou; o
+residente não vê a fila do estúdio, e buscá-la para ele seria pedir um 403 por
+minuto ao servidor.
+
+**Conferido contra a aplicação rodando:** um sinal foi confirmado pela API, sem
+tocar na tela, e o contador caiu de 4 para 3 em 20 segundos. Como residente, zero
+requisições em 15 segundos de observação.
+
+**Próximo passo:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
 fechamento de sexta às 20h `Europe/Dublin`, demonstrativo do artista e ajustes
 negativos de devolução posterior (RN-REP-003 a RN-REP-007).
 

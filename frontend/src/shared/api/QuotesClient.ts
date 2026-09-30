@@ -52,6 +52,16 @@ export class QuotesClient {
     return payload.map(QuotesClient.toQuote);
   }
 
+  /** Os orçamentos esperando decisão (RN-ORC-002).
+   *
+   * Não há vencimento automático: um orçamento fica pendente pelo tempo que
+   * for, e sem o painel nada cobra a decisão. O filtro é do servidor e não do
+   * navegador para que a lista não cresça com o histórico do estúdio. */
+  async listPending(): Promise<Quote[]> {
+    const payload = await this.http.get<QuotePayload[]>("/quotes?status=PENDING");
+    return payload.map(QuotesClient.toQuote);
+  }
+
   async create(clientId: string, fields: QuoteFields, artistId: string | null): Promise<Quote> {
     return QuotesClient.toQuote(
       await this.http.post<QuotePayload>("/quotes", {

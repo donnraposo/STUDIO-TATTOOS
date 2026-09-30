@@ -11,6 +11,7 @@ from app.modules.quotes.api.quote_request import QuoteRequest
 from app.modules.quotes.api.quote_response import QuoteResponse
 from app.modules.quotes.api.reference_image_response import ReferenceImageResponse
 from app.modules.quotes.api.reject_quote_request import RejectQuoteRequest
+from app.modules.quotes.domain.quote_status import QuoteStatus
 
 
 class QuoteRouter:
@@ -84,10 +85,12 @@ class QuoteRouter:
         )
         return router
 
-    def list_quotes(self, request: Request) -> list[QuoteResponse]:
+    def list_quotes(
+        self, request: Request, status: QuoteStatus | None = None
+    ) -> list[QuoteResponse]:
         actor = self._authenticator.require_user(request)
         with self._container.database.session() as session:
-            quotes = self._container.quotes.list_quotes(session).execute(actor)
+            quotes = self._container.quotes.list_quotes(session).execute(actor, status)
             return [QuoteResponse.from_model(quote) for quote in quotes]
 
     def get_quote(self, quote_id: uuid.UUID, request: Request) -> QuoteResponse:

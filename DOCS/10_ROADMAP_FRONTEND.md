@@ -33,12 +33,13 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Vue 3, TypeScript, Vite, Vitest, ESLint | Em container, com lint e tipos limpos |
 | `tokens.css` e `base.css` | Escala 32/24/20/18/16/14, paleta ouro sobre preto, e a pílula única de campo |
 | Casca, sessão e guarda de rota | `AppShell`, `SessionStore`, `HttpClient` com CSRF e 401 central |
-| 16 componentes base | Todo controle passa por eles; uma exceção declarada (`BookingBlock`) |
+| 17 componentes base | Todo controle passa por eles; uma exceção declarada (`BookingBlock`) |
 | Clientes, agenda, orçamentos | `ClientsView`, `SchedulingView` com a timeline, `QuotesView` |
-| 83 testes | Classes puras, sem montar componente |
+| Painel com o que espera decisão | `HomeView` com a fila das três origens e o contador na casca |
+| 90 testes | Classes puras, sem montar componente |
 
-**Não existe ainda:** painel com o que está esperando decisão, sessões,
-pagamentos, repasses, gestão de contas — e é isso que a M7.2 cobre.
+**Não existe ainda:** sessões, pagamentos, repasses e gestão de contas — e é
+isso que falta da M7.2.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -73,8 +74,8 @@ perto que a demonstração chega de dinheiro.
 > **Uma tela entregue mudou de comportamento sem mudar de código.** A M5 fechou o
 > portão da RN-AGE-005, e a caixa "Approve straight away" do `BookingForm` passou
 > a ser recusada pelo backend para residente: criar já aprovado só vale onde não
-> há sinal a confirmar (ADR-027). A tela ainda oferece a caixa. É a primeira
-> pendência da M7.2.
+> há sinal a confirmar (ADR-027). A tela ainda oferece a caixa — é a próxima
+> pendência da M7.2, agora que a M7.2.1 fechou.
 
 ## 4. Princípios
 
@@ -208,6 +209,7 @@ está no `CLAUDE.md`.
 | `.control` em `base.css` | A pílula: altura, respiro, borda, raio e preenchimento. Campo de texto e seletor precisam ser **indistinguíveis em altura**, e três cópias divergiriam no primeiro ajuste |
 | `AppModal` | Rolagem própria. Sem ela, num celular deitado o modal passa das duas bordas e o topo fica inalcançável — o primeiro campo some |
 | `AppTextarea` | Mesmo contrato do `AppInput` e mesma pílula, com o raio aberto: numa caixa de várias linhas o canto arredondado dobraria as pontas do texto para dentro |
+| `AppBadgeCount` | **Some quando é zero.** Um contador mostrando "0" ocupa o mesmo espaço e a mesma atenção de um que mostra "3", e ensina o olho a ignorá-lo — o oposto do que ele existe para fazer |
 | `AppFileInput` | Esconde o `<input type="file">` — cujo botão nativo nenhum navegador deixa estilizar por completo — atrás de um `AppButton`. Escondido com `opacity`, **não** com `display: none`, que o tiraria do alcance do teclado. Limpa o valor depois de cada escolha, senão escolher o mesmo arquivo duas vezes não dispara evento e parece travamento |
 
 **Uma exceção, declarada:** `BookingBlock` usa `<button>` cru. Não é botão do
@@ -428,7 +430,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 
 | Tela | Depende de | Situação da dependência |
 |---|---|---|
-| **Painel do gestor com o que está esperando decisão** | RN-AGE-012 e seção 10.1 | ⬅️ **Etapa M7.2.1, detalhada abaixo** |
+| **Painel do gestor com o que está esperando decisão** | RN-AGE-012 e seção 10.1 | ✅ **Etapa M7.2.1, concluída em 30/09/2026** |
 | Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ Pronta — a tela é que ficou para trás |
 | Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
 | Sessões e atendimentos | M4.4 | ✅ Pronta |
@@ -443,10 +445,10 @@ backend. Agora espera só a M6 — e as três primeiras linhas da tabela podem
 começar a qualquer momento. A primeira delas é correção de defeito, não tela
 nova: o `BookingForm` oferece uma ação que o servidor recusa.
 
-## 7.1 Etapa M7.2.1 — Painel do gestor: o que está esperando decisão
+## 7.1 Etapa M7.2.1 — Painel do gestor: o que está esperando decisão ✅
 
-> **Antecipada a pedido do estúdio, em 30/09/2026.** Não depende da M6 e sai
-> antes do resto da M7.2. O andamento fica registrado no `09`, como sempre.
+> **Antecipada a pedido do estúdio e concluída em 30/09/2026.** Não dependia da
+> M6. A evidência fica no `09`, como sempre.
 
 **O problema.** O gerente precisa abrir o calendário para descobrir se existe
 solicitação de agendamento. Se não abrir, não sabe; se abrir e não reparar, passa
@@ -468,16 +470,33 @@ Telas e componentes previstos:
 
 | Peça | Camada | Papel |
 |---|---|---|
-| `PendingWorkStore.ts` | `shared/` | Estado único da aplicação, como o `SessionStore`. É o que permite o contador viver na casca sem ela falar com a API |
-| `AppBadgeCount.vue` | base | Contador em pílula, sem domínio |
-| `PendingWorkList.vue` | apresentação | Recebe por `props`, devolve por `emits` |
-| `HomeView.vue` | tela | A única que fala com a API |
-| `AppShell.vue` | casca | Lê o estado e desenha o contador |
+| `PendingWorkStore.ts` | `shared/work` | Estado único da aplicação, como o `SessionStore`. É o que permite o contador viver na casca sem ela falar com a API. **O ciclo de um minuto mora aqui** |
+| `PendingWorkAssembler.ts` | `shared/work` | Classe pura: monta a fila única das três origens e a ordena. 7 testes, sem montar tela |
+| `PendingWork.ts` | `shared/domain` | O item achatado que a lista desenha — nem o agendamento inteiro, nem o orçamento inteiro |
+| `PaymentsClient.ts` | `shared/api` | Pagamentos e sinal. Sem método de exclusão, porque não há rota: pagamento nunca é apagado (RN-PAG-007) |
+| `AppBadgeCount.vue` | base | Contador em pílula. **Some quando é zero** — um contador mostrando "0" ensina o olho a ignorá-lo |
+| `PendingWorkList.vue` | apresentação | Uma lista, não três. Recebe por `props`, devolve por `emits` |
+| `HomeView.vue` | tela | **Lê** o estado compartilhado; não o busca |
+| `AppShell.vue` | casca | Lê o estado, desenha o contador e decide ligar ou desligar o ciclo conforme o perfil |
 
 **Por que um store e não uma chamada na casca.** A convenção diz que só a tela
 fala com a API, e o contador precisa do dado fora de qualquer tela. O caminho que
 não quebra a regra é o mesmo já usado pela sessão: estado único em `shared/`,
-alimentado por quem carrega, lido por quem desenha.
+que busca, e casca e tela que apenas leem.
+
+**Por que o ciclo mora no estado e não na tela do painel.** Se a tela carregasse,
+o contador só saberia de algo novo enquanto o gestor estivesse no painel —
+justamente onde ele não está quando o problema acontece.
+
+**Por que a casca liga e desliga o ciclo.** É nela que se sabe quem entrou. O
+residente não vê a fila do estúdio, e buscá-la para ele seria pedir ao servidor
+um 403 por minuto. Conferido: entrando como residente, zero requisições em 15
+segundos de observação.
+
+**Falhar não derruba nada.** Uma requisição que não volta deixa o número como
+estava e o ciclo seguinte tenta de novo. Contador momentaneamente velho é muito
+melhor do que tela quebrada — e nada se perde, porque a pendência continua onde
+estava.
 
 **Critérios de aceite:**
 
@@ -490,6 +509,10 @@ alimentado por quem carrega, lido por quem desenha.
 - A área se atualiza sozinha a cada minuto, sem recarregar a página.
 - Zero pendências mostra estado vazio explícito, não área em branco.
 - Responsivo: no celular o contador acompanha a navegação horizontal da casca.
+
+**Os cinco foram exercitados contra a aplicação rodando**, e o mais importante
+deles precisou do relógio: um sinal foi confirmado pela API, sem tocar na tela, e
+o contador caiu de 4 para 3 em 20 segundos.
 
 **O que esta etapa não é.** Não é a caixa de notificações do modelo de dados — a
 tabela `notification` e o `email_outbox` servem ao e-mail e ao worker, declarados

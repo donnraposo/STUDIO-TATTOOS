@@ -169,6 +169,10 @@
      desenho, pequena o bastante para caber quatro numa linha de celular. */
   --thumb-size: 6rem;
 
+  /* Contador de pendencias. Pilula que cabe dois digitos sem esticar e some
+     quando nao ha nada a contar. */
+  --badge-size: 1.375rem;
+
   --opacity-disabled: 0.5;
 
   /* Invisivel mas ainda presente para o teclado e para o leitor de tela. Usado

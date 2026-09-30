@@ -2,6 +2,7 @@ import { AccountsClient } from "@/shared/api/AccountsClient";
 import { AuthClient } from "@/shared/api/AuthClient";
 import { ClientsClient } from "@/shared/api/ClientsClient";
 import { HttpClient } from "@/shared/api/HttpClient";
+import { PaymentsClient } from "@/shared/api/PaymentsClient";
 import { QuotesClient } from "@/shared/api/QuotesClient";
 import { SchedulingClient } from "@/shared/api/SchedulingClient";
 
@@ -11,6 +12,7 @@ const clients = new ClientsClient(http);
 const scheduling = new SchedulingClient(http);
 const accounts = new AccountsClient(http);
 const quotes = new QuotesClient(http);
+const payments = new PaymentsClient(http);
 
 /** Os clientes de API da aplicação, sobre um `HttpClient` único.
  *
@@ -28,6 +30,7 @@ export function useApi(): {
   scheduling: SchedulingClient;
   accounts: AccountsClient;
   quotes: QuotesClient;
+  payments: PaymentsClient;
 } {
-  return { http, auth, clients, scheduling, accounts, quotes };
+  return { http, auth, clients, scheduling, accounts, quotes, payments };
 }

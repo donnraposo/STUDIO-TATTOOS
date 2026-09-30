@@ -12,6 +12,7 @@ from app.modules.scheduling.api.booth_response import BoothResponse
 from app.modules.scheduling.api.cancel_booking_request import CancelBookingRequest
 from app.modules.scheduling.api.reject_booking_request import RejectBookingRequest
 from app.modules.scheduling.api.reschedule_booking_request import RescheduleBookingRequest
+from app.modules.scheduling.domain.booking_status import BookingStatus
 
 
 class SchedulingRouter:
@@ -92,6 +93,7 @@ class SchedulingRouter:
         request: Request,
         starts_at: datetime | None = None,
         ends_at: datetime | None = None,
+        status: BookingStatus | None = None,
     ) -> list[BookingResponse]:
         """A agenda consulta um dia por vez, informando os dois extremos.
 
@@ -100,7 +102,7 @@ class SchedulingRouter:
         actor = self._authenticator.require_user(request)
         with self._container.database.session() as session:
             bookings = self._container.scheduling.list_bookings(session).execute(
-                actor, starts_at, ends_at
+                actor, starts_at, ends_at, status
             )
             return [BookingResponse.from_model(booking) for booking in bookings]
 

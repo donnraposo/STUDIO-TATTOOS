@@ -40,6 +40,17 @@ class PaymentRepository:
         )
         return list(self._session.execute(statement).scalars())
 
+    def list_by_status(self, status: PaymentStatus) -> list[Payment]:
+        """Todos os pagamentos num estado, no estudio inteiro.
+
+        E a consulta do painel do gestor (secao 10.1): o que esta aguardando
+        confirmacao. Nao recebe recorte por artista porque quem confirma
+        recebimento e sempre o gestor (RN-PAG-002), e ele ve tudo."""
+        statement = (
+            select(Payment).where(Payment.status == status).order_by(Payment.reported_at)
+        )
+        return list(self._session.execute(statement).scalars())
+
     def find_live_deposit(self, booking_id: uuid.UUID) -> Payment | None:
         """O sinal que ainda vale para este agendamento.
 

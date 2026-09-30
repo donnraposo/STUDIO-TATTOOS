@@ -47,15 +47,25 @@ class BookingRepository:
         return self._session.get(Booking, booking_id)
 
     def list_for_artist(
-        self, artist_id: uuid.UUID, window: Range | None = None
+        self,
+        artist_id: uuid.UUID,
+        window: Range | None = None,
+        status: BookingStatus | None = None,
     ) -> list[Booking]:
         statement = select(Booking).where(Booking.artist_id == artist_id)
-        return self._fetch(statement, window)
+        return self._fetch(statement, window, status)
 
-    def list_all(self, window: Range | None = None) -> list[Booking]:
-        return self._fetch(select(Booking), window)
+    def list_all(
+        self, window: Range | None = None, status: BookingStatus | None = None
+    ) -> list[Booking]:
+        return self._fetch(select(Booking), window, status)
 
-    def _fetch(self, statement: Select[tuple[Booking]], window: Range | None) -> list[Booking]:
+    def _fetch(
+        self,
+        statement: Select[tuple[Booking]],
+        window: Range | None,
+        status: BookingStatus | None = None,
+    ) -> list[Booking]:
         """Aplica a janela de tempo, quando houver, e ordena.
 
         O recorte usa o operador de sobreposicao do PostgreSQL, `&&`, e nao uma
@@ -64,19 +74,18 @@ class BookingRepository:
         `inicio >= :de` a perderia ao consultar so a partir das 20h.
 
         Sem janela, devolve tudo. A agenda sempre informa uma; quem nao informa
-        esta consultando historico, e ai o conjunto inteiro e o que se quer."""
+        esta consultando historico, e ai o conjunto inteiro e o que se quer.
+
+        O filtro por estado existe para a pergunta que o painel do gestor faz: as
+        solicitacoes esperando decisao, sem janela de data (RN-AGE-012). Sem ele,
+        perguntar isso traria o historico inteiro do estudio para o navegador
+        filtrar -- custo que cresce toda semana sem ninguem ter mudado nada."""
         if window is not None:
             statement = statement.where(Booking.period.op("&&")(window))
+        if status is not None:
+            statement = statement.where(Booking.status == status)
         ordered = statement.order_by(Booking.requested_at.desc())
         return list(self._session.execute(ordered).scalars())
-
-    def list_pending(self) -> list[Booking]:
-        statement = (
-            select(Booking)
-            .where(Booking.status == BookingStatus.REQUESTED)
-            .order_by(Booking.requested_at)
-        )
-        return list(self._session.execute(statement).scalars())
 
     @staticmethod
     def build_period(starts_at: datetime, ends_at: datetime) -> Range:

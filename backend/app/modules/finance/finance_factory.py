@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.finance.application.confirm_payment import ConfirmPayment
 from app.modules.finance.application.list_payments import ListPayments
+from app.modules.finance.application.list_payments_by_status import ListPaymentsByStatus
 from app.modules.finance.application.payment_decision import PaymentDecision
 from app.modules.finance.application.payment_deposit_gate import PaymentDepositGate
 from app.modules.finance.application.payment_settlement_gate import PaymentSettlementGate
@@ -95,6 +96,9 @@ class FinanceFactory:
             bookings=BookingRepository(session),
             policy=self._policy,
         )
+
+    def list_payments_by_status(self, session: Session) -> ListPaymentsByStatus:
+        return ListPaymentsByStatus(payments=self.payments(session), policy=self._policy)
 
     def settle_booking(self, session: Session) -> SettleBooking:
         return SettleBooking(

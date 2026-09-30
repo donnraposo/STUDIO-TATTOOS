@@ -55,6 +55,18 @@ export class SchedulingClient {
     return payload.map(SchedulingClient.toBooking);
   }
 
+  /** As solicitações esperando decisão, **sem janela de data** (RN-AGE-012).
+   *
+   * É a exceção deliberada ao parágrafo acima. A tela de agenda sempre informa
+   * um intervalo porque olha um dia; o painel pergunta outra coisa — o que está
+   * parado — e uma solicitação esquecida é justamente a que ninguém foi
+   * procurar no dia certo. O filtro por estado é o que mantém o conjunto
+   * pequeno no lugar da janela. */
+  async listPending(): Promise<Booking[]> {
+    const payload = await this.http.get<BookingPayload[]>("/bookings?status=REQUESTED");
+    return payload.map(SchedulingClient.toBooking);
+  }
+
   /** Cria a reserva. Residente e guest criam em `REQUESTED`; o gestor pode
    * criar ja aprovada (RN-AGE-005).
    *

@@ -1,20 +1,52 @@
 <script setup lang="ts">
-import AppCard from "@/shared/components/AppCard.vue";
+import { computed } from "vue";
+import { useRouter } from "vue-router";
+
+import PendingWorkList from "@/features/home/components/PendingWorkList.vue";
 import AppButton from "@/shared/components/AppButton.vue";
+import AppCard from "@/shared/components/AppCard.vue";
+import EmptyState from "@/shared/components/EmptyState.vue";
 import HeroBanner from "@/shared/components/HeroBanner.vue";
+import LoadingState from "@/shared/components/LoadingState.vue";
 import PageHeader from "@/shared/components/PageHeader.vue";
 import SectionKicker from "@/shared/components/SectionKicker.vue";
-import StatusBadge from "@/shared/components/StatusBadge.vue";
+import type { PendingWorkItem } from "@/shared/domain/PendingWork";
 import { useSession } from "@/shared/session/useSession";
+import { usePendingWork } from "@/shared/work/usePendingWork";
 
-/** Entrada provisória, até a M7.1.3.
+/** Painel de entrada.
  *
- * A tela de entrada definida para o MVP é a **agenda do dia**, que ainda não
- * existe. Até lá, esta apresenta o espaço de trabalho sem fingir número nenhum:
- * um painel com indicadores zerados ou inventados seria pior do que não ter
- * painel, porque numa demonstração ninguém pergunta se o número é real. */
+ * **A área de pendências é o motivo desta tela existir** (RN-AGE-012 e seção
+ * 10.1). Antes dela, descobrir que havia uma solicitação esperando exigia abrir
+ * o calendário e reparar; quem não abrisse, não sabia.
+ *
+ * A tela **lê** o estado compartilhado, não o busca nem o inicia. Quem busca e
+ * mantém atualizado é o `PendingWorkStore`, ligado pela casca — e a razão é o
+ * contador da barra lateral, que precisa do mesmo número em qualquer tela,
+ * inclusive nas que não são esta.
+ *
+ * Um `onMounted` daqui chamando o ciclo seria dois donos para a mesma coisa: a
+ * casca monta antes, e a condição de quem decide já está resolvida lá.
+ *
+ * O gestor vê a área; residente e guest não. O painel deles é a M7.2.5, com o
+ * recorte que a seção 10.2 descreve — mostrar aqui a fila do estúdio a quem não
+ * decide seria ruído. */
 const { session, permissions } = useSession();
+const { pending } = usePendingWork();
+const router = useRouter();
+
 const user = session.user;
+
+const isStaff = computed(() => (user.value ? permissions.isStaff(user.value) : false));
+
+const waitingLabel = computed(() => {
+  const total = pending.count.value;
+  return total === 1 ? "1 item waiting" : `${total} items waiting`;
+});
+
+function open(item: PendingWorkItem): void {
+  void router.push({ name: item.route });
+}
 </script>
 
 <template>
@@ -27,13 +59,49 @@ const user = session.user;
       :title="`Good to see you, ${user.fullName.split(' ')[0]}.`"
     />
 
+    <section
+      v-if="isStaff"
+      class="waiting"
+    >
+      <header>
+        <div>
+          <SectionKicker label="Needs your decision" />
+          <h2>{{ waitingLabel }}</h2>
+        </div>
+        <AppButton
+          tone="ghost"
+          :busy="pending.isLoading.value"
+          @click="pending.refresh()"
+        >
+          Refresh
+        </AppButton>
+      </header>
+
+      <LoadingState v-if="pending.isLoading.value && pending.count.value === 0" />
+
+      <EmptyState
+        v-else-if="pending.count.value === 0"
+        title="Nothing waiting"
+        description="Every request, deposit and quote has been decided."
+      />
+
+      <PendingWorkList
+        v-else
+        :items="[...pending.items.value]"
+        @open="open"
+      />
+    </section>
+
     <HeroBanner
       kicker="Studio edition"
       title="The right space for remarkable work."
       description="Booths, clients and quotes in one place — with double booking made impossible."
     >
       <template #action>
-        <AppButton tone="light">
+        <AppButton
+          tone="light"
+          @click="router.push({ name: 'schedule' })"
+        >
           Open today's schedule
         </AppButton>
       </template>
@@ -47,10 +115,12 @@ const user = session.user;
         <AppCard title="Schedule">
           <p>Booth timeline, requests and conflict prevention.</p>
           <template #footer>
-            <StatusBadge
-              label="Coming next"
-              tone="warning"
-            />
+            <AppButton
+              tone="ghost"
+              @click="router.push({ name: 'schedule' })"
+            >
+              Open
+            </AppButton>
           </template>
         </AppCard>
 
@@ -60,10 +130,12 @@ const user = session.user;
         >
           <p>Register clients and keep their contact details current.</p>
           <template #footer>
-            <StatusBadge
-              label="Coming next"
-              tone="warning"
-            />
+            <AppButton
+              tone="ghost"
+              @click="router.push({ name: 'clients' })"
+            >
+              Open
+            </AppButton>
           </template>
         </AppCard>
 
@@ -73,10 +145,12 @@ const user = session.user;
         >
           <p>Describe the work, plan sessions and get it approved.</p>
           <template #footer>
-            <StatusBadge
-              label="Coming next"
-              tone="warning"
-            />
+            <AppButton
+              tone="ghost"
+              @click="router.push({ name: 'quotes' })"
+            >
+              Open
+            </AppButton>
           </template>
         </AppCard>
       </div>
@@ -91,15 +165,30 @@ const user = session.user;
   gap: var(--space-8);
 }
 
+.waiting {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.waiting header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.waiting h2,
+.operation h2 {
+  font-size: var(--text-heading-1);
+  letter-spacing: var(--tracking-display);
+}
+
 .operation {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-}
-
-.operation h2 {
-  font-size: var(--text-heading-1);
-  letter-spacing: var(--tracking-display);
 }
 
 .cards {

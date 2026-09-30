@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { useRouter } from "vue-router";
 
+import AppBadgeCount from "@/shared/components/AppBadgeCount.vue";
 import AppButton from "@/shared/components/AppButton.vue";
 import BrandLockup from "@/shared/components/BrandLockup.vue";
 import SectionKicker from "@/shared/components/SectionKicker.vue";
 import { useSession } from "@/shared/session/useSession";
+import { usePendingWork } from "@/shared/work/usePendingWork";
 
 /** Casca da aplicação: barra lateral escura e área de trabalho clara.
  *
@@ -15,11 +17,22 @@ import { useSession } from "@/shared/session/useSession";
  *
  * Lateral e não superior porque a lista de telas do MVP vai a nove itens
  * (`01_REGRAS_DE_NEGOCIO.md` §10) e uma barra no topo passaria a esconder
- * metade delas atrás de um menu logo na terceira sprint. */
+ * metade delas atrás de um menu logo na terceira sprint.
+ *
+ * **O contador de pendências mora aqui, e é o ponto** (RN-AGE-012). A área no
+ * painel ajuda quem já está no painel; o problema relatado pelo estúdio é
+ * justamente não estar — o gerente precisava abrir o calendário para descobrir
+ * que havia uma solicitação esperando. Na lateral, o número acompanha quem
+ * decide, esteja em que tela estiver.
+ *
+ * A casca **lê** o estado compartilhado e não chama a API: quem busca é o
+ * `PendingWorkStore`, pela mesma razão que a sessão vive num estado único. */
 interface NavigationItem {
   label: string;
   route: string;
   visible: boolean;
+  /** Quantos itens esperam decisão nesta tela. Zero não desenha nada. */
+  waiting?: number;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -30,9 +43,29 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 const { session, permissions } = useSession();
+const { pending } = usePendingWork();
 const router = useRouter();
 
 const user = session.user;
+
+const isStaff = computed(() => (user.value ? permissions.isStaff(user.value) : false));
+
+/** O ciclo começa quando há alguém que decide, e para quando ele sai.
+ *
+ * Ligado aqui e não na entrada da aplicação porque é aqui que se sabe quem
+ * entrou: o residente não vê a fila do estúdio, e buscá-la para ele seria pedir
+ * ao servidor um 403 por minuto. */
+watch(
+  isStaff,
+  (decides) => {
+    if (decides) {
+      pending.start();
+    } else {
+      pending.stop();
+    }
+  },
+  { immediate: true },
+);
 
 const navigation = computed<NavigationItem[]>(() => {
   const current = user.value;
@@ -41,7 +74,7 @@ const navigation = computed<NavigationItem[]>(() => {
   }
 
   return [
-    { label: "Overview", route: "home", visible: true },
+    { label: "Overview", route: "home", visible: true, waiting: pending.count.value },
     { label: "Schedule", route: "schedule", visible: true },
     { label: "Clients", route: "clients", visible: permissions.canSeeClients(current) },
     { label: "Quotes", route: "quotes", visible: permissions.canSeeQuotes(current) },
@@ -75,6 +108,11 @@ async function signOut(): Promise<void> {
           :to="{ name: item.route }"
         >
           {{ item.label }}
+          <AppBadgeCount
+            v-if="item.waiting"
+            :count="item.waiting"
+            label="items waiting for a decision"
+          />
         </RouterLink>
       </nav>
 
@@ -139,6 +177,10 @@ nav {
    entra só no texto. Uma pílula inteiramente dourada roubaria a atenção do
    conteúdo a cada tela. */
 nav a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-round);
   color: var(--color-on-dark-muted);
