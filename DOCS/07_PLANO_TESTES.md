@@ -8,16 +8,9 @@
 
 ## 0. Cobertura atual
 
-**172 testes aprovados** no backend até a M4.4, executados em container contra
-PostgreSQL real no banco isolado `tattoo_studio_test`.
-
-> **A M5 acrescentou 33 testes e o total não foi conferido.** As suítes de agenda
-> (31) e de financeiro (32) passaram no container depois da última alteração, com
-> Ruff limpo, mas a execução da suíte inteira num só comando não completou: a VM
-> do Docker desta máquina passou a sistema de arquivos somente-leitura no meio da
-> execução e derrubou o container da API. **O número acima só será atualizado
-> depois de um `pytest` inteiro verde.** Contador que se atualiza sem execução é
-> exatamente o status congelado que a `CLAUDE.md` manda evitar.
+**205 testes aprovados** no backend, executados em container contra PostgreSQL
+real no banco isolado `tattoo_studio_test`. Conferido em 30/09/2026, com a suíte
+inteira num só comando.
 
 > **A suíte devolve as conexões entre testes.** Cada teste monta um `Container`
 > próprio, com engine próprio, e o pool não se fechava sozinho: ao passar de cento

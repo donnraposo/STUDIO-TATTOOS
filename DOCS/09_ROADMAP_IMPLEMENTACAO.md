@@ -6,7 +6,8 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2, M3, M4, M5 e M7.1 — a fatia vertical de interface.
-**Próxima:** M6 — repasses e fechamento semanal.
+**Próxima:** M7.2.1 — painel do gestor com o que está esperando decisão,
+antecipada a pedido do estúdio. A M6 vem em seguida.
 
 > **O portão do sinal estava aberto e foi fechado na M5.** A RN-AGE-005 e a
 > RN-PAG-002 dizem que uma solicitação não pode ser aprovada sem sinal
@@ -128,8 +129,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M4 | Orçamentos e sessões | Backend | ✅ Concluída em 30/09/2026 |
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
-| M6 | Repasses e fechamento semanal | Backend | ⬅️ Próxima |
-| M7.2 | Restante da interface do MVP | Frontend | Não iniciada |
+| M6 | Repasses e fechamento semanal | Backend | Não iniciada |
+| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Próxima, pela etapa M7.2.1** |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -714,13 +715,14 @@ consequência registrada sobre o dinheiro.
 | Fronteira entre os módulos | A agenda declara as portas `DepositGate` e `BookingSettlementGate`; o financeiro as implementa; o `Container` liga. A agenda continua sem saber o que é um pagamento (ADR-016) |
 | `guest_week_id` | Fora da `0006`: a tabela `guest_week` ainda não existe, e chave estrangeira para tabela inexistente quebra a migração. Entra na sprint do guest |
 
-> **Estado dos testes nesta entrega.** Ruff limpo e uma classe por arquivo sem
-> apontamento. As suítes de agenda (31) e de financeiro (32) passaram no
-> container depois da última alteração. **A execução da suíte inteira num só
-> comando não completou**: a VM do Docker desta máquina passou a sistema de
-> arquivos somente-leitura no meio da execução e derrubou o container da API —
-> a mesma instabilidade já registrada nas entregas anteriores. Falta rodar
-> `pytest` inteiro depois de reiniciar o Docker.
+- Ruff limpo; **205 testes** no backend; uma classe por arquivo sem apontamento.
+
+> **A suíte inteira só foi conferida no dia seguinte à entrega.** A VM do Docker
+> desta máquina passou a sistema de arquivos somente-leitura no meio da primeira
+> execução e derrubou o container da API — a mesma instabilidade já registrada
+> nas entregas anteriores. O commit da M5 foi feito declarando isso, com as
+> suítes de agenda (31) e de financeiro (32) verdes mas o total não conferido.
+> Reiniciado o Docker, `pytest` inteiro passou: 205 testes.
 
 ## Sprint M6 — Repasses e fechamento semanal
 
@@ -1045,6 +1047,79 @@ base e a timeline já existem e foram exercitados.
 
 **Resultado esperado:** os três perfis operam o ciclo completo pela interface, em
 desktop e celular.
+
+### Etapas
+
+Dividida como a M3, a M4 e a M7.1, pelo mesmo motivo: a sprint acumula painel,
+sessões, pagamentos, repasses e gestão de contas. Entregar em bloco único tira a
+chance de conferir cada regra antes da seguinte.
+
+**A M7.2.1 é antecipada e não espera a M6.** As demais etapas dependem de
+repasse; o painel não depende. Ela pode sair antes ou em paralelo à M6, que é
+backend.
+
+| Etapa | Escopo | Situação |
+|---|---|---|
+| **M7.2.1** | ⚠️ Painel do gestor: o que está esperando decisão | ⬅️ **Próxima** |
+| M7.2.2 | Sessões e atendimentos | Não iniciada |
+| M7.2.3 | Pagamentos, sinal e devoluções | Não iniciada |
+| M7.2.4 | Repasses e demonstrativo do artista | Não iniciada |
+| M7.2.5 | Painel do residente e do guest | Não iniciada |
+| M7.2.6 | Usuários e permissões | Não iniciada |
+
+### Etapa M7.2.1 — Painel do gestor: o que está esperando decisão
+
+**O problema, relatado pelo estúdio em 30/09/2026.** Hoje o gerente precisa abrir
+o calendário para descobrir se existe solicitação de agendamento. Se não abrir,
+não sabe; se abrir e não reparar, passa batido. Uma solicitação esquecida é um
+horário que o cliente acha reservado e o estúdio não confirmou.
+
+**A regra já previa isso, e não estava construída.** A RN-AGE-012 diz que "uma
+nova solicitação **aparecerá no painel** de gerente e proprietário", e a seção
+10.1 lista o conteúdo desse painel. O `HomeView` entregue na M7.1.1 é marcador de
+lugar.
+
+**Entrega:** a área de pendências no painel do gestor, com três origens, e um
+contador na barra lateral visível em **toda** tela — é o contador que resolve a
+dor, porque não exige estar na tela certa para saber que há algo esperando.
+
+| Origem | Regra | Por que está aqui |
+|---|---|---|
+| Solicitações de agendamento | RN-AGE-005, RN-AGE-012 | A dor relatada |
+| Pagamentos aguardando confirmação | RN-PAG-002, seção 10.1 | Desde a M5 o sinal não confirmado **trava a aprovação**; esquecê-lo trava a agenda |
+| Orçamentos pendentes | RN-ORC-002, seção 10.1 | Não têm vencimento automático: ficam pendentes pelo tempo que for, sem nada cobrar decisão |
+
+**Decisões tomadas com o responsável antes de começar:**
+
+| Pergunta | Decisão |
+|---|---|
+| Onde encaixar | Etapa própria, antecipada. Não depende da M6 |
+| O que aparece na área | Os três itens da seção 10.1, não só as solicitações |
+| Atualização | A cada minuto, enquanto a tela estiver aberta. O gerente fica com o sistema aberto durante o expediente, e uma solicitação que chega às 14h05 não pode esperar ele navegar |
+| Painel do residente | **Fora desta etapa.** A seção 10.2 o prevê e ele entra na M7.2.5; a dor relatada é do gestor |
+| Notificação por e-mail | **Fora do MVP.** A RN-AGE-012 também a prevê, mas depende do `email_outbox` e do worker, declarados na sprint F2 |
+
+**O que falta no backend, e é pequeno:**
+
+| Ponto | O que falta |
+|---|---|
+| `GET /bookings` | Filtro por estado. Hoje só há janela de data, e pedir as pendentes sem data traria o histórico inteiro |
+| Pagamentos aguardando confirmação | Só existe listagem por agendamento; falta a consulta do que está `REPORTED` no estúdio |
+| `GET /quotes` | Devolve todos; falta o filtro por estado |
+
+**Nenhuma migração.** Solicitação pendente é agendamento em `REQUESTED`; pagamento
+aguardando é `payment` em `REPORTED`; orçamento pendente é `quote` em `PENDING`. A
+tabela `notification` do modelo de dados é da sprint F2 e serve à caixa interna
+com e-mail — não é o que esta etapa precisa.
+
+**Critérios de aceite:**
+
+- O contador aparece na barra lateral em toda tela, e some quando não há
+  pendência.
+- Gestor vê as três origens; residente e guest não veem a área nesta etapa.
+- Cada item leva à tela onde a decisão é tomada, sem o gestor procurar.
+- A área se atualiza sozinha a cada minuto, sem recarregar a página.
+- Zero pendências mostra estado vazio explícito, não área em branco.
 
 ## Sprint M8 — Implantação mínima
 

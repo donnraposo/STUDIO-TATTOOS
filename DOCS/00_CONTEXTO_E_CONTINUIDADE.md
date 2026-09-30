@@ -455,7 +455,30 @@ confirmar o sinal, aprovar.
 > passaram depois da última alteração, com Ruff limpo. Falta rodar `pytest`
 > inteiro depois de reiniciar o Docker.
 
-**Próximo passo:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
+**Próximo passo:** etapa **M7.2.1 — painel do gestor com o que está esperando
+decisão**, antecipada a pedido do estúdio em 30/09/2026.
+
+O problema relatado: o gerente precisa abrir o calendário para descobrir se existe
+solicitação de agendamento; se não abrir, não sabe, e se abrir e não reparar, passa
+batido. A RN-AGE-012 já previa que "uma nova solicitação aparecerá no painel de
+gerente e proprietário", e a seção 10.1 lista o conteúdo desse painel — nunca foi
+construído, e o `HomeView` é marcador de lugar.
+
+A área mostra as três origens da seção 10.1: solicitações de agendamento,
+pagamentos aguardando confirmação e orçamentos pendentes. O contador fica na barra
+lateral, visível em toda tela — é ele que resolve a dor, porque o problema é
+justamente não estar no painel. Atualiza sozinho a cada minuto.
+
+**Não há migração nem tabela nova.** Pendência é estado que já existe: agendamento
+em `REQUESTED`, pagamento em `REPORTED`, orçamento em `PENDING`. A tabela
+`notification` do modelo de dados serve à caixa interna com e-mail e é da sprint
+F2, junto do worker.
+
+Falta no backend, e é pequeno: filtro por estado em `GET /bookings` e em
+`GET /quotes`, e uma consulta dos pagamentos aguardando confirmação no estúdio —
+hoje só existe listagem por agendamento.
+
+**Depois dela:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
 fechamento de sexta às 20h `Europe/Dublin`, demonstrativo do artista e ajustes
 negativos de devolução posterior (RN-REP-003 a RN-REP-007).
 

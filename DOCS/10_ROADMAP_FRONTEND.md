@@ -21,18 +21,27 @@ A decisão de antecipar uma fatia vertical está no **ADR-025**, que revê o ADR
 
 ## 2. Onde o frontend está hoje
 
-Quase no começo, e é importante não se iludir com o que existe:
+> Esta seção descrevia o estado de 28/09/2026, quando nada existia. **Reescrita em
+> 30/09/2026**, ao fim da M7.1 — cabeçalho que descreve um passado é a armadilha
+> que a `CLAUDE.md` seção 7 chama de status congelado.
+
+A fatia antecipada está inteira: quatro telas de negócio sobre a casca, com
+sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 
 | O que existe | Situação |
 |---|---|
-| Vue 3, TypeScript, Vite, Vitest, ESLint | Configurados e funcionando em container |
-| `tokens.css` e `base.css` | Tipografia Urbanist na escala 32/24/20/18/16/14 e paleta ouro sobre preto |
-| `features/dashboard/DashboardView.vue` | Tela de status da sprint 01; **será substituída** |
-| `shared/api/SystemStatusClient.ts` | Único cliente HTTP, sem autenticação |
-| `app/router.ts` | Uma rota, sem guarda |
+| Vue 3, TypeScript, Vite, Vitest, ESLint | Em container, com lint e tipos limpos |
+| `tokens.css` e `base.css` | Escala 32/24/20/18/16/14, paleta ouro sobre preto, e a pílula única de campo |
+| Casca, sessão e guarda de rota | `AppShell`, `SessionStore`, `HttpClient` com CSRF e 401 central |
+| 16 componentes base | Todo controle passa por eles; uma exceção declarada (`BookingBlock`) |
+| Clientes, agenda, orçamentos | `ClientsView`, `SchedulingView` com a timeline, `QuotesView` |
+| 83 testes | Classes puras, sem montar componente |
 
-**Não existe:** login, sessão no navegador, cliente HTTP autenticado, componente
-compartilhado algum, nenhuma tela de negócio.
+**Não existe ainda:** painel com o que está esperando decisão, sessões,
+pagamentos, repasses, gestão de contas — e é isso que a M7.2 cobre.
+
+**O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
+diagnóstico do gestor, e não como página inicial.
 
 ## 3. O teto: até onde a API deixa ir
 
@@ -419,6 +428,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 
 | Tela | Depende de | Situação da dependência |
 |---|---|---|
+| **Painel do gestor com o que está esperando decisão** | RN-AGE-012 e seção 10.1 | ⬅️ **Etapa M7.2.1, detalhada abaixo** |
 | Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ Pronta — a tela é que ficou para trás |
 | Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
 | Sessões e atendimentos | M4.4 | ✅ Pronta |
@@ -432,6 +442,59 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 backend. Agora espera só a M6 — e as três primeiras linhas da tabela podem
 começar a qualquer momento. A primeira delas é correção de defeito, não tela
 nova: o `BookingForm` oferece uma ação que o servidor recusa.
+
+## 7.1 Etapa M7.2.1 — Painel do gestor: o que está esperando decisão
+
+> **Antecipada a pedido do estúdio, em 30/09/2026.** Não depende da M6 e sai
+> antes do resto da M7.2. O andamento fica registrado no `09`, como sempre.
+
+**O problema.** O gerente precisa abrir o calendário para descobrir se existe
+solicitação de agendamento. Se não abrir, não sabe; se abrir e não reparar, passa
+batido. Uma solicitação esquecida é um horário que o cliente acha reservado e o
+estúdio não confirmou.
+
+**A regra já previa.** A RN-AGE-012 diz que "uma nova solicitação **aparecerá no
+painel** de gerente e proprietário", e a seção 10.1 lista o que esse painel mostra.
+O `HomeView` entregue na M7.1.1 é marcador de lugar.
+
+**Entrega:** a área de pendências no painel do gestor, com três origens, e um
+contador na barra lateral visível em **toda** tela.
+
+**O contador é o que resolve a dor, e por isso mora na casca.** A área no painel
+ajuda quem já está no painel; o problema relatado é justamente não estar. Na
+lateral, o número acompanha o gerente onde quer que ele esteja no sistema.
+
+Telas e componentes previstos:
+
+| Peça | Camada | Papel |
+|---|---|---|
+| `PendingWorkStore.ts` | `shared/` | Estado único da aplicação, como o `SessionStore`. É o que permite o contador viver na casca sem ela falar com a API |
+| `AppBadgeCount.vue` | base | Contador em pílula, sem domínio |
+| `PendingWorkList.vue` | apresentação | Recebe por `props`, devolve por `emits` |
+| `HomeView.vue` | tela | A única que fala com a API |
+| `AppShell.vue` | casca | Lê o estado e desenha o contador |
+
+**Por que um store e não uma chamada na casca.** A convenção diz que só a tela
+fala com a API, e o contador precisa do dado fora de qualquer tela. O caminho que
+não quebra a regra é o mesmo já usado pela sessão: estado único em `shared/`,
+alimentado por quem carrega, lido por quem desenha.
+
+**Critérios de aceite:**
+
+- O contador aparece na barra lateral em toda tela, e some quando não há
+  pendência.
+- Gestor vê as três origens — solicitações de agendamento, pagamentos aguardando
+  confirmação e orçamentos pendentes. Residente e guest não veem a área nesta
+  etapa; o painel deles é a M7.2.5, conforme a seção 10.2.
+- Cada item leva à tela onde a decisão é tomada, sem o gestor procurar.
+- A área se atualiza sozinha a cada minuto, sem recarregar a página.
+- Zero pendências mostra estado vazio explícito, não área em branco.
+- Responsivo: no celular o contador acompanha a navegação horizontal da casca.
+
+**O que esta etapa não é.** Não é a caixa de notificações do modelo de dados — a
+tabela `notification` e o `email_outbox` servem ao e-mail e ao worker, declarados
+na sprint F2. Aqui não há tabela nova: pendência é estado que já existe nas
+tabelas de agendamento, pagamento e orçamento.
 
 ## 8. Fase 2
 
