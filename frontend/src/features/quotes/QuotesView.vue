@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 
 import QuoteDetail from "@/features/quotes/components/QuoteDetail.vue";
+import SessionDecisionModal from "@/features/quotes/components/SessionDecisionModal.vue";
 import QuoteForm, { type QuoteDraft } from "@/features/quotes/components/QuoteForm.vue";
 import QuoteList from "@/features/quotes/components/QuoteList.vue";
 import { ApiError } from "@/shared/api/ApiError";
@@ -14,6 +15,7 @@ import LoadingState from "@/shared/components/LoadingState.vue";
 import PageHeader from "@/shared/components/PageHeader.vue";
 import type { Client } from "@/shared/domain/Client";
 import type { Quote, ReferenceImage } from "@/shared/domain/Quote";
+import type { TattooSession } from "@/shared/domain/TattooSession";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 import { StudioClock } from "@/shared/format/StudioClock";
 import { useSession } from "@/shared/session/useSession";
@@ -38,7 +40,7 @@ interface QuotesBoard {
   artists: StudioMember[];
 }
 
-const { quotes: quotesApi, clients: clientsApi, accounts } = useApi();
+const { quotes: quotesApi, sessions: sessionsApi, clients: clientsApi, accounts } = useApi();
 const { session, permissions } = useSession();
 const clock = new StudioClock();
 
@@ -49,6 +51,8 @@ const editing = ref<Quote | null>(null);
 const busy = ref(false);
 const failure = ref<string | null>(null);
 const images = ref<ReferenceImage[]>([]);
+const sessions = ref<TattooSession[]>([]);
+const deciding = ref<{ session: TattooSession; mode: "mark" | "confirm" } | null>(null);
 const imagesBusy = ref(false);
 const imagesFailure = ref<string | null>(null);
 
@@ -72,6 +76,15 @@ const heading = computed(() => {
 /** RN-ORC-003: o gestor edita sempre; o artista edita o próprio orçamento
  * **enquanto pendente**. É a mesma decisão do `QuotePolicy`, e continua sendo
  * aparência — o backend recusa com 403 de qualquer forma. */
+/** RN-ORC-005: o artista marca a própria sessão como realizada; o gestor
+ * também, porque opera o sistema por quem não registrou e responde pelo guest,
+ * que não acessa o módulo (RN-ORC-001). */
+const canMarkSelected = computed(() => {
+  const quote = selected.value;
+  const current = user.value;
+  return Boolean(quote && current && (isStaff.value || current.id === quote.artistId));
+});
+
 const canEditSelected = computed(() => {
   const quote = selected.value;
   const current = user.value;
@@ -144,6 +157,10 @@ async function act(action: () => Promise<unknown>, keepOpen: boolean): Promise<v
     editing.value = null;
     await load();
     selected.value = keepOpen ? refreshed(selected.value) : null;
+    deciding.value = null;
+    if (selected.value) {
+      await loadSessions(selected.value.id);
+    }
   } catch (error) {
     failure.value =
       error instanceof ApiError ? error.message : "Could not reach the studio system.";
@@ -161,7 +178,45 @@ function refreshed(quote: Quote | null): Quote | null {
 async function open(quote: Quote): Promise<void> {
   selected.value = quote;
   failure.value = null;
-  await loadImages(quote.id);
+  await Promise.all([loadImages(quote.id), loadSessions(quote.id)]);
+}
+
+/** As sessões do orçamento aberto (RN-ORC-005).
+ *
+ * Falhar aqui não derruba o detalhe: um orçamento pendente não tem sessões, e
+ * quem não pode vê-las recebe 403 — nos dois casos a lista vazia é resposta
+ * melhor do que uma tela que não abre. */
+async function loadSessions(quoteId: string): Promise<void> {
+  try {
+    sessions.value = await sessionsApi.listForQuote(quoteId);
+  } catch {
+    sessions.value = [];
+  }
+}
+
+/** Marcar e confirmar recarregam **as sessões e o orçamento**.
+ *
+ * O orçamento porque a RN-ORC-006 pode devolvê-lo a Pendente quando um ajuste
+ * muda o valor comprometido; sem recarregar, o modal continuaria mostrando
+ * "Approved" sobre um orçamento que deixou de estar. */
+async function markPerformed(chargedValue: string | null): Promise<void> {
+  const target = deciding.value;
+  if (target) {
+    await act(() => sessionsApi.markPerformed(target.session.id, chargedValue), true);
+  }
+}
+
+async function confirmReceipt(
+  chargedValue: string | null,
+  reason: string | null,
+): Promise<void> {
+  const target = deciding.value;
+  if (target) {
+    await act(
+      () => sessionsApi.confirmPayment(target.session.id, chargedValue, reason),
+      true,
+    );
+  }
 }
 
 async function loadImages(quoteId: string): Promise<void> {
@@ -332,6 +387,8 @@ onMounted(load);
       :images="images"
       :can-decide="canDecide"
       :can-edit="canEditSelected"
+      :sessions="sessions"
+      :can-mark-sessions="canMarkSelected"
       :busy="busy"
       :failure="failure"
       :images-busy="imagesBusy"
@@ -342,6 +399,19 @@ onMounted(load);
       @attach="attach"
       @remove="remove"
       @close="selected = null"
+      @mark-session="deciding = { session: $event, mode: 'mark' }"
+      @confirm-session="deciding = { session: $event, mode: 'confirm' }"
+    />
+
+    <SessionDecisionModal
+      v-if="deciding"
+      :session="deciding.session"
+      :mode="deciding.mode"
+      :busy="busy"
+      :failure="failure"
+      @mark="markPerformed"
+      @confirm="confirmReceipt"
+      @close="deciding = null"
     />
   </div>
 </template>

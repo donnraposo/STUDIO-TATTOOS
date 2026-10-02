@@ -3,12 +3,14 @@ import { computed, ref, watch } from "vue";
 
 import { QuoteDisplay } from "@/features/quotes/QuoteDisplay";
 import ReferenceImages from "@/features/quotes/components/ReferenceImages.vue";
+import SessionList from "@/features/quotes/components/SessionList.vue";
 import AppButton from "@/shared/components/AppButton.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
 import AppTextarea from "@/shared/components/AppTextarea.vue";
 import StatusBadge from "@/shared/components/StatusBadge.vue";
 import type { Quote, ReferenceImage } from "@/shared/domain/Quote";
+import type { TattooSession } from "@/shared/domain/TattooSession";
 import { MoneyFormatter } from "@/shared/format/MoneyFormatter";
 
 /** O orçamento inteiro, com as decisões que cabem a quem está olhando.
@@ -33,6 +35,8 @@ const props = defineProps<{
   createdAt: string;
   decidedAt: string | null;
   images: ReferenceImage[];
+  sessions: TattooSession[];
+  canMarkSessions: boolean;
   canDecide: boolean;
   canEdit: boolean;
   busy: boolean;
@@ -45,6 +49,8 @@ const emit = defineEmits<{
   edit: [];
   approve: [artistPercentage: string | null];
   reject: [reason: string, note: string | null];
+  markSession: [session: TattooSession];
+  confirmSession: [session: TattooSession];
   attach: [file: File];
   remove: [imageId: string];
   close: [];
@@ -156,6 +162,15 @@ const facts = computed(() => [
         — {{ props.quote.rejectionNote }}
       </template>
     </p>
+
+    <SessionList
+      :sessions="props.sessions"
+      :can-mark="props.canMarkSessions"
+      :can-confirm="props.canDecide"
+      :busy="props.busy"
+      @mark="$emit('markSession', $event)"
+      @confirm="$emit('confirmSession', $event)"
+    />
 
     <ReferenceImages
       :images="props.images"

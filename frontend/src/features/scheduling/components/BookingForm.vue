@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 
+import { DepositRequirement } from "@/features/scheduling/DepositRequirement";
 import AppButton from "@/shared/components/AppButton.vue";
 import AppCheckbox from "@/shared/components/AppCheckbox.vue";
 import AppInput from "@/shared/components/AppInput.vue";
@@ -17,8 +18,15 @@ import type { StudioMember } from "@/shared/domain/StudioMember";
  * que escolha a si mesmo numa lista seria ruído, e escolher outro seria recusado
  * pelo backend de qualquer forma.
  *
- * **Criar já aprovado também é do gestor** (RN-AGE-005). Fica como caixa e não
- * como botão separado, porque é uma variação do mesmo ato, não outro ato.
+ * **Criar já aprovado vale onde não há sinal a confirmar.** A RN-AGE-005 permite
+ * o atalho *"desde que confirmem o sinal"*, e o sinal pertence ao agendamento —
+ * que ainda não existe no instante da criação (ADR-027). O caminho corrente é
+ * criar, confirmar os €50 e aprovar; a caixa só aparece onde a regra não pede
+ * sinal, que é o cliente próprio do guest (RN-GST-004).
+ *
+ * A tela **esconde** o atalho em vez de oferecê-lo e levar 403: um botão que o
+ * servidor recusa ensina a equipe a desconfiar dos próprios botões. Quem garante
+ * continua sendo o backend.
  *
  * O formulário **não verifica conflito de horário**. Quem decide isso é a
  * restrição do banco, no momento da gravação (ADR-011): conferir aqui e gravar
@@ -68,6 +76,11 @@ const artistOptions = computed<SelectOption[]>(() =>
  * não depende do estado do estúdio — ninguém precisa consultar o banco para
  * saber que um intervalo vazio não é um agendamento. */
 const invalidPeriod = computed(() => endTime.value <= startTime.value);
+
+const deposits = new DepositRequirement();
+
+/** O atalho de criar já aprovado só existe onde não há sinal a confirmar. */
+const needsDeposit = computed(() => deposits.appliesTo(artistId.value, props.artists));
 
 const incomplete = computed(
   () => clientId.value === "" || benchId.value === "" || invalidPeriod.value,
@@ -139,11 +152,19 @@ function submit(): void {
     </div>
 
     <AppCheckbox
-      v-if="props.canDecide"
+      v-if="props.canDecide && !needsDeposit"
       v-model="approveImmediately"
       label="Approve straight away"
       :disabled="props.busy"
     />
+
+    <p
+      v-else-if="props.canDecide"
+      class="deposit"
+    >
+      The €50 deposit has to be registered and confirmed before this booking can
+      be approved. Create the request first, then confirm the deposit.
+    </p>
 
     <p
       v-if="props.failure"
@@ -166,7 +187,7 @@ function submit(): void {
         :disabled="incomplete"
         @click="submit"
       >
-        {{ props.canDecide && approveImmediately ? "Create and approve" : "Request booking" }}
+        {{ approveImmediately ? "Create and approve" : "Request booking" }}
       </AppButton>
     </template>
   </AppModal>
@@ -190,6 +211,16 @@ function submit(): void {
   .period {
     grid-template-columns: 1fr;
   }
+}
+
+/* A exigência do sinal é informação que precede a decisão, não erro: tom suave,
+   como as consequências do modal de agendamento. */
+.deposit {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  font-size: var(--text-label-3);
 }
 
 .failure {

@@ -33,18 +33,19 @@ gestão de contas. Depois dela, a M8.
 | Migrações aplicadas | `0001` a `0009`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente e repasses |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 248 no backend e 105 no frontend, todos aprovados |
-| Frontend | Acesso, painel com o que espera decisão, clientes, agenda com a timeline, orçamentos e repasses |
+| Testes | 248 no backend e 115 no frontend, todos aprovados |
+| Frontend | Acesso, painel, clientes, agenda com a timeline, orçamentos com sessões, e repasses |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
 > do login ao repasse de sexta. As duas dores que justificam o sistema têm
 > resposta: impedir choque de horário e saber quem recebe quanto.
 >
-> **O frontend ainda atrasa, mas menos.** Agenda, orçamentos, painel e repasses
-> têm tela; **sessões e pagamentos não** — e sem elas o ciclo não se percorre
-> inteiro pela interface. O gestor consegue ver o que deve e confirmar o
-> repasse, mas registrar o sinal e marcar a sessão como realizada ainda exigem a
-> API. É o que falta da M7.2.
+> **Falta uma tela para o ciclo fechar pela interface.** Agenda, orçamentos,
+> sessões, painel e repasses têm tela; **o sinal não**. O gestor vê no painel
+> que há um pagamento aguardando confirmação, mas registrá-lo e confirmá-lo
+> ainda exige a API — e sem a confirmação o horário não pode ser aprovado
+> (RN-AGE-005). É a M7.2.3, e é o que separa a interface de ser utilizável de
+> ponta a ponta.
 
 ### Pendências de costura entre sprints
 
@@ -56,9 +57,7 @@ seguinte fecha sem saber tudo o que tinha de fechar.
 |---|---|---|
 | `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008). **Não fechou na M6:** o repasse lê a sessão, então fazê-la lá misturaria dois assuntos numa entrega só | M7.2.3 |
 | `payment.guest_week_id` | Coluna e origem da taxa semanal; a tabela `guest_week` ainda não existe (RN-GST-001) | Sprint do guest |
-| `BookingForm` — caixa "Approve straight away" | Criar já aprovado passou a ser recusado onde há sinal a confirmar (ADR-027); a tela ainda oferece a caixa | M7.2 |
 | Tela de sinal e pagamentos | Registrar, confirmar, recusar e devolver. O painel **mostra** o que aguarda confirmação desde a M7.2.1, mas quem decide ainda precisa da tela | M7.2.3 |
-| Tela de sessões | Marcar realizada, sessão parcial e confirmar recebimento. O backend existe desde a M4.4 | M7.2.2 |
 
 **Fechadas na M5, em 30/09/2026:**
 
@@ -141,7 +140,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
-| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1 e M7.2.4 concluídas |
+| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1, M7.2.2 e M7.2.4 concluídas |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1075,9 +1074,9 @@ backend.
 | Etapa | Escopo | Situação |
 |---|---|---|
 | **M7.2.1** | ⚠️ Painel do gestor: o que está esperando decisão | ✅ Concluída em 30/09/2026 |
-| M7.2.2 | Sessões e atendimentos | Não iniciada |
+| M7.2.2 | Sessões e atendimentos | ✅ Concluída em 02/10/2026 |
 | M7.2.3 | Pagamentos, sinal e devoluções | Não iniciada |
-| M7.2.4 | Repasses e demonstrativo do artista | Não iniciada |
+| M7.2.4 | Repasses e demonstrativo do artista | ✅ Concluída em 02/10/2026, junto com a M6 |
 | M7.2.5 | Painel do residente e do guest | Não iniciada |
 | M7.2.6 | Usuários e permissões | Não iniciada |
 
@@ -1207,6 +1206,61 @@ agendamento de 1 de outubro, estando o estúdio em 30 de setembro, abriu
 |---|---|
 | Cada dia consultado viraria uma entrada de histórico | `replace` e não `push`: sair da agenda passaria a exigir um toque em voltar para cada dia que se olhou. Voltar leva de onde se veio — o painel, quando foi ele que trouxe |
 | `?day=ontem` caía no dia de hoje, mas a barra continuava exibindo `ontem` | O endereço é acertado também na montagem. Um endereço que mente sobre o que está na tela leva outra pessoa ao mesmo engano quando é copiado |
+
+### Evidência da etapa M7.2.2 — 02/10/2026
+
+**As sessões têm tela.** O backend delas existia desde a M4.4 e nenhuma
+interface as consumia; agora o ciclo do orçamento vai da aprovação à sessão
+quitada sem sair do navegador.
+
+A lista e as decisões moram **dentro do detalhe do orçamento**, e não em tela
+própria: a sessão não existe fora dele, e uma rota separada obrigaria quem decide
+a procurar o orçamento de que ela veio.
+
+| Regra | Como a tela cumpre |
+|---|---|
+| **RN-ORC-005** | O artista marca realizada; o gestor confirma o recebimento. São dois botões, para gente diferente, e a tela esconde o que não cabe a quem olha |
+| **RN-ORC-006** | A caixa "the session was interrupted" pede o valor cobrado, e o campo recusa valor **igual ou maior** que o previsto antes de enviar |
+| **RN-ORC-005**, correções | Confirmar valor diferente do informado revela o campo de motivo e trava o botão enquanto ele estiver vazio |
+| **RN-REP-006** | O modal mostra o percentual congelado da sessão, não o padrão vigente |
+
+**Realizada aparece em tom de espera; só quitada aparece em verde.** Não é
+estética: realizada ainda não entra em repasse, e pintá-la de positivo diria ao
+artista que o trabalho terminou quando ele ainda não conta para o fechamento de
+sexta.
+
+**A tela diz o que o ato não faz.** "This records that the studio received the
+money. It does not move anything — the payment happens outside the system." Quem
+opera dinheiro não deve precisar deduzir se um botão movimenta caixa, e a
+RN-PAG-006 reserva qualquer automação para uma versão futura.
+
+**Exercitado contra a aplicação rodando:**
+
+| Passo | Resultado |
+|---|---|
+| Aprovar o orçamento | Quatro sessões `SCHEDULED` de €250 apareceram no detalhe |
+| Marcar parcial com €250 | Recusado na tela, com a explicação, e o botão travado |
+| Marcar parcial com €100 | `PARTIALLY PERFORMED`, mostrando "€100.00 of €250.00 planned" |
+| Confirmar €150 sem motivo | Botão travado; o campo de motivo apareceu sozinho |
+| Confirmar €150 com motivo | `SETTLED`, e as ações do artista somem — desfazer confirmação é do gestor |
+
+#### Defeito corrigido junto: a caixa "Approve straight away"
+
+**A M5 fechou o portão do sinal e deixou um botão mentindo.** Criar agendamento
+já aprovado passou a ser recusado onde há sinal a confirmar (ADR-027), e o
+formulário continuava oferecendo a caixa — o gestor marcava e levava 403.
+
+A tela agora **esconde o atalho** onde ele não vale e explica o caminho: criar a
+solicitação, confirmar os €50, aprovar. Um botão que o servidor recusa ensina a
+equipe a desconfiar dos próprios botões.
+
+`DepositRequirement` decide isso por perfil, porque um agendamento novo nunca
+nasce ligado a um orçamento — e a exceção da RN-GST-004 é do guest com cliente
+próprio. **Erra para o lado de exigir** quando não reconhece o artista: não
+oferecer o atalho custa um clique, oferecê-lo custa um 403.
+
+- ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
+  convenção sem apontamento.
 
 ### Evidência da sprint M6 — 02/10/2026
 

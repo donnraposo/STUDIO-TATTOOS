@@ -37,10 +37,10 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Clientes, agenda, orçamentos | `ClientsView`, `SchedulingView` com a timeline, `QuotesView` |
 | Painel com o que espera decisão | `HomeView` com a fila das três origens e o contador na casca |
 | Repasses | `PayoutsView` com lista, demonstrativo e confirmação de transferência |
+| Sessões | `SessionList` e `SessionDecisionModal` dentro do detalhe do orçamento |
 | 90 testes | Classes puras, sem montar componente |
 
-**Não existe ainda:** sessões, pagamentos e gestão de contas — e é isso que
-falta da M7.2.
+**Não existe ainda:** o sinal e a gestão de contas — e é isso que falta da M7.2.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -57,7 +57,7 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Clientes | ✅ | ✅ M7.1.2 |
 | Macas e agenda | ✅ | ✅ M7.1.3 |
 | Orçamentos e imagens de referência | ✅ | ✅ M7.1.4 |
-| Sessões | ✅ M4.4 | ❌ M7.2 |
+| Sessões | ✅ M4.4 | ✅ M7.2.2 |
 | Pagamentos e sinal | ✅ M5 | ❌ M7.2 |
 | Repasses | ✅ M6 | ✅ M6 |
 | Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
@@ -432,9 +432,9 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 | Tela | Depende de | Situação da dependência |
 |---|---|---|
 | **Painel do gestor com o que está esperando decisão** | RN-AGE-012 e seção 10.1 | ✅ **Etapa M7.2.1, concluída em 30/09/2026** |
-| Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ Pronta — a tela é que ficou para trás |
+| Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ **Corrigido em 02/10/2026** |
 | Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
-| Sessões e atendimentos | M4.4 | ✅ Pronta |
+| Sessões e atendimentos | M4.4 | ✅ **Entregue em 02/10/2026** |
 | Repasses semanais e demonstrativo | M6 | ✅ **Entregue junto com a M6, em 02/10/2026** |
 | Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
 | Painel do residente | M6 | ❌ Não iniciada |
