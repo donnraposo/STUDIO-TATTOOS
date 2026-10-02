@@ -5,17 +5,22 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1, M2, M3, M4, M5 e M7.1 — a fatia vertical de interface.
-**Próxima:** M6 — repasses e fechamento semanal. A etapa M7.2.1 fechou em
-30/09/2026.
+**Concluído:** sprint 01, M1, M2, M3, M4, M5, M6 e M7.1 — a fatia vertical de
+interface, mais a etapa M7.2.1.
+**Próxima:** o restante da M7.2 — sessões, pagamentos, painel do residente e
+gestão de contas. Depois dela, a M8.
+
+> **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
+> sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
+> M6, e o estúdio deixa de precisar calcular fora do sistema quanto paga a cada
+> artista.
 
 > **O portão do sinal estava aberto e foi fechado na M5.** A RN-AGE-005 e a
 > RN-PAG-002 dizem que uma solicitação não pode ser aprovada sem sinal
 > confirmado, e até 30/09/2026 o `ApproveBooking` tinha um `_deposit_is_confirmed`
 > que devolvia `True` sempre — declarado como costura, mas na prática uma regra
 > escrita que o sistema não cumpria.
-**Progresso do MVP:** 8 das 11 entregas fechadas. Falta a M6, o resto da M7.2 e
-a M8.
+**Progresso do MVP:** 9 das 11 entregas fechadas. Falta o resto da M7.2 e a M8.
 
 > Esta tabela descrevia 26/09/2026 e **ficou congelada por cinco dias**, afirmando
 > 145 testes, migrações até a `0005` e "falta todo o dinheiro" com a M5 já
@@ -25,22 +30,21 @@ a M8.
 | O que existe | Detalhe |
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `finance`, `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` a `0008`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, e origem do cliente |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, e `/payments/*` |
+| Migrações aplicadas | `0001` a `0009`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente e repasses |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 221 no backend e 101 no frontend, todos aprovados |
-| Frontend | Acesso, painel com o que espera decisão, clientes, agenda com a timeline e orçamentos |
+| Testes | 248 no backend e 105 no frontend, todos aprovados |
+| Frontend | Acesso, painel com o que espera decisão, clientes, agenda com a timeline, orçamentos e repasses |
 
-> **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend
-> **menos o último elo**: login, cliente, agenda com prevenção de conflito,
-> orçamento, sinal, pagamento e sessão existem; **o repasse de sexta não**. É a
-> M6, e enquanto ela não entrar o estúdio continua calculando o que paga a cada
-> artista fora do sistema.
+> **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
+> do login ao repasse de sexta. As duas dores que justificam o sistema têm
+> resposta: impedir choque de horário e saber quem recebe quanto.
 >
-> **O frontend inverteu a situação de uma semana atrás e agora é ele que atrasa.**
-> O backend está duas sprints à frente: sessões e pagamentos existem e nenhuma
-> tela os consome. Das duas dores que justificam o sistema, a interface resolve
-> uma inteira — impedir choque de horário — e nenhuma parte da outra.
+> **O frontend ainda atrasa, mas menos.** Agenda, orçamentos, painel e repasses
+> têm tela; **sessões e pagamentos não** — e sem elas o ciclo não se percorre
+> inteiro pela interface. O gestor consegue ver o que deve e confirmar o
+> repasse, mas registrar o sinal e marcar a sessão como realizada ainda exigem a
+> API. É o que falta da M7.2.
 
 ### Pendências de costura entre sprints
 
@@ -50,10 +54,11 @@ seguinte fecha sem saber tudo o que tinha de fechar.
 
 | Ponto no código | O que falta | Fecha em |
 |---|---|---|
-| `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008) | M6 |
+| `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008). **Não fechou na M6:** o repasse lê a sessão, então fazê-la lá misturaria dois assuntos numa entrega só | M7.2.3 |
 | `payment.guest_week_id` | Coluna e origem da taxa semanal; a tabela `guest_week` ainda não existe (RN-GST-001) | Sprint do guest |
 | `BookingForm` — caixa "Approve straight away" | Criar já aprovado passou a ser recusado onde há sinal a confirmar (ADR-027); a tela ainda oferece a caixa | M7.2 |
 | Tela de sinal e pagamentos | Registrar, confirmar, recusar e devolver. O painel **mostra** o que aguarda confirmação desde a M7.2.1, mas quem decide ainda precisa da tela | M7.2.3 |
+| Tela de sessões | Marcar realizada, sessão parcial e confirmar recebimento. O backend existe desde a M4.4 | M7.2.2 |
 
 **Fechadas na M5, em 30/09/2026:**
 
@@ -135,8 +140,8 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M4 | Orçamentos e sessões | Backend | ✅ Concluída em 30/09/2026 |
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
-| **M6** | Repasses e fechamento semanal | Backend | ⬅️ **Próxima** |
-| M7.2 | Restante da interface do MVP | Frontend | Em andamento: M7.2.1 concluída |
+| M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
+| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1 e M7.2.4 concluídas |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -758,7 +763,10 @@ da M8 precisa hospedar:
 
 **Recomendação registrada:** cálculo sob demanda no MVP. O resultado é idêntico —
 ninguém consulta repasse às 20h de sexta — e evita subir infraestrutura que só a
-Fase 2 realmente exige. **Ainda não decidido pelo responsável.**
+Fase 2 realmente exige.
+
+> **Decidido pelo responsável em 02/10/2026: cálculo sob demanda.** A M8 segue
+> com três containers, e o worker continua previsto apenas para a Fase 2.
 
 Seja qual for o caminho, o risco de fechamento duplicado continua sendo resolvido no
 banco, por unicidade da semana fechada, e não pela garantia de que só existe um
@@ -1199,6 +1207,63 @@ agendamento de 1 de outubro, estando o estúdio em 30 de setembro, abriu
 |---|---|
 | Cada dia consultado viraria uma entrada de histórico | `replace` e não `push`: sair da agenda passaria a exigir um toque em voltar para cada dia que se olhou. Voltar leva de onde se veio — o painel, quando foi ele que trouxe |
 | `?day=ontem` caía no dia de hoje, mas a barra continuava exibindo `ontem` | O endereço é acertado também na montagem. Um endereço que mente sobre o que está na tela leva outra pessoa ao mesmo engano quando é copiado |
+
+### Evidência da sprint M6 — 02/10/2026
+
+**O último elo do MVP fechou.** O estúdio deixa de calcular fora do sistema
+quanto paga a cada artista.
+
+| Regra | Como o backend cumpre |
+|---|---|
+| **RN-REP-003** | Cada sessão quitada vira um item, com o valor recebido e o percentual congelado dela |
+| **RN-REP-004** | Semana de sexta 20h a sexta 20h no fuso do estúdio; artista vê só os próprios valores, gestor vê todos; a confirmação registra data, hora, valor e responsável |
+| **RN-REP-005** | `payout_adjustment` com valor negativo, vinculado ao pagamento devolvido e único por pagamento |
+| **RN-REP-006** | O percentual vem congelado da sessão, não do padrão vigente, e é copiado para o item |
+| **RN-REP-007** | Cálculo por sessão arredondado a duas casas; o demonstrativo exibe sessões, valor recebido, percentual, ajustes e líquido; três estados |
+
+**Decisões tomadas com o responsável antes de qualquer código:**
+
+| Pergunta | Decisão |
+|---|---|
+| Quem dispara o cálculo? | **Sob demanda.** A regra diz "depois do fechamento", não *quando*, e ninguém consulta repasse às 20h de sexta. Resultado idêntico ao de um agendador e **nenhum container a mais** na M8 — o worker segue para a Fase 2 (ADR-008) |
+| O que o sistema faz com o dinheiro? | **Só registra a confirmação.** O gestor transfere por fora; o sistema nunca move dinheiro sozinho, mesma linha do ADR-029 |
+
+**O risco declarado da sprint era a fronteira do horário de verão, e está
+coberto.** A semana que atravessa a virada tem **169 horas**, não 168: subtrair
+sete dias em UTC deixaria uma hora de fora, e nela caberia um pagamento
+confirmado na madrugada de sábado. O `PayoutWeek` calcula no fuso do estúdio e
+tem teste nas duas estações.
+
+**Duas decisões de cálculo que decidem dinheiro:**
+
+| Decisão | Por quê |
+|---|---|
+| Arredonda **por sessão**, não no total | A RN-REP-007 é literal. Somar antes e arredondar no fim dá outro número, e a diferença sai do bolso do artista. Tem teste com os dois caminhos lado a lado |
+| Meio centavo arredonda **para cima** | `ROUND_HALF_UP`, não o padrão do Python. O arredondamento bancário é mais justo estatisticamente e contabilmente surpreendente — ninguém quer explicar por que €0,125 virou €0,12 numa semana e €0,13 na outra |
+
+**Um defeito encontrado pelo próprio teste.** A idempotência estava no filtro de
+sessões, não no repasse: fechar duas vezes devolvia **lista vazia**, e o gestor
+abriria a tela de novo e veria a semana sem repasse nenhum, como se o fechamento
+tivesse sumido. Agora quem já tem repasse na semana é devolvido como está, e só
+quem não tem é calculado.
+
+**A terceira porta entre módulos**, e desta vez quem pergunta é o financeiro: o
+repasse declara `SettledSessions` e o módulo de orçamentos a implementa
+(ADR-028). Consultar a tabela de sessões direto faria o cálculo do repasse
+depender do desenho interno daquele módulo.
+
+**A tela saiu junto**, embora fosse a etapa M7.2.4: o backend sozinho não
+demonstra repasse, e a dependência dela era exatamente esta sprint. `/payouts`
+mostra a lista com o recorte do servidor, o demonstrativo em modal e a
+confirmação da transferência.
+
+**Pendência mantida, e é honesto dizer:** a costura em que
+`ConfirmSessionPayment` passa a se apoiar num pagamento `BALANCE` confirmado
+continua aberta. O repasse lê a sessão, então quando ela entrar nada na M6 muda —
+fazê-la aqui misturaria dois assuntos numa entrega só.
+
+- Ruff limpo; **248 testes** no backend e **105** no frontend; uma classe por
+  arquivo e as quatro verificações do frontend sem apontamento.
 
 ### Renomeação de `booth` para `bench` — 30/09/2026
 

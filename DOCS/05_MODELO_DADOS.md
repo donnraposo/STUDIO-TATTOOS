@@ -19,6 +19,7 @@
 | `payment` e `payment_refund` | `0006` | M5 |
 | `booth` → `bench`, com colunas, índices e restrições | `0007` | M7.2.1 |
 | `client.brought_by_artist_id` | `0008` | M7.2.1 |
+| `payout`, `payout_item` e `payout_adjustment` | `0009` | M6 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -356,19 +357,40 @@ saem da conta, porque em ambos os casos o cliente paga outro.
 `adjustments_total`, `net_total`, `status` (`CALCULATED`, `PAID`, `ADJUSTED`),
 `paid_at`, `paid_by`, `receipt_object_key`, `created_at`.
 
-`UNIQUE (artist_id, period_end)`. O `period_end` é a sexta às 20h `Europe/Dublin`
-convertida para UTC (RN-REP-004).
+`uq_payout_period` sobre `(artist_id, period_end)`. O `period_end` é a sexta às
+20h `Europe/Dublin` convertida para UTC (RN-REP-004).
+
+**É essa restrição que impede fechar a mesma semana duas vezes**, e ela não é
+acessório: com o cálculo sob demanda, duas abas abertas na tela de repasses são
+dois processos, e só o banco arbitra isso.
+
+`ck_payout_net_total` mantém `net_total = gross_total + adjustments_total`. O
+líquido poderia ser somado na leitura, mas é o número que o artista recebe:
+derivado, cada tela repetiria a soma, e bastaria uma errar para o demonstrativo
+discordar do extrato.
 
 ### `payout_item`
 
 `id`, `payout_id`, `session_id`, `received_amount`, `percentage`, `amount`.
 O cálculo é por sessão, arredondado a duas casas (RN-REP-007).
 
+`uq_payout_item_session` impede a mesma sessão em dois repasses. Pagar duas vezes
+pelo mesmo trabalho aparece no extrato do estúdio, não num teste.
+
+**`percentage` e `amount` são guardados, não recalculados.** O percentual é o
+congelado na sessão no momento do fechamento (RN-REP-006): lê-lo do orçamento na
+hora de exibir o demonstrativo mostraria o acordo de hoje sobre um pagamento de
+semanas atrás.
+
 ### `payout_adjustment`
 
 `id`, `payout_id`, `related_payment_id`, `amount` (negativo), `reason`, `actor_id`.
 Devolução posterior a um repasse pago não altera o fechamento anterior: entra como
 ajuste negativo no seguinte (RN-REP-005).
+
+`uq_payout_adjustment_payment` garante que um pagamento devolvido gera **um**
+ajuste. Sem ela, dois fechamentos consecutivos descontariam o mesmo valor duas
+vezes, e o artista pagaria em dobro por uma devolução só.
 
 ## 8. Guest
 

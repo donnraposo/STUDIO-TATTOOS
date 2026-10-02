@@ -12,6 +12,7 @@ from app.core.settings import Settings
 from app.modules.clients.clients_factory import ClientsFactory
 from app.modules.finance.finance_factory import FinanceFactory
 from app.modules.identity.identity_factory import IdentityFactory
+from app.modules.quotes.application.quote_settled_sessions import QuoteSettledSessions
 from app.modules.quotes.quotes_factory import QuotesFactory
 from app.modules.scheduling.scheduling_factory import SchedulingFactory
 from app.shared.storage.filesystem_object_storage import FilesystemObjectStorage
@@ -37,7 +38,9 @@ class Container:
         )
         self._identity = IdentityFactory(self._settings)
         self._clients = ClientsFactory()
-        self._finance = FinanceFactory()
+        # O repasse pergunta ao orcamento o que foi quitado; os dois se
+        # encontram aqui, pela porta que o financeiro declarou (ADR-028).
+        self._finance = FinanceFactory(settled_sessions=QuoteSettledSessions)
         # A agenda recebe as portas, nao o modulo financeiro: e aqui, na raiz de
         # composicao, que os dois se encontram (ADR-016).
         self._scheduling = SchedulingFactory(

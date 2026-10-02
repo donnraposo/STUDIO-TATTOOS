@@ -36,10 +36,11 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | 17 componentes base | Todo controle passa por eles; uma exceção declarada (`BookingBlock`) |
 | Clientes, agenda, orçamentos | `ClientsView`, `SchedulingView` com a timeline, `QuotesView` |
 | Painel com o que espera decisão | `HomeView` com a fila das três origens e o contador na casca |
+| Repasses | `PayoutsView` com lista, demonstrativo e confirmação de transferência |
 | 90 testes | Classes puras, sem montar componente |
 
-**Não existe ainda:** sessões, pagamentos, repasses e gestão de contas — e é
-isso que falta da M7.2.
+**Não existe ainda:** sessões, pagamentos e gestão de contas — e é isso que
+falta da M7.2.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -58,7 +59,7 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Orçamentos e imagens de referência | ✅ | ✅ M7.1.4 |
 | Sessões | ✅ M4.4 | ❌ M7.2 |
 | Pagamentos e sinal | ✅ M5 | ❌ M7.2 |
-| Repasses | ❌ M6 | ❌ M7.2 |
+| Repasses | ✅ M6 | ✅ M6 |
 | Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
 
 **O teto deixou de ser o backend.** Até 29/09/2026 a coluna da API era o limite;
@@ -434,7 +435,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 | Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ Pronta — a tela é que ficou para trás |
 | Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
 | Sessões e atendimentos | M4.4 | ✅ Pronta |
-| Repasses semanais e demonstrativo | M6 | ❌ Não iniciada |
+| Repasses semanais e demonstrativo | M6 | ✅ **Entregue junto com a M6, em 02/10/2026** |
 | Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
 | Painel do residente | M6 | ❌ Não iniciada |
 | Usuários e permissões | Nada — a API está pronta, foi adiada por não ser precisa à demonstração | ✅ Pronta |

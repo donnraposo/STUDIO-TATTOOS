@@ -197,7 +197,15 @@ scheduling/domain/deposit_gate.py            porta: o sinal está confirmado?
 scheduling/domain/booking_settlement_gate.py porta: o desfecho mudou
 finance/application/payment_deposit_gate.py     adaptador que responde
 finance/application/payment_settlement_gate.py  adaptador que aplica
+
+finance/domain/settled_sessions.py              porta: o que foi quitado na semana?
+quotes/application/quote_settled_sessions.py    adaptador que responde
 ```
+
+A terceira porta segue a mesma direção, e desta vez quem pergunta é o financeiro:
+o repasse precisa saber o que foi quitado, e quem sabe é o módulo de orçamentos.
+Consultar a tabela de sessões direto faria o cálculo do repasse depender do
+desenho interno daquele módulo, e mexer lá quebraria o pagamento dos artistas.
 
 A direção importa. Se a agenda importasse o financeiro, a regra de aprovação
 passaria a depender do desenho interno de pagamento, e trocar aquele desenho
@@ -238,7 +246,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
 | Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
 | Pagamentos | `POST /payments`, `GET /payments` (filtro `status`, só gestor), `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
-| Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |
+| Repasses | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `POST /payouts/{id}/confirm-paid` |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
 | Pós-venda | `GET /aftercare`, `POST /aftercare/{id}/complete`, `/reopen`, `/photos` |
 | Relatórios | `GET /reports/{name}`, `GET /reports/{name}/export` |

@@ -38,6 +38,15 @@ export class ProfilePermissions {
     return this.isStaff(user) || user.role === "RESIDENT";
   }
 
+  /** RN-REP-004: "cada artista visualizará somente seus próprios valores;
+   * gerente e proprietário visualizarão todos". **Todo mundo que tatua vê a
+   * tela** — o que muda é o conteúdo, e quem garante isso é o backend.
+   *
+   * Esconder a tela do artista seria esconder dele o próprio pagamento. */
+  canSeePayouts(user: AuthenticatedUser): boolean {
+    return this.isStaff(user) || user.actsAsArtist || ["RESIDENT", "GUEST"].includes(user.role);
+  }
+
   /** Gestão de contas é do gestor (RN 2.5 e 2.6). */
   canManageAccounts(user: AuthenticatedUser): boolean {
     return this.isStaff(user);
