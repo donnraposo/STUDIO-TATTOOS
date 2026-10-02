@@ -15,6 +15,7 @@ const FULL = {
   phone: "+353 87 111 1111",
   instagram: "@niamh",
   registered_by_artist_id: "a1",
+  brought_by_artist_id: "a1",
   created_at: "2026-09-01T10:00:00+01:00",
 };
 
@@ -43,6 +44,7 @@ describe("ClientsClient", () => {
       phone: "+353 87 111 1111",
       instagram: "@niamh",
       registeredByArtistId: "a1",
+      broughtByArtistId: "a1",
       createdAt: "2026-09-01T10:00:00+01:00",
     });
   });
@@ -54,11 +56,13 @@ describe("ClientsClient", () => {
       respondWith({ client: FULL, possible_duplicates: [CONTACT] }),
     );
 
-    const registered = await new ClientsClient(new HttpClient()).register(
-      "Niamh",
-      "+353 87 111 1111",
-      null,
-    );
+    const registered = await new ClientsClient(new HttpClient()).register({
+      name: "Niamh",
+      phone: "+353 87 111 1111",
+      instagram: null,
+      source: "ARTIST",
+      broughtByArtistId: null,
+    });
 
     expect(registered.client.id).toBe("c1");
     expect(registered.possibleDuplicates).toEqual([

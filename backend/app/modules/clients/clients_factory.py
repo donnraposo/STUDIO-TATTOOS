@@ -4,6 +4,7 @@ from app.modules.clients.application.list_clients import ListClients
 from app.modules.clients.application.merge_clients import MergeClients
 from app.modules.clients.application.register_client import RegisterClient
 from app.modules.clients.application.update_client import UpdateClient
+from app.modules.clients.domain.client_source_resolver import ClientSourceResolver
 from app.modules.clients.domain.client_visibility_policy import ClientVisibilityPolicy
 from app.modules.clients.infrastructure.client_repository import ClientRepository
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
@@ -14,6 +15,7 @@ class ClientsFactory:
 
     def __init__(self) -> None:
         self._policy = ClientVisibilityPolicy()
+        self._sources = ClientSourceResolver()
 
     @property
     def policy(self) -> ClientVisibilityPolicy:
@@ -26,6 +28,7 @@ class ClientsFactory:
         return RegisterClient(
             clients=self.clients(session),
             policy=self._policy,
+            sources=self._sources,
             audit=AuditRecorder(session),
         )
 
@@ -34,6 +37,7 @@ class ClientsFactory:
 
     def update_client(self, session: Session) -> UpdateClient:
         return UpdateClient(
+            sources=self._sources,
             clients=self.clients(session),
             policy=self._policy,
             audit=AuditRecorder(session),

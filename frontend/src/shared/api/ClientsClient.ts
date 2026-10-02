@@ -1,4 +1,4 @@
-import type { Client, ClientContact } from "@/shared/domain/Client";
+import type { Client, ClientContact, ClientSource } from "@/shared/domain/Client";
 import { HttpClient } from "@/shared/api/HttpClient";
 
 /** As duas formas em que a API descreve um cliente, em `snake_case`.
@@ -14,6 +14,7 @@ interface ContactPayload {
 
 interface ClientPayload extends ContactPayload {
   registered_by_artist_id: string;
+  brought_by_artist_id: string | null;
   created_at: string;
 }
 
@@ -44,11 +45,22 @@ export class ClientsClient {
     return payload.map(ClientsClient.toClient);
   }
 
-  async register(name: string, phone: string, instagram: string | null): Promise<RegisteredClient> {
+  /** `source` e `broughtByArtistId` dizem **de onde o cliente veio**
+   * (RN-CLI-002). Omitidos, valem o padrão: trazido pelo próprio autor do
+   * cadastro, que é o caso corrente. */
+  async register(client: {
+    name: string;
+    phone: string;
+    instagram: string | null;
+    source: ClientSource;
+    broughtByArtistId: string | null;
+  }): Promise<RegisteredClient> {
     const payload = await this.http.post<RegisteredPayload>("/clients", {
-      name,
-      phone,
-      instagram,
+      name: client.name,
+      phone: client.phone,
+      instagram: client.instagram,
+      source: client.source,
+      brought_by_artist_id: client.broughtByArtistId,
     });
     return {
       client: ClientsClient.toClient(payload.client),
@@ -65,16 +77,28 @@ export class ClientsClient {
       : ClientsClient.toContact(payload);
   }
 
+  /** `source` nulo **não mexe** na origem, e é o padrão.
+   *
+   * Na criação o campo tem padrão porque todo cliente vem de algum lugar; na
+   * edição, um padrão faria toda correção de telefone tentar reescrever a
+   * origem — e, como alterá-la é de gerente e proprietário (RN-CLI-003), o
+   * artista corrigindo um Instagram receberia 403 sem entender por quê. */
   async update(
     id: string,
-    name: string,
-    phone: string,
-    instagram: string | null,
+    client: {
+      name: string;
+      phone: string;
+      instagram: string | null;
+      source: ClientSource | null;
+      broughtByArtistId: string | null;
+    },
   ): Promise<Client> {
     const payload = await this.http.put<ClientPayload>(`/clients/${id}`, {
-      name,
-      phone,
-      instagram,
+      name: client.name,
+      phone: client.phone,
+      instagram: client.instagram,
+      source: client.source,
+      brought_by_artist_id: client.broughtByArtistId,
     });
     return ClientsClient.toClient(payload);
   }
@@ -92,6 +116,7 @@ export class ClientsClient {
     return {
       ...ClientsClient.toContact(payload),
       registeredByArtistId: payload.registered_by_artist_id,
+      broughtByArtistId: payload.brought_by_artist_id,
       createdAt: payload.created_at,
     };
   }

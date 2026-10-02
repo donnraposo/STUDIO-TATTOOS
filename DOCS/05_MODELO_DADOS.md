@@ -18,6 +18,7 @@
 | `quote`, `quote_reference_image`, `tattoo_session` e `booking.session_id` | `0005` | M4.1 |
 | `payment` e `payment_refund` | `0006` | M5 |
 | `booth` → `bench`, com colunas, índices e restrições | `0007` | M7.2.1 |
+| `client.brought_by_artist_id` | `0008` | M7.2.1 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições

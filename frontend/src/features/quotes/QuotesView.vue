@@ -312,6 +312,7 @@ onMounted(load);
     <QuoteForm
       v-if="composing && state.data.value"
       :quote="editing"
+      :self-artist-id="user?.id ?? null"
       :clients="state.data.value.clients"
       :artists="state.data.value.artists"
       :can-choose-artist="isStaff"

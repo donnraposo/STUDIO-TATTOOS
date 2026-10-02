@@ -15,6 +15,8 @@ class ClientResponse(BaseModel):
     phone: str
     instagram: str | None
     registered_by_artist_id: uuid.UUID
+    #: Nulo significa indicação do estúdio: a ausência é o dado (RN-CLI-002).
+    brought_by_artist_id: uuid.UUID | None
     created_at: datetime
 
     @classmethod
@@ -25,5 +27,6 @@ class ClientResponse(BaseModel):
             phone=client.phone,
             instagram=client.instagram,
             registered_by_artist_id=client.registered_by_artist_id,
+            brought_by_artist_id=client.brought_by_artist_id,
             created_at=client.created_at,
         )

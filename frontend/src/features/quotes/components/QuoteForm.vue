@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { QuoteDisplay } from "@/features/quotes/QuoteDisplay";
 import { QuoteDraftCheck } from "@/features/quotes/QuoteDraftCheck";
+import { QuoteOriginSuggestion } from "@/features/quotes/QuoteOriginSuggestion";
 import AppButton from "@/shared/components/AppButton.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
@@ -35,6 +36,9 @@ export interface QuoteDraft {
 
 const props = defineProps<{
   quote: Quote | null;
+  /** Quem está orçando, para reconhecer "cliente próprio" quando o artista não
+   * é escolhido explicitamente. */
+  selfArtistId: string | null;
   clients: Client[];
   artists: StudioMember[];
   canChooseArtist: boolean;
@@ -46,6 +50,7 @@ const emit = defineEmits<{ submit: [draft: QuoteDraft]; close: [] }>();
 
 const display = new QuoteDisplay();
 const check = new QuoteDraftCheck();
+const suggestion = new QuoteOriginSuggestion();
 const money = new MoneyFormatter();
 
 const editing = props.quote;
@@ -67,6 +72,24 @@ const notes = ref(editing?.notes ?? "");
 
 const isEditing = computed(() => props.quote !== null);
 const selectedOrigin = computed(() => origin.value as QuoteOrigin);
+
+/** Escolher o cliente já marca a origem provável (RN-CLI-002).
+ *
+ * **Sugere e não prende:** o campo continua editável, porque a regra manda
+ * determinar a origem em cada atendimento. O que a sugestão evita é o caminho
+ * oposto — abrir sempre em "cliente próprio" e deixar que o descuido pague 70%
+ * numa indicação do estúdio.
+ *
+ * Só na criação. Num orçamento existente a origem já foi decidida, e
+ * sobrescrevê-la ao abrir o formulário apagaria uma decisão do gestor sem
+ * ninguém pedir. */
+watch([clientId, artistId], ([client, artist]) => {
+  if (isEditing.value) {
+    return;
+  }
+  const chosen = props.clients.find((candidate) => candidate.id === client) ?? null;
+  origin.value = suggestion.for(chosen, artist === "" ? props.selfArtistId : artist);
+});
 
 const clientOptions = computed<SelectOption[]>(() =>
   props.clients.map((client) => ({ value: client.id, label: client.name })),

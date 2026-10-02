@@ -1,7 +1,7 @@
 # Roadmap de Implementação
 
 **Status:** Implementação autorizada. Estratégia de MVP definida em 24/09/2026.
-**Última atualização:** 26/09/2026
+**Última atualização:** 01/10/2026
 
 ## Onde o projeto está agora
 
@@ -14,27 +14,33 @@
 > confirmado, e até 30/09/2026 o `ApproveBooking` tinha um `_deposit_is_confirmed`
 > que devolvia `True` sempre — declarado como costura, mas na prática uma regra
 > escrita que o sistema não cumpria.
-**Progresso do MVP:** 4 de 8 sprints em número; o backend está adiante disso e o
-frontend, bem atrás.
+**Progresso do MVP:** 8 das 11 entregas fechadas. Falta a M6, o resto da M7.2 e
+a M8.
+
+> Esta tabela descrevia 26/09/2026 e **ficou congelada por cinco dias**, afirmando
+> 145 testes, migrações até a `0005` e "falta todo o dinheiro" com a M5 já
+> entregue. Reescrita em 01/10/2026. É a terceira vez que isso acontece neste
+> projeto, e é exatamente o que a seção 7 da `CLAUDE.md` adverte.
 
 | O que existe | Detalhe |
 |---|---|
-| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` extensões, `0002` identidade e auditoria, `0003` clientes, `0004` agenda, `0005` orçamentos e sessões |
-| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` incluindo as imagens de referência |
+| Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `finance`, `reporting` (só auditoria) |
+| Migrações aplicadas | `0001` a `0008`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, e origem do cliente |
+| Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, e `/payments/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 145 no backend e 47 no frontend, todos aprovados |
-| Frontend | Apenas a tela de status da sprint 01 e os tokens de design |
+| Testes | 221 no backend e 101 no frontend, todos aprovados |
+| Frontend | Acesso, painel com o que espera decisão, clientes, agenda com a timeline e orçamentos |
 
-> **Leitura honesta do avanço.** O backend cobre identidade, clientes, agenda —
-> inclusive a prevenção de conflito, que era o risco técnico central — e o
-> orçamento. **Falta todo o dinheiro:** sinal, pagamento e repasse. Enquanto essa
-> metade não existir, o estúdio continua com controle paralelo, porque o fio
-> condutor do MVP não fecha.
+> **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend
+> **menos o último elo**: login, cliente, agenda com prevenção de conflito,
+> orçamento, sinal, pagamento e sessão existem; **o repasse de sexta não**. É a
+> M6, e enquanto ela não entrar o estúdio continua calculando o que paga a cada
+> artista fora do sistema.
 >
-> O frontend, por outro lado, ainda é quase tudo: existem os tokens de design e uma
-> tela de status. A M7.1 começa a mudar isso, e a demonstração que ela permite
-> cobre uma das duas dores do estúdio, não as duas.
+> **O frontend inverteu a situação de uma semana atrás e agora é ele que atrasa.**
+> O backend está duas sprints à frente: sessões e pagamentos existem e nenhuma
+> tela os consome. Das duas dores que justificam o sistema, a interface resolve
+> uma inteira — impedir choque de horário — e nenhuma parte da outra.
 
 ### Pendências de costura entre sprints
 
@@ -1224,6 +1230,41 @@ renomear o que já teria outro nome. Migração aplicada é histórico, não ras
 | Backend | 5 arquivos renomeados, `BenchRepository`, `CreateBench`, rota `/benches`, e o `scope` do conflito passou de `booth` para `bench` |
 | Frontend | `Bench`, `BenchTimeline.vue`, `benchId`, e o rótulo "Bench 1" na tela |
 | Documentação | `05`, `06`, `09` e `10`. O `01` não foi tocado: lá o termo é maca |
+
+### Cliente guarda quem o trouxe — 01/10/2026
+
+**A RN-CLI-002 decide dinheiro a partir de uma pergunta que o sistema não sabia
+responder:** *"o cliente retornou ao mesmo artista **que o trouxe**?"*. O que
+existia era `registered_by_artist_id`, e ele responde outra coisa — quem digitou
+o cadastro. Coincidem quando o artista cadastra o próprio cliente e divergem
+justamente no caso que importa: a RN-GST-005 manda o **gestor** cadastrar o
+cliente indicado pelo estúdio, e ali o campo antigo aponta para quem não trouxe
+ninguém.
+
+**Decisões tomadas com o responsável antes de qualquer código:**
+
+| Pergunta | Decisão |
+|---|---|
+| O campo novo substitui `registered_by_artist_id`? | **Convivem.** A RN-CLI-004 amarra a visibilidade da ficha a quem cadastrou; trocar um pelo outro deixaria o cliente de indicação do estúdio sem dono, e nenhum artista veria a ficha dele |
+| Ele decide a origem do orçamento? | **Sugere.** A RN-CLI-002 diz que a origem é determinada em cada atendimento, e a RN-CLI-003 dá a correção ao gestor. O formulário abre preenchido; quem orça confirma ou troca |
+
+**Nulo significa indicação do estúdio** — a ausência é o dado, e não a falta
+dele. Os cadastros anteriores à migração `0008` ficam nulos, e isso é correto:
+gravar quem cadastrou como se fosse quem trouxe inventaria uma afirmação que
+ninguém fez, e ela sairia do banco como verdade no primeiro repasse.
+
+**Criar e editar ganharam contratos separados**, e não é preciosismo. Na criação
+`source` tem padrão, porque todo cliente vem de algum lugar; na edição o padrão
+seria desastre, porque alterar a origem é do gestor (RN-CLI-003) e o artista
+corrigindo um telefone levaria 403 por causa de um campo que nem viu. O mesmo
+`None` significaria "use o padrão" num caso e "não toque" no outro.
+
+**A sugestão erra para o lado seguro.** Sem saber quem trouxe, sugere indicação
+do estúdio: paga 50% ao artista, e errar assim significa pagar a menos até
+alguém conferir, em vez de pagar a mais e precisar cobrar de volta.
+
+- Ruff limpo; **221 testes** no backend e **101** no frontend; uma classe por
+  arquivo e as quatro verificações do frontend sem apontamento.
 
 ## Sprint M8 — Implantação mínima
 

@@ -10,9 +10,23 @@ export interface ClientContact {
   instagram: string | null;
 }
 
+/** De onde o cliente veio (RN-CLI-002).
+ *
+ * Separado da origem do orçamento de propósito: os nomes se parecem e os fatos
+ * não são o mesmo. Este diz de onde o cliente veio, uma vez; aquele diz o que
+ * vale **neste** atendimento, e pode mudar a cada um. */
+export type ClientSource = "ARTIST" | "STUDIO";
+
 /** Ficha completa. Só chega a gestor e ao artista que cadastrou. */
 export interface Client extends ClientContact {
   registeredByArtistId: string;
+  /** Quem **trouxe** o cliente. Nulo significa indicação do estúdio — a
+   * ausência é o dado, e não a falta dele.
+   *
+   * Não se confunde com `registeredByArtistId`, que é quem digitou o cadastro e
+   * decide a visibilidade da ficha (RN-CLI-004). Os dois coincidem no caso
+   * corrente e divergem quando o gestor cadastra por alguém (RN-GST-005). */
+  broughtByArtistId: string | null;
   createdAt: string;
 }
 

@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { ApiError } from "@/shared/api/ApiError";
 import type { Client, ClientContact } from "@/shared/domain/Client";
+import type { StudioMember } from "@/shared/domain/StudioMember";
 import { useApi } from "@/shared/api/useApi";
 import { useAsyncState } from "@/shared/async/useAsyncState";
 import AppButton from "@/shared/components/AppButton.vue";
@@ -11,7 +12,7 @@ import ErrorState from "@/shared/components/ErrorState.vue";
 import LoadingState from "@/shared/components/LoadingState.vue";
 import PageHeader from "@/shared/components/PageHeader.vue";
 import { useSession } from "@/shared/session/useSession";
-import ClientForm from "@/features/clients/components/ClientForm.vue";
+import ClientForm, { type ClientDraft } from "@/features/clients/components/ClientForm.vue";
 import ClientList from "@/features/clients/components/ClientList.vue";
 import DuplicateWarning from "@/features/clients/components/DuplicateWarning.vue";
 
@@ -26,10 +27,11 @@ import DuplicateWarning from "@/features/clients/components/DuplicateWarning.vue
  * acertar a mesma regra duas vezes, e a versão do frontend seria a que
  * silenciosamente ficaria para trás. O que a tela faz é **explicar** o recorte,
  * para que o residente não conclua que o estúdio tem três clientes no total. */
-const { clients: clientsApi } = useApi();
+const { clients: clientsApi, accounts } = useApi();
 const { session, permissions } = useSession();
 
 const state = useAsyncState<Client[]>();
+const artists = ref<StudioMember[]>([]);
 const editing = ref<Client | null>(null);
 const composing = ref(false);
 const saving = ref(false);
@@ -50,6 +52,17 @@ async function load(): Promise<void> {
   await state.run(() => clientsApi.list());
 }
 
+/** Só o gestor lista contas; os demais recebem 403 e cadastram para si, que é o
+ * caso em que o seletor de artista nem aparece. Falhar aqui não derruba a tela:
+ * sem a lista, o formulário some um campo, não a página inteira. */
+async function loadArtists(): Promise<void> {
+  try {
+    artists.value = await accounts.listArtists();
+  } catch {
+    artists.value = [];
+  }
+}
+
 function startCreating(): void {
   editing.value = null;
   composing.value = true;
@@ -68,19 +81,18 @@ function stopComposing(): void {
   saveFailure.value = null;
 }
 
-async function save(values: {
-  name: string;
-  phone: string;
-  instagram: string | null;
-}): Promise<void> {
+async function save(values: ClientDraft): Promise<void> {
   saving.value = true;
   saveFailure.value = null;
   try {
     if (editing.value) {
-      await clientsApi.update(editing.value.id, values.name, values.phone, values.instagram);
+      await clientsApi.update(editing.value.id, values);
       duplicates.value = [];
     } else {
-      const registered = await clientsApi.register(values.name, values.phone, values.instagram);
+      const registered = await clientsApi.register({
+        ...values,
+        source: values.source ?? "ARTIST",
+      });
       duplicates.value = registered.possibleDuplicates;
     }
     stopComposing();
@@ -93,7 +105,10 @@ async function save(values: {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  void load();
+  void loadArtists();
+});
 </script>
 
 <template>
@@ -122,6 +137,8 @@ onMounted(load);
     <ClientForm
       v-if="composing"
       :client="editing"
+      :artists="artists"
+      :can-choose-artist="isStaff"
       :busy="saving"
       :failure="saveFailure"
       @submit="save"
