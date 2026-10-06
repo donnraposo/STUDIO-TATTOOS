@@ -19,7 +19,7 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**166 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**176 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
 tradução de erro da API, ciclo de sessão e os espelhos de política que decidem o
@@ -47,6 +47,7 @@ que a tela mostra.
 | **Sinal do agendamento** | Coberta por 8 testes: **informado não basta para aprovar o horário** (RN-AGE-005) — é a diferença que o 403 do botão de aprovar comunicava sozinho —, recusado e devolvido não contam como sinal vivo (RN-AGE-008), e o pagamento integral antecipado substitui o sinal (RN-PAG-004) |
 | **Pagamento na tela** | Coberta por 6 testes: informado em alerta porque trava a aprovação, devolvido em neutro porque é desfecho correto (RN-PAG-003) e recusado em vermelho, e **sinal retido exibido como tal** — continua confirmado (RN-AGE-009), e quem lesse só o estado procuraria a devolução que nunca houve |
 | **Consequência de cada decisão de agenda** | Coberta por 7 testes, criados depois de o texto apodrecer: a frase da aprovação afirmava que o sinal não era registrado no sistema, e passou a contradizer o painel do sinal logo acima dela no mesmo modal. Os testes prendem o fato que cada frase carrega, e não a redação |
+| **Painel do artista** | Coberta por 10 testes de classe pura (seções 10.2 e 10.3): o dia em ordem de acontecer, cancelado e recusado fora, o que está em curso contado como "próximo", e **o repasse exibido é sempre o último fechado, nunca previsão** — um número adiantado diria ao artista quanto ele vai receber sem que ninguém tenha fechado a semana |
 | **Semana de repasse** | Coberta por 9 testes de classe pura: sabado pertence a sexta seguinte, sexta de manha a sexta do mesmo dia, **20h em ponto fecha a semana que termina** e um minuto depois cai na seguinte, 20h de Dublin dando 19h UTC no verao e 20h UTC no inverno, e **a semana que atravessa a virada do horario de verao com 169 horas** — subtrair sete dias em UTC deixaria uma hora de fora |
 | **Divisao do repasse** | Coberta por 5 testes: 70% e 50% de valores redondos, o exemplo da RN-PAG-005, meio centavo arredondando **para cima** e nao pelo padrao bancario do Python, e a diferenca entre arredondar por sessao e arredondar no total |
 | **Ciclo do repasse** | Coberta: fechamento com a parcela de cada sessao, um repasse por artista, **fechar duas vezes devolvendo o mesmo fechamento**, sessao nao quitada fora, sessao de outra semana fora, semana em curso recusada, artista sem fechar, artista vendo so os proprios repasses, artista recusado no demonstrativo do colega, o demonstrativo exibindo o que a RN-REP-007 lista, confirmacao registrando responsavel, segunda confirmacao recusada e artista sem confirmar |

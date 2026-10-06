@@ -5,11 +5,10 @@
 
 ## Onde o projeto está agora
 
-**Concluído:** sprint 01, M1, M2, M3, M4, M5, M6 e M7.1 — a fatia vertical de
-interface —, mais as etapas M7.2.1, M7.2.2, M7.2.3, M7.2.4 e M7.2.6.
+**Concluído:** sprint 01, M1, M2, M3, M4, M5, M6, M7.1 e **a M7.2 inteira**, nas
+seis etapas.
 
-**Próxima:** o que resta da M7.2 — o painel do residente e do guest (M7.2.5).
-Depois dela, a M8.
+**Próxima:** a M8 — implantação mínima. É a última do MVP.
 
 > **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
 > sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
@@ -22,8 +21,7 @@ Depois dela, a M8.
 > que devolvia `True` sempre — declarado como costura, mas na prática uma regra
 > escrita que o sistema não cumpria.
 
-**Progresso do MVP:** 8 das 10 sprints fechadas. Falta o que resta da
-M7.2 — a etapa M7.2.5 — e a M8.
+**Progresso do MVP:** 9 das 10 sprints fechadas. Falta a M8.
 
 > Este número dizia "9 das 11" e **não batia com a tabela logo abaixo**, que tem
 > dez linhas. Conferido contra ela em 06/10/2026.
@@ -39,7 +37,7 @@ M7.2 — a etapa M7.2.5 — e a M8.
 | Migrações aplicadas | `0001` a `0010`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente, repasses e percentual por artista |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 258 no backend e 166 no frontend, todos aprovados |
+| Testes | 258 no backend e 176 no frontend, todos aprovados |
 | Frontend | Acesso, painel, clientes, agenda com a timeline e o sinal, orçamentos com sessões, pagamentos, repasses, e contas com o acordo de percentual |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
@@ -52,9 +50,12 @@ M7.2 — a etapa M7.2.5 — e a M8.
 > último elo era o sinal, e era também o único ponto em que a interface
 > prometia uma ação que o servidor recusava.
 >
-> **O que falta da M7.2 é a M7.2.5**, o painel de entrada do residente e do
-> guest. É conforto, não bloqueio: o artista já vê agenda, orçamentos e os
-> próprios repasses.
+> **A M7.2 fechou em 06/10/2026.** Toda tela do MVP existe, e cada perfil tem a
+> sua entrada: o gestor abre na fila do que espera decisão, o artista no próprio
+> dia.
+>
+> **O que falta do MVP é a M8**, implantação. Nenhuma linha do MVP tem API
+> pronta e interface ausente.
 
 ### Pendências de costura entre sprints
 
@@ -148,7 +149,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
-| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** só falta a M7.2.5 |
+| **M7.2** | Restante da interface do MVP | Frontend | ✅ **Concluída em 06/10/2026**, nas seis etapas |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1085,7 +1086,7 @@ backend.
 | M7.2.2 | Sessões e atendimentos | ✅ Concluída em 02/10/2026 |
 | M7.2.3 | Pagamentos, sinal e devoluções | ✅ Concluída em 06/10/2026 |
 | M7.2.4 | Repasses e demonstrativo do artista | ✅ Concluída em 02/10/2026, junto com a M6 |
-| M7.2.5 | Painel do residente e do guest | Não iniciada |
+| M7.2.5 | Painel do residente e do guest | ✅ Concluída em 06/10/2026 |
 | M7.2.6 | Usuários e permissões | ✅ Concluída em 06/10/2026, com o acordo de percentual por artista (ADR-030) |
 
 ### Etapa M7.2.1 — Painel do gestor: o que está esperando decisão
@@ -1269,6 +1270,66 @@ oferecer o atalho custa um clique, oferecê-lo custa um 403.
 
 - ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
   convenção sem apontamento.
+
+### Evidência da etapa M7.2.5 — 06/10/2026
+
+**A tela de entrada deixou de ser decorativa para metade da equipe.** O gestor
+tinha a fila do que espera decisão desde a M7.2.1; o artista abria o mesmo
+endereço e via uma saudação, um banner e três atalhos.
+
+O painel responde às três perguntas que o artista faz ao entrar: **o que tenho
+hoje, o que estou esperando o estúdio decidir, e quanto entrou no último
+fechamento.**
+
+| Regra | Como a tela cumpre |
+|---|---|
+| **Seção 10.2** | Agenda própria do dia, solicitações próprias pendentes e orçamentos próprios por aprovar |
+| **Seção 10.3** | O guest vê o mesmo sem orçamentos (RN-ORC-001) e sem clientes (RN-GST-004) — os cartões somem, em vez de mostrarem zero |
+| **RN-REP-004** | O repasse exibido é o do artista, porque é só isso que o servidor devolve |
+| **RN-CLI-004** | O nome do cliente encaminhado aparece **dentro do agendamento**, buscado à parte |
+| **Seção 10.1** | O proprietário que tatua vê a fila **e** o próprio dia: a alçada administrativa não o tira da maca |
+
+**O recorte é todo do backend.** `ListBookings` já devolve ao artista apenas a
+própria agenda, a RN-REP-004 faz o mesmo com o repasse e a RN-CLI-004 com o
+cliente. A tela não refiltra nada — duas versões das mesmas regras divergiriam,
+e a do navegador seria a que ficaria para trás.
+
+#### O que a regra pede e **não** foi inventado
+
+| Pedido | Situação |
+|---|---|
+| **Repasse semanal previsto** (10.2) | Não existe. O repasse só nasce no fechamento de sexta às 20h (RN-REP-004), e um número calculado no navegador para a semana em curso seria o sistema dizendo ao artista quanto ele vai receber sem que ninguém tenha fechado nada. O cartão mostra o **último fechado** e o rótulo diz exatamente isso |
+| **Pós-vendas próprios** (10.2) | Fase 2 — o módulo não existe |
+| **Semanas pagas e validade do acesso** (10.3) | Depende da tabela `guest_week`, que é da sprint F1 |
+
+#### Um defeito encontrado durante a verificação
+
+O painel do residente mostrava **"Client"** no horário das 11h, em vez do nome.
+Não era defeito de código: `GET /clients` devolve ao artista só os clientes que
+ele cadastrou, e corretamente — lá a regra é o cadastro completo.
+
+Mas a RN-CLI-004 é explícita na outra metade: *"o artista Y verá apenas nome,
+telefone e Instagram **dentro do próprio agendamento**"*. A agenda dele estava
+dizendo que alguém vem às 11h sem dizer quem.
+
+Os nomes que faltam passam a ser buscados um a um por `GET /clients/{id}`, que
+já devolve a projeção reduzida a qualquer artista. Poucos por dia, e só os que
+faltam. O gatilho para levar essa junção ao servidor é volume, não estética.
+
+#### Exercitado contra a aplicação rodando
+
+| Perfil | Resultado |
+|---|---|
+| Residente | "1 booking today", 11:00–13:00 com **Niamh O'Sullivan** pelo nome; cartões de solicitações, orçamentos e último repasse |
+| Residente, sem fechamento | "Last payout —", com "nothing closed yet — a week closes every Friday at 20:00" em vez de um zero que pareceria saldo |
+| Guest | Mesmo painel **sem o cartão de orçamentos**, e sem Clients e Quotes na navegação |
+| Guest, dia vazio | "Nothing on the bench today", em vez de lista vazia sem explicação |
+
+**Verificação:**
+
+- ESLint e `vue-tsc` limpos; **176 testes** no frontend, sendo 10 novos.
+- As quatro verificações de convenção do frontend sem apontamento.
+- Nenhuma alteração no backend: todos os recortes já existiam.
 
 ### Evidência da etapa M7.2.3 — 06/10/2026
 

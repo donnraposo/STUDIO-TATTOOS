@@ -40,10 +40,11 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Sessões | `SessionList` e `SessionDecisionModal` dentro do detalhe do orçamento |
 | Contas e artistas | `AccountsView` com criação, bloqueio e o acordo de percentual (ADR-030) |
 | Pagamentos e sinal | `PaymentsView` com a fila e o histórico; `DepositPanel` dentro do agendamento |
-| 166 testes | Classes puras, sem montar componente |
+| Painel do artista | `ArtistPanel` no `HomeView`: o dia, o que espera o estúdio e o último repasse |
+| 176 testes | Classes puras, sem montar componente |
 
-**O ciclo fecha inteiro pela interface desde 06/10/2026.** O que falta da M7.2
-é o painel de entrada do residente e do guest (M7.2.5) — conforto, não bloqueio.
+**A M7.2 fechou em 06/10/2026**, nas seis etapas. O ciclo se percorre inteiro
+pela interface e cada perfil tem a sua entrada. O que falta do MVP é a M8.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -452,7 +453,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 | Sessões e atendimentos | M4.4 | ✅ **Entregue em 02/10/2026** |
 | Repasses semanais e demonstrativo | M6 | ✅ **Entregue junto com a M6, em 02/10/2026** |
 | Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
-| Painel do residente | M6 | ❌ Não iniciada |
+| Painel do residente | M6 | ✅ **Entregue em 06/10/2026** |
 | Usuários e permissões | Nada — a API já estava pronta | ✅ **Entregue em 06/10/2026**, com o acordo de percentual por artista |
 | Configuração de macas e horários | RN-AGE-011, que está na F3 | ❌ Fase 3 |
 
