@@ -27,6 +27,7 @@ const props = defineProps<{
 }>();
 
 defineEmits<{
+  edit: [account: StudioAccount];
   setShare: [account: StudioAccount];
   block: [account: StudioAccount];
   unblock: [account: StudioAccount];
@@ -72,6 +73,13 @@ const reach = new AccountManagementReach();
         </dl>
 
         <template #footer>
+          <AppButton
+            v-if="reach.canEdit(props.actor, account)"
+            tone="ghost"
+            @click="$emit('edit', account)"
+          >
+            Edit
+          </AppButton>
           <AppButton
             v-if="reach.canSetShare(props.actor, account)"
             tone="ghost"

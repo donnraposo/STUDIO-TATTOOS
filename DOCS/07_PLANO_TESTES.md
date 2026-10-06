@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**279 testes aprovados** no backend, executados em container contra PostgreSQL
+**291 testes aprovados** no backend, executados em container contra PostgreSQL
 real no banco isolado `tattoo_studio_test`. Conferido em 07/10/2026, com a suíte
 inteira num só comando.
 
@@ -19,7 +19,7 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**189 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**194 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
 tradução de erro da API, ciclo de sessão e os espelhos de política que decidem o
@@ -53,6 +53,7 @@ que a tela mostra.
 | **Fronteira do mes** | Coberta: outubro comeca a meia-noite de Dublin, que e 23h de 30 de setembro em UTC no horario de verao; janeiro comeca a meia-noite UTC. O mes e meio-aberto, e o fim de um e o comeco do outro |
 | **Alcada do faturamento** | Coberta: o artista leva 403 (RN 10.4). O relatorio mostra quanto todos receberam, e a RN-REP-004 o limita aos proprios valores |
 | **Mes na tela** | Coberta por 13 testes de classe pura: o mes corrente vem do fuso do estudio e nao do navegador, a virada do ano anda nos dois sentidos, e a barra da comparacao e relativa ao maior mes — com mes zerado desenhado em zero, nunca removido |
+| **Edicao de conta** | Coberta por 12 testes de ponta a ponta (RN 2.6): a gestao corrige o cadastro, **so o proprietario troca o perfil**, o gerente nao promove nem troca residente por guest, o gerente nao edita gestao, o ultimo proprietario ativo nao perde o perfil, artista nao fica sem nome de artista, e-mail ja em uso e recusado, manter o proprio e-mail nao e duplicata, artista nao edita ninguem, e a edicao fica na auditoria com o valor anterior |
 | **Semana de repasse** | Coberta por 9 testes de classe pura: sabado pertence a sexta seguinte, sexta de manha a sexta do mesmo dia, **20h em ponto fecha a semana que termina** e um minuto depois cai na seguinte, 20h de Dublin dando 19h UTC no verao e 20h UTC no inverno, e **a semana que atravessa a virada do horario de verao com 169 horas** — subtrair sete dias em UTC deixaria uma hora de fora |
 | **Divisao do repasse** | Coberta por 5 testes: 70% e 50% de valores redondos, o exemplo da RN-PAG-005, meio centavo arredondando **para cima** e nao pelo padrao bancario do Python, e a diferenca entre arredondar por sessao e arredondar no total |
 | **Ciclo do repasse** | Coberta: fechamento com a parcela de cada sessao, um repasse por artista, **fechar duas vezes devolvendo o mesmo fechamento**, sessao nao quitada fora, sessao de outra semana fora, semana em curso recusada, artista sem fechar, artista vendo so os proprios repasses, artista recusado no demonstrativo do colega, o demonstrativo exibindo o que a RN-REP-007 lista, confirmacao registrando responsavel, segunda confirmacao recusada e artista sem confirmar |

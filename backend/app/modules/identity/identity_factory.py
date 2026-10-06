@@ -10,6 +10,7 @@ from app.modules.identity.application.list_accounts import ListAccounts
 from app.modules.identity.application.resolve_session import ResolveSession
 from app.modules.identity.application.set_artist_percentage import SetArtistPercentage
 from app.modules.identity.application.unblock_account import UnblockAccount
+from app.modules.identity.application.update_account import UpdateAccount
 from app.modules.identity.domain.account_management_policy import AccountManagementPolicy
 from app.modules.identity.infrastructure.password_hasher import PasswordHasher
 from app.modules.identity.infrastructure.session_repository import SessionRepository
@@ -104,3 +105,11 @@ class IdentityFactory:
 
     def list_accounts(self, session: Session) -> ListAccounts:
         return ListAccounts(users=self.users(session), policy=self._policy)
+
+    def update_account(self, session: Session) -> UpdateAccount:
+        return UpdateAccount(
+            users=self.users(session),
+            history=self.status_history(session),
+            policy=self._policy,
+            audit=self.audit(session),
+        )

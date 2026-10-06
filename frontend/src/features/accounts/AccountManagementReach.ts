@@ -44,6 +44,31 @@ export class AccountManagementReach {
     return [];
   }
 
+  /** Corrigir o cadastro (RN 2.6).
+   *
+   * **A própria conta entra**, ao contrário do bloqueio: corrigir o próprio
+   * telefone não tem consequência nenhuma, e proibi-lo obrigaria o
+   * proprietário a pedir a outra pessoa que arrume o nome dele. */
+  canEdit(actor: AuthenticatedUser, account: StudioAccount): boolean {
+    if (actor.role === "OWNER") {
+      return true;
+    }
+    if (actor.role === "MANAGER") {
+      return AccountManagementReach.MANAGEABLE_BY_MANAGER.includes(account.role);
+    }
+    return false;
+  }
+
+  /** Trocar o perfil de uma conta.
+   *
+   * **Só o proprietário, e é literal:** a RN 2.6 diz que o gerente não pode
+   * promover usuários *"nem alterar perfis de acesso"* — as duas coisas. Trocar
+   * residente por guest também é alterar perfil: muda a exigência de sinal
+   * (RN-GST-004) e o repasse de quem o estúdio indica. */
+  canChangeRole(actor: AuthenticatedUser): boolean {
+    return actor.role === "OWNER";
+  }
+
   /** Bloquear e desbloquear. A própria conta fica de fora: quem se bloqueia
    * perde a sessão no mesmo instante e não tem como voltar. */
   canChangeStatus(actor: AuthenticatedUser, account: StudioAccount): boolean {

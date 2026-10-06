@@ -63,6 +63,43 @@ describe("AccountManagementReach", () => {
     expect(reach.creatableRoles(user("GUEST"))).toEqual([]);
   });
 
+  it("lets the owner correct any account", () => {
+    expect(reach.canEdit(user("OWNER"), account({ role: "MANAGER" }))).toBe(true);
+    expect(reach.canEdit(user("OWNER"), account({ role: "GUEST" }))).toBe(true);
+  });
+
+  /** A RN 2.6 da a edicao ao gerente para residentes e guests. */
+  it("stops the manager from editing management accounts", () => {
+    const manager = user("MANAGER");
+
+    expect(reach.canEdit(manager, account({ role: "RESIDENT" }))).toBe(true);
+    expect(reach.canEdit(manager, account({ role: "OWNER" }))).toBe(false);
+  });
+
+  /** Ao contrário do bloqueio, a própria conta entra: corrigir o próprio
+   * telefone não tem consequência, e proibi-lo obrigaria o proprietário a
+   * pedir a outra pessoa que arrume o nome dele. */
+  it("lets someone correct their own record", () => {
+    const owner = user("OWNER", "same");
+
+    expect(reach.canEdit(owner, account({ id: "same", role: "OWNER" }))).toBe(true);
+  });
+
+  /** O teste que mais importa da edição. A RN 2.6 diz que o gerente não pode
+   * promover "nem alterar perfis de acesso" — as duas coisas. Trocar residente
+   * por guest também é alterar perfil: muda a exigência de sinal (RN-GST-004)
+   * e o repasse de quem o estúdio indica. */
+  it("gives the role change to the owner alone", () => {
+    expect(reach.canChangeRole(user("OWNER"))).toBe(true);
+    expect(reach.canChangeRole(user("MANAGER"))).toBe(false);
+    expect(reach.canChangeRole(user("RESIDENT"))).toBe(false);
+  });
+
+  it("gives an artist nobody to edit", () => {
+    expect(reach.canEdit(user("RESIDENT"), account({ id: "other" }))).toBe(false);
+    expect(reach.canEdit(user("GUEST"), account({ id: "other" }))).toBe(false);
+  });
+
   it("lets the owner block anyone else", () => {
     expect(reach.canChangeStatus(user("OWNER"), account({ role: "MANAGER" }))).toBe(true);
     expect(reach.canChangeStatus(user("OWNER"), account({ role: "GUEST" }))).toBe(true);

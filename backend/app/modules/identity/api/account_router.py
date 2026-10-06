@@ -8,6 +8,7 @@ from app.modules.identity.api.artist_percentage_request import ArtistPercentageR
 from app.modules.identity.api.block_account_request import BlockAccountRequest
 from app.modules.identity.api.create_account_request import CreateAccountRequest
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
+from app.modules.identity.api.update_account_request import UpdateAccountRequest
 
 
 class AccountRouter:
@@ -31,6 +32,12 @@ class AccountRouter:
             methods=["POST"],
             response_model=AccountResponse,
             status_code=status.HTTP_201_CREATED,
+        )
+        router.add_api_route(
+            "/{account_id}",
+            self.update_account,
+            methods=["PUT"],
+            response_model=AccountResponse,
         )
         router.add_api_route("/{account_id}/block", self.block_account, methods=["POST"])
         router.add_api_route("/{account_id}/unblock", self.unblock_account, methods=["POST"])
@@ -57,6 +64,27 @@ class AccountRouter:
                 actor=actor,
                 email=payload.email,
                 password=payload.password,
+                full_name=payload.full_name,
+                phone=payload.phone,
+                role=payload.role,
+                acts_as_artist=payload.acts_as_artist,
+                artist_name=payload.artist_name,
+            )
+            return AccountResponse.from_model(account)
+
+    def update_account(
+        self, account_id: uuid.UUID, payload: UpdateAccountRequest, request: Request
+    ) -> AccountResponse:
+        """`PUT` e não `PATCH`: o formulário manda o cadastro inteiro, e um campo
+        ausente seria ambíguo entre "não mexa" e "apague"."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+
+        with self._container.database.session() as session:
+            account = self._container.identity.update_account(session).execute(
+                actor=actor,
+                account_id=account_id,
+                email=payload.email,
                 full_name=payload.full_name,
                 phone=payload.phone,
                 role=payload.role,

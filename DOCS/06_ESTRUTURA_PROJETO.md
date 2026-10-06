@@ -240,7 +240,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Recurso | Endpoints principais |
 |---|---|
 | Autenticação | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password-reset` |
-| Usuários | `GET/POST /users`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
+| Usuários | `GET/POST /users`, `PUT /users/{id}`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
@@ -257,6 +257,13 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**Não há rota de exclusão de conta**, e é decisão: a conta é referenciada por
+orçamento, agendamento, cliente, pagamento, repasse e auditoria. Apagá-la
+apagaria quem assinou cada um deles — o banco recusaria pelas chaves
+estrangeiras, e forçar a remoção levaria junto o histórico financeiro que a
+RN-CLI-007 manda guardar por seis anos. Quem sai do estúdio é **bloqueado**:
+perde o acesso na hora e o histórico fica.
 
 **O faturamento não tem rota de escrita, e é decisão** (ADR-031): um relatório
 que corrigisse dado ao passar seria um relatório que muda o passado. Correção

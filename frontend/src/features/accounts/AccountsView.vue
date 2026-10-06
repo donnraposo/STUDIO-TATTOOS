@@ -2,12 +2,12 @@
 import { computed, onMounted, ref } from "vue";
 
 import { AccountManagementReach } from "@/features/accounts/AccountManagementReach";
+import AccountFormModal, {
+  type AccountDraft,
+} from "@/features/accounts/components/AccountFormModal.vue";
 import AccountList from "@/features/accounts/components/AccountList.vue";
 import ArtistShareModal from "@/features/accounts/components/ArtistShareModal.vue";
 import BlockAccountModal from "@/features/accounts/components/BlockAccountModal.vue";
-import NewAccountModal, {
-  type AccountDraft,
-} from "@/features/accounts/components/NewAccountModal.vue";
 import { ApiError } from "@/shared/api/ApiError";
 import { useApi } from "@/shared/api/useApi";
 import { useAsyncState } from "@/shared/async/useAsyncState";
@@ -44,7 +44,10 @@ const { session } = useSession();
 const state = useAsyncState<StudioAccount[]>();
 const reach = new AccountManagementReach();
 
+/** Nulo e fechado são estados diferentes: `editing` guarda a conta aberta,
+ * e `creating` liga o mesmo formulário sem conta nenhuma. */
 const creating = ref(false);
+const editing = ref<StudioAccount | null>(null);
 const sharing = ref<StudioAccount | null>(null);
 const blocking = ref<StudioAccount | null>(null);
 const busy = ref(false);
@@ -66,7 +69,17 @@ async function load(): Promise<void> {
 }
 
 async function create(draft: AccountDraft): Promise<void> {
-  await act(() => accountsApi.create(draft), () => (creating.value = false));
+  await act(
+    () => accountsApi.create({ ...draft, password: draft.password ?? "" }),
+    () => (creating.value = false),
+  );
+}
+
+async function save(draft: AccountDraft): Promise<void> {
+  const account = editing.value;
+  if (account) {
+    await act(() => accountsApi.update(account.id, draft), () => (editing.value = null));
+  }
 }
 
 async function setShare(percentage: string | null): Promise<void> {
@@ -164,18 +177,32 @@ onMounted(load);
       :accounts="state.data.value"
       :actor="actor"
       :busy="busy"
+      @edit="editing = $event"
       @set-share="sharing = $event"
       @block="blocking = $event"
       @unblock="unblock"
     />
 
-    <NewAccountModal
+    <AccountFormModal
       v-if="creating"
+      :account="null"
       :roles="creatableRoles"
+      :can-change-role="true"
       :busy="busy"
       :failure="failure"
       @submit="create"
       @close="creating = false"
+    />
+
+    <AccountFormModal
+      v-if="editing"
+      :account="editing"
+      :roles="creatableRoles"
+      :can-change-role="actor ? reach.canChangeRole(actor) : false"
+      :busy="busy"
+      :failure="failure"
+      @submit="save"
+      @close="editing = null"
     />
 
     <ArtistShareModal

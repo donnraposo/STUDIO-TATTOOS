@@ -41,7 +41,7 @@ responsavel durante a M7.2.
 | Migrações aplicadas | `0001` a `0010`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente, repasses e percentual por artista |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 279 no backend e 189 no frontend, todos aprovados |
+| Testes | 291 no backend e 194 no frontend, todos aprovados |
 | Frontend | Acesso, painel, clientes, agenda com a timeline e o sinal, orçamentos com sessões, pagamentos, repasses, e contas com o acordo de percentual |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
@@ -1275,6 +1275,82 @@ oferecer o atalho custa um clique, oferecê-lo custa um 403.
 
 - ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
   convenção sem apontamento.
+
+### Evidência — edição de conta na área de contas — 07/10/2026
+
+**A regra autorizava desde sempre, e nunca tinha sido implementada.** A RN 2.6 é
+literal: *"gerente ou proprietário pode autorizar, **editar** ou bloquear
+cadastros de residentes e guests"*. Até aqui existiam criar e bloquear —
+corrigir um telefone exigia o banco.
+
+| Pedido | Situação |
+|---|---|
+| **Editar** | ✅ Entregue. `UpdateAccount`, `PUT /users/{id}` e o mesmo formulário da criação |
+| **Bloquear** | ✅ Já existia desde a M7.2.6, com motivo obrigatório |
+| **Desativar** | ✅ É o bloqueio. No modelo há `ACTIVE` e `BLOCKED`, e bloquear é o que tira o acesso preservando o histórico (RN 2.5) |
+| **Excluir** | ❌ **Não existe, e é decisão de desenho.** Ver abaixo |
+
+#### Um buraco encontrado ao escrever o caso de uso
+
+A primeira versão checava a troca de perfil pela política de **criação**:
+`can_create(actor, role)`. Isso deixaria o gerente trocar residente por guest,
+porque ele pode criar os dois.
+
+A RN 2.6 não fala só em promoção — diz *"não pode promover usuários **nem
+alterar perfis de acesso**"*. E trocar residente por guest **é** alterar perfil
+de acesso: muda a exigência de sinal (RN-GST-004) e o repasse de quem o estúdio
+indica. Corrigido: a troca de perfil exige que o ator seja proprietário, e há
+teste para o caso que passava.
+
+#### Outras garantias
+
+| O que | Por quê |
+|---|---|
+| O último proprietário ativo não perde o perfil | É a RN 2.5 pela outra porta: bloquear e rebaixar esvaziam a administração do mesmo jeito, e rebaixar não tem volta — ninguém sobraria para criar outro proprietário |
+| A senha não passa pela edição | Trocá-la encerra as sessões da conta (RN 2.7). No meio do formulário, o gestor derrubaria alguém ao corrigir um telefone |
+| O estado não passa pela edição | Bloquear e desbloquear têm rotas próprias, que registram motivo e encerram sessões. Mudar `status` por um campo pularia as duas coisas |
+| Manter o próprio e-mail não é duplicata | Quem corrige só o telefone manda o cadastro inteiro de volta; comparar o e-mail com ele mesmo recusaria toda edição |
+| A edição fica na auditoria com o valor anterior | RN 2.6: *"edição (...) deve ficar registrada no histórico"* |
+
+#### Um formulário, dois casos
+
+`NewAccountModal` virou `AccountFormModal`: conta nula cria, conta preenchida
+edita. É a mesma razão do cadastro de cliente — dois componentes quase iguais
+divergiriam na primeira mudança de campo, e a diferença entre criar e corrigir
+uma conta é **um campo**.
+
+Na edição o seletor de perfil fica travado para o gerente, com a frase que
+explica por quê. O papel atual entra na lista mesmo fora da alçada de quem
+edita: sem ele o seletor abriria mostrando outro papel, e salvar mudaria o
+perfil de alguém sem que ninguém tenha pedido.
+
+#### Por que não existe excluir
+
+A conta é referenciada por orçamento, agendamento, cliente, pagamento, repasse,
+histórico de estado e auditoria. Apagá-la apagaria **quem assinou cada um
+deles**: o banco recusaria pelas chaves estrangeiras, e forçar a remoção levaria
+junto o registro financeiro que a RN-CLI-007 manda guardar por seis anos.
+
+Nenhuma regra aprovada prevê exclusão de conta, e o sistema inteiro segue o
+oposto: pagamento nunca é apagado (RN-PAG-007), auditoria não pode ser apagada
+(§12), e cliente com histórico não é apagado diretamente (RN-CLI-006).
+
+**Quem sai do estúdio é bloqueado**: perde o acesso no mesmo instante, as
+sessões são encerradas e o histórico fica de pé.
+
+#### Exercitado contra a aplicação rodando
+
+| Passo | Resultado |
+|---|---|
+| "Edit" num artista | Formulário aberto com os sete campos preenchidos e o aviso sobre a senha |
+| Corrigir o telefone e salvar | Cartão passou a exibir o número novo; modal fechou depois de recarregar |
+| Seletor de perfil como proprietário | Habilitado |
+
+**Verificação:**
+
+- Ruff limpo; **291 testes** no backend, sendo 12 novos.
+- ESLint e `vue-tsc` limpos; **194 testes** no frontend, sendo 5 novos.
+- As quatro verificações de convenção sem apontamento.
 
 ### Evidência da sprint M9 — Faturamento do estúdio — 07/10/2026
 

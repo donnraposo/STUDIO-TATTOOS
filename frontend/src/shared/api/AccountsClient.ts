@@ -83,6 +83,23 @@ export class AccountsClient {
     return AccountsClient.toAccount(payload);
   }
 
+  /** Corrige o cadastro (RN 2.6).
+   *
+   * `PUT` porque o formulário manda o cadastro inteiro: num `PATCH` ficaria
+   * ambíguo se o campo ausente significa "não mexa" ou "apague". A senha não
+   * entra — trocá-la encerra as sessões da conta, e é ato de outra natureza. */
+  async update(accountId: string, account: Omit<NewAccount, "password">): Promise<StudioAccount> {
+    const payload = await this.http.put<AccountPayload>(`/users/${accountId}`, {
+      email: account.email,
+      full_name: account.fullName,
+      phone: account.phone,
+      role: account.role,
+      acts_as_artist: account.actsAsArtist,
+      artist_name: account.artistName,
+    });
+    return AccountsClient.toAccount(payload);
+  }
+
   /** O motivo é obrigatório (RN 2.5): o bloqueio precisa ficar rastreável. */
   async block(accountId: string, reason: string): Promise<void> {
     await this.http.post(`/users/${accountId}/block`, { reason });
