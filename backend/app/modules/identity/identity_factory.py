@@ -1,12 +1,14 @@
 from sqlalchemy.orm import Session
 
 from app.core.settings import Settings
+from app.modules.identity.application.account_artist_terms import AccountArtistTerms
 from app.modules.identity.application.authenticate_user import AuthenticateUser
 from app.modules.identity.application.block_account import BlockAccount
 from app.modules.identity.application.create_account import CreateAccount
 from app.modules.identity.application.end_session import EndSession
 from app.modules.identity.application.list_accounts import ListAccounts
 from app.modules.identity.application.resolve_session import ResolveSession
+from app.modules.identity.application.set_artist_percentage import SetArtistPercentage
 from app.modules.identity.application.unblock_account import UnblockAccount
 from app.modules.identity.domain.account_management_policy import AccountManagementPolicy
 from app.modules.identity.infrastructure.password_hasher import PasswordHasher
@@ -36,6 +38,13 @@ class IdentityFactory:
     @property
     def policy(self) -> AccountManagementPolicy:
         return self._policy
+
+    def set_artist_percentage(self, session: Session) -> SetArtistPercentage:
+        return SetArtistPercentage(users=self.users(session), audit=AuditRecorder(session))
+
+    def artist_terms(self, session: Session) -> AccountArtistTerms:
+        """O adaptador que o orçamento consome por porta (ADR-028)."""
+        return AccountArtistTerms(users=self.users(session))
 
     def users(self, session: Session) -> UserRepository:
         return UserRepository(session)

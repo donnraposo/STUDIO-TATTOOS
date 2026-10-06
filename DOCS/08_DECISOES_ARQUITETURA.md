@@ -596,6 +596,55 @@ no histórico, não um erro desfeito.
 
 **Data:** 30/09/2026.
 
+## ADR-030 — O percentual do artista é dado da pessoa, não constante do código
+
+**Decisão:** cada conta que tatua pode ter um **percentual acordado**, gravado em
+`user_account.default_artist_percentage`. Nulo significa "siga a regra da
+origem". Na aprovação do orçamento a ordem é: correção explícita do gestor para
+**aquele** atendimento, depois o acordo do artista, depois a regra da origem.
+
+**Motivo:** a planilha de controle do estúdio mostra **três** divisões no mesmo
+mês — 85/15, 70/30 e 50/50 — e o mesmo artista aparecendo em mais de uma. Até
+aqui os dois valores da RN-REP-001 e da RN-REP-002 estavam fixos no
+`ArtistPercentagePolicy`, e um terceiro caso não cabia ali: acrescentá-lo
+trocaria uma rigidez por outra, porque o estúdio negocia acordos e cada acordo
+novo exigiria uma versão nova do sistema.
+
+A precedência não é arbitrária. Um acordo negociado é mais específico que uma
+regra geral, e a correção do gestor na aprovação é mais específica que o acordo
+— é a RN-CLI-003, que já existia, e é o que explica FARPA aparecer na planilha
+em 85/15 e em 70/30 no mesmo mês.
+
+**Consequência:** `ArtistPercentagePolicy.for_origin` recebe o acordo e o
+prefere quando existe. O percentual chega ao módulo de orçamentos pela porta
+`ArtistTerms`, no desenho do ADR-028: quem precisa da resposta declara a porta,
+quem tem o dado a implementa — `AccountArtistTerms`, em identidade —, e o
+`Container` liga. Orçamentos continuam sem saber que existe uma tabela de
+contas.
+
+**Consequência de regra:** **mudar o acordo não alcança trabalho já aprovado.**
+A garantia não está no caso de uso que altera, e sim na cópia que o orçamento
+congelou na aprovação (RN-REP-006). É o teste mais importante da suíte deste
+campo, porque é a diferença entre renegociar daqui para frente e reescrever o
+que alguém já tinha a receber.
+
+**Alternativa considerada:** acrescentar `85` como terceira entrada do mapa de
+origens. Recusada porque o percentual não é propriedade da origem — a planilha
+mostra o mesmo artista em duas divisões, e o mesmo valor aplicado a origens
+diferentes. Seria dar nome de regra a um acordo comercial.
+
+**Alçada:** só gerente e proprietário alteram, e a auditoria guarda o valor
+anterior. Este número decide quanto o artista recebe em todo trabalho que
+aprovar daqui para frente; deixá-lo mexer seria deixá-lo escrever o próprio
+contrato, e mudá-lo sem registro seria mudar o contrato de alguém em silêncio.
+
+**Pendência que não é do código:** a RN-REP-001 e a RN-REP-002 continuam como
+estão no documento de regras, falando de dois percentuais. A decisão do
+responsável em 06/10/2026 as estende, e **cabe a ele atualizar o texto** — o
+documento de regras de negócio não é alterado por quem implementa.
+
+**Data:** 06/10/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar

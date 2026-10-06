@@ -2,7 +2,14 @@
 
 Roda dentro do container:
 
-    docker compose exec api python scripts/seed_demo.py
+    docker compose exec api sh -c 'cd /app &&
+      PYTHONPATH=/app SEED_DEMO_PASSWORD=<senha> python scripts/seed_demo.py'
+
+As duas variaveis sao necessarias e nao vem do ambiente do container: sem
+`PYTHONPATH` o import de `app` falha, porque `python scripts/...` poe
+`/app/scripts` no caminho e nao `/app`; `SEED_DEMO_PASSWORD` nao esta no
+`docker-compose.yml` de proposito, para que a senha de demonstracao exista
+apenas no comando de quem a roda.
 
 **So executa em desenvolvimento.** Cria contas com senha conhecida; rodar isto
 em producao seria abrir o sistema para quem souber ler o `.env.example`. A
@@ -42,18 +49,44 @@ from app.modules.scheduling.infrastructure.models.booking import Booking
 class DemoSeeder:
     """Popula o banco com o minimo para a interface ter o que mostrar.
 
-    O conteudo segue a configuracao operacional aprovada: quatro macas, um
-    proprietario, um gerente, dois residentes e um guest. Os clientes ficam
-    ligados a residentes diferentes de proposito, porque e isso que torna
-    visivel na tela a regra de visibilidade da RN-CLI-004 -- um residente nao
-    pode ver a ficha completa do cliente do outro.
+    Quatro macas, as contas de gestao e a equipe de artistas do estudio. Os
+    clientes ficam ligados a artistas diferentes de proposito, porque e isso que
+    torna visivel na tela a regra de visibilidade da RN-CLI-004 -- um residente
+    nao pode ver a ficha completa do cliente do outro.
     """
 
+    # A equipe real do estudio, pelos nomes que ele usa. Duas coisas ficam
+    # **em branco de proposito**, e as duas sao decisao do estudio, tomada na
+    # tela de contas:
+    #
+    # - **Perfil.** Todos entram como residente, que e o perfil corrente de
+    #   artista. Quem e guest varia por temporada, e nada na documentacao diz
+    #   quem e o que -- chutar aqui colocaria alguem fora da exigencia de sinal
+    #   da RN-GST-004 por invencao do seed.
+    # - **Percentual.** Nulo, ou seja, regra da origem: 70% no cliente proprio
+    #   e 50% na indicacao. A planilha do estudio mostra acordos de 85%, mas
+    #   nao ha como saber de quem sem perguntar, e escrever o acordo errado de
+    #   alguem e pior do que nao escrever nenhum.
+    #
+    # O nome vai nos dois campos porque a lista enviada pelo estudio traz o
+    # nome pelo qual ele chama cada pessoa, e **artista sem nome de artista o
+    # banco recusa** (ck_user_account_artist_name_required). Onde o nome civil
+    # difere, o estudio corrige na tela de contas.
+    #
+    # As duas contas de gestao e a conta guest sao ficticias, e existem para a
+    # demonstracao ter quem decide e quem cai na RN-GST-004.
     _ACCOUNTS = [
         ("owner@studio.ie", "Aoife Byrne", UserRole.OWNER, True, "Nyx"),
         ("manager@studio.ie", "Cillian Walsh", UserRole.MANAGER, False, None),
-        ("resident@studio.ie", "Saoirse Kelly", UserRole.RESIDENT, False, "Vera"),
-        ("resident2@studio.ie", "Eoin Murphy", UserRole.RESIDENT, False, "Corvo"),
+        ("ytalo@studio.ie", "Ytalo Lyra", UserRole.RESIDENT, False, "Ytalo Lyra"),
+        ("lisa@studio.ie", "Lisa", UserRole.RESIDENT, False, "Lisa"),
+        ("bohdan@studio.ie", "Bohdan", UserRole.RESIDENT, False, "Bohdan"),
+        ("warlen@studio.ie", "Warlen", UserRole.RESIDENT, False, "Warlen"),
+        ("jay@studio.ie", "Jay", UserRole.RESIDENT, False, "Jay"),
+        ("duda@studio.ie", "Duda", UserRole.RESIDENT, False, "Duda"),
+        ("lipo@studio.ie", "Lipo", UserRole.RESIDENT, False, "Lipo"),
+        ("farpa@studio.ie", "Farpa", UserRole.RESIDENT, False, "Farpa"),
+        ("yukimy@studio.ie", "Yukimy Midory", UserRole.RESIDENT, False, "Yukimy Midory"),
         ("guest@studio.ie", "Lucia Ferrari", UserRole.GUEST, False, "Lu"),
     ]
 
@@ -62,9 +95,9 @@ class DemoSeeder:
     _BENCHS = [1, 2, 3, 4]
 
     _CLIENTS = [
-        ("Niamh O'Sullivan", "+353 87 111 1111", "@niamh.os", "resident@studio.ie"),
-        ("Declan Moore", "+353 86 222 2222", None, "resident@studio.ie"),
-        ("Roisin Doyle", "+353 85 333 3333", "@roisin.d", "resident2@studio.ie"),
+        ("Niamh O'Sullivan", "+353 87 111 1111", "@niamh.os", "ytalo@studio.ie"),
+        ("Declan Moore", "+353 86 222 2222", None, "ytalo@studio.ie"),
+        ("Roisin Doyle", "+353 85 333 3333", "@roisin.d", "lisa@studio.ie"),
     ]
 
     def __init__(self, session: Session, password: str) -> None:
@@ -76,8 +109,8 @@ class DemoSeeder:
     # Artistas e macas diferentes de proposito, para nao esbarrar nas restricoes
     # EXCLUDE -- que e justamente o que a demonstracao quer mostrar funcionando.
     _BOOKINGS = [
-        (10, 2, 0, "resident@studio.ie", BookingStatus.APPROVED),
-        (13, 3, 1, "resident2@studio.ie", BookingStatus.APPROVED),
+        (10, 2, 0, "ytalo@studio.ie", BookingStatus.APPROVED),
+        (13, 3, 1, "lisa@studio.ie", BookingStatus.APPROVED),
         (15, 2, 0, "guest@studio.ie", BookingStatus.REQUESTED),
         (17, 2, 2, "owner@studio.ie", BookingStatus.APPROVED),
     ]
@@ -192,8 +225,8 @@ class DemoSeeder:
         self._session.add(
             Quote(
                 client_id=clients[0].id,
-                artist_id=accounts["resident@studio.ie"].id,
-                created_by=accounts["resident@studio.ie"].id,
+                artist_id=accounts["ytalo@studio.ie"].id,
+                created_by=accounts["ytalo@studio.ie"].id,
                 origin=QuoteOrigin.ARTIST_OWN,
                 description="Blackwork forearm sleeve, botanical motifs",
                 body_region="Left forearm",

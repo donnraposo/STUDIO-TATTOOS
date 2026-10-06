@@ -1,3 +1,5 @@
+from collections.abc import Callable
+
 from sqlalchemy.orm import Session
 
 from app.core.settings import Settings
@@ -17,6 +19,7 @@ from app.modules.quotes.application.reject_quote import RejectQuote
 from app.modules.quotes.application.remove_reference_image import RemoveReferenceImage
 from app.modules.quotes.application.update_quote import UpdateQuote
 from app.modules.quotes.domain.artist_percentage_policy import ArtistPercentagePolicy
+from app.modules.quotes.domain.artist_terms import ArtistTerms
 from app.modules.quotes.domain.quote_policy import QuotePolicy
 from app.modules.quotes.domain.reference_image_policy import ReferenceImagePolicy
 from app.modules.quotes.domain.session_plan import SessionPlan
@@ -37,12 +40,18 @@ class QuotesFactory:
     S3 mantém conexões e é compartilhado pela aplicação, e a fábrica não precisa
     saber qual implementação está em uso (ADR-006, ADR-016)."""
 
-    def __init__(self, settings: Settings, storage: ObjectStorage) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        storage: ObjectStorage,
+        artist_terms: Callable[[Session], ArtistTerms],
+    ) -> None:
         self._policy = QuotePolicy()
         self._percentages = ArtistPercentagePolicy()
         self._session_policy = SessionPolicy()
         self._session_plan = SessionPlan()
         self._storage = storage
+        self._artist_terms = artist_terms
         self._image_limits = ReferenceImagePolicy(
             allowed_types=settings.allowed_reference_image_types,
             max_bytes=settings.reference_image_max_bytes,
@@ -93,6 +102,7 @@ class QuotesFactory:
             quotes=self.quotes(session),
             policy=self._policy,
             percentages=self._percentages,
+            terms=self._artist_terms(session),
             sessions=self.generate_sessions(session),
             audit=AuditRecorder(session),
         )

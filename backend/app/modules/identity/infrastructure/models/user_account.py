@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, CheckConstraint, DateTime, ForeignKey, Numeric, String, func
 from sqlalchemy.dialects.postgresql import CITEXT, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -39,6 +40,16 @@ class UserAccount(OrmBase):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(160), nullable=False)
     artist_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    #: Percentual que este artista recebe por padrão, quando ele tem acordo
+    #: próprio. **Nulo significa "use a regra da origem"** — 70% para cliente
+    #: próprio, 50% para indicação do estúdio (RN-REP-001 e RN-REP-002).
+    #:
+    #: Só decide o que a **próxima** aprovação vai congelar. A RN-REP-006 é
+    #: explícita: mudar o padrão não alcança trabalho já aprovado, que carrega a
+    #: cópia feita no momento em que foi acordado.
+    default_artist_percentage: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
     phone: Mapped[str] = mapped_column(String(40), nullable=False)
     role: Mapped[UserRole] = mapped_column(String(16), nullable=False)
     acts_as_artist: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

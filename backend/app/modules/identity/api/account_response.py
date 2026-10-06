@@ -1,4 +1,5 @@
 import uuid
+from decimal import Decimal
 
 from pydantic import BaseModel
 
@@ -16,6 +17,9 @@ class AccountResponse(BaseModel):
     role: str
     acts_as_artist: bool
     status: str
+    #: Nulo significa que o artista segue a regra da origem — 70% para cliente
+    #: próprio, 50% para indicação do estúdio (ADR-030).
+    default_artist_percentage: Decimal | None
 
     @classmethod
     def from_model(cls, account: UserAccount) -> "AccountResponse":
@@ -28,4 +32,5 @@ class AccountResponse(BaseModel):
             role=str(account.role),
             acts_as_artist=account.acts_as_artist,
             status=str(account.status),
+            default_artist_percentage=account.default_artist_percentage,
         )

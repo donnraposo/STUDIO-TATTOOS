@@ -79,6 +79,11 @@ const navigation = computed<NavigationItem[]>(() => {
     { label: "Clients", route: "clients", visible: permissions.canSeeClients(current) },
     { label: "Quotes", route: "quotes", visible: permissions.canSeeQuotes(current) },
     { label: "Payouts", route: "payouts", visible: permissions.canSeePayouts(current) },
+    {
+      label: "Accounts",
+      route: "accounts",
+      visible: permissions.canManageAccounts(current),
+    },
     { label: "System", route: "status", visible: permissions.isStaff(current) },
   ].filter((item) => item.visible);
 });

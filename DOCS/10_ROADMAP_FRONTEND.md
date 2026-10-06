@@ -38,9 +38,11 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Painel com o que espera decisão | `HomeView` com a fila das três origens e o contador na casca |
 | Repasses | `PayoutsView` com lista, demonstrativo e confirmação de transferência |
 | Sessões | `SessionList` e `SessionDecisionModal` dentro do detalhe do orçamento |
-| 90 testes | Classes puras, sem montar componente |
+| Contas e artistas | `AccountsView` com criação, bloqueio e o acordo de percentual (ADR-030) |
+| 139 testes | Classes puras, sem montar componente |
 
-**Não existe ainda:** o sinal e a gestão de contas — e é isso que falta da M7.2.
+**Não existe ainda:** o sinal — e é a última peça do ciclo que ainda exige a
+API. É a M7.2.3.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -53,7 +55,7 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Área | API pronta | Tela existe |
 |---|---|---|
 | Autenticação e sessão | ✅ | ✅ M7.1.1 |
-| Contas e permissões | ✅ | ❌ M7.2 — adiada por não ser precisa à demonstração |
+| Contas e permissões | ✅ | ✅ M7.2.6 |
 | Clientes | ✅ | ✅ M7.1.2 |
 | Macas e agenda | ✅ | ✅ M7.1.3 |
 | Orçamentos e imagens de referência | ✅ | ✅ M7.1.4 |
@@ -63,8 +65,8 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
 
 **O teto deixou de ser o backend.** Até 29/09/2026 a coluna da API era o limite;
-hoje o backend está à frente da interface em duas sprints inteiras. Sessões e
-pagamentos existem e nenhuma tela os consome.
+hoje a distância é de uma tela só. Pagamentos existem desde a M5 e nenhuma tela
+os consome — é a única linha da tabela com API pronta e interface ausente.
 
 **A leitura honesta para a demonstração:** das duas dores que justificam o
 sistema, a interface resolve **uma inteira** — impedir choque de horário nas
@@ -296,6 +298,18 @@ frontend/src/
     └── tokens.css       variáveis de design
 ```
 
+**Regra de domínio que duas camadas precisam mora em `shared/domain`.** O
+`ArtistRole` é o caso: quem tatua decide três coisas — quem aparece na agenda,
+quem tem repasse e quem precisa de nome de artista, que o banco exige. A
+pergunta é feita ao mapear uma conta vinda da API, ao escolher o artista de um
+agendamento e ao criar uma conta nova. Escrita em cada um desses lugares,
+divergiria no primeiro perfil novo, e em silêncio: cada tela continuaria
+parecendo correta sozinha.
+
+Fica em `shared/` e não em `features/accounts/` por causa da direção das
+dependências — o cliente de API precisa dela, e `shared` não importa de
+`features`.
+
 **Um cliente por recurso, sobre um `HttpClient` único.** O `HttpClient` concentra o
 que toda chamada precisa: cabeçalho CSRF por duplo envio, envio do cookie de sessão,
 tradução de 401, 403, 409 e 422 em erros tipados. Sem essa peça única, cada tela
@@ -438,7 +452,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 | Repasses semanais e demonstrativo | M6 | ✅ **Entregue junto com a M6, em 02/10/2026** |
 | Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
 | Painel do residente | M6 | ❌ Não iniciada |
-| Usuários e permissões | Nada — a API está pronta, foi adiada por não ser precisa à demonstração | ✅ Pronta |
+| Usuários e permissões | Nada — a API já estava pronta | ✅ **Entregue em 06/10/2026**, com o acordo de percentual por artista |
 | Configuração de macas e horários | RN-AGE-011, que está na F3 | ❌ Fase 3 |
 
 **A ordem mudou de critério.** Quando a M7.2 foi planejada, ela esperava o
@@ -535,6 +549,9 @@ autenticado.
 | Agenda | Todos os perfis, com recortes diferentes | `GET /benches`, `GET/POST /bookings`, `/approve`, `/reject`, `/cancel`, `/reschedule` |
 | Orçamentos | Gestor e residente; **guest não** | `GET/POST /quotes`, `GET/PUT /quotes/{id}`, `/approve`, `/reject` |
 | Imagens de referência | Quem vê o orçamento | `GET/POST /quotes/{id}/reference-images`, `DELETE .../{image_id}`, `GET .../{image_id}/content` |
+| Sessões | Artista registra; gestor confirma | `GET /quotes/{id}/sessions`, `POST /sessions/{id}/mark-done`, `/confirm-payment` |
+| Repasses | Artista vê os próprios; gestor vê todos | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `/confirm-paid` |
+| Contas e artistas | **Só gestor** | `GET/POST /users`, `POST /users/{id}/block`, `/unblock`, `PUT /users/{id}/percentage` |
 
 ## 10. Testes
 

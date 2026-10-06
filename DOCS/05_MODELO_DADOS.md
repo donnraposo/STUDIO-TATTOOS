@@ -20,6 +20,7 @@
 | `booth` → `bench`, com colunas, índices e restrições | `0007` | M7.2.1 |
 | `client.brought_by_artist_id` | `0008` | M7.2.1 |
 | `payout`, `payout_item` e `payout_adjustment` | `0009` | M6 |
+| `user_account.default_artist_percentage` | `0010` | M7.2.6 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -64,6 +65,7 @@ teste de concorrência** desde 26/09/2026.
 | `phone` | text NOT NULL | |
 | `role` | enum NOT NULL | `OWNER`, `MANAGER`, `RESIDENT`, `GUEST` |
 | `acts_as_artist` | boolean NOT NULL | Proprietário/gerente que também tatua |
+| `default_artist_percentage` | numeric(5,2) NULL | Percentual acordado com este artista. **Nulo significa "siga a regra da origem"** — 70% cliente próprio, 50% indicação (ADR-030) |
 | `status` | enum NOT NULL | `PENDING_APPROVAL`, `ACTIVE`, `BLOCKED`, `REJECTED` |
 | `requested_role` | enum NULL | Perfil pedido no autocadastro |
 | `created_by` | uuid FK NULL | Nulo quando é autocadastro |
@@ -72,6 +74,8 @@ teste de concorrência** desde 26/09/2026.
 **Regras:**
 - `CHECK (NOT (acts_as_artist OR role IN ('RESIDENT','GUEST')) OR artist_name IS NOT NULL)` — garante nome artístico de quem tatua.
 - O último proprietário ativo não pode ser bloqueado (RN 2.5). Verificação em caso de uso transacional, não em constraint, por depender de contagem.
+- `CHECK (default_artist_percentage IS NULL OR (default_artist_percentage > 0 AND default_artist_percentage <= 100))` — mesmo intervalo do percentual congelado no orçamento: zero seria trabalho de graça e acima de cem seria o estúdio pagando para trabalhar.
+- **O campo não alcança trabalho já aprovado** (RN-REP-006). Ele decide o que a **próxima** aprovação vai congelar; o que já foi aprovado guarda a própria cópia em `quote.artist_percentage`. Alterá-lo é ato de gestor e fica na auditoria com o valor anterior.
 
 ### `user_status_history`
 

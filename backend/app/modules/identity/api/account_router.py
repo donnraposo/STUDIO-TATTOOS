@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request, status
 
 from app.core.container import Container
 from app.modules.identity.api.account_response import AccountResponse
+from app.modules.identity.api.artist_percentage_request import ArtistPercentageRequest
 from app.modules.identity.api.block_account_request import BlockAccountRequest
 from app.modules.identity.api.create_account_request import CreateAccountRequest
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
@@ -33,6 +34,12 @@ class AccountRouter:
         )
         router.add_api_route("/{account_id}/block", self.block_account, methods=["POST"])
         router.add_api_route("/{account_id}/unblock", self.unblock_account, methods=["POST"])
+        router.add_api_route(
+            "/{account_id}/percentage",
+            self.set_percentage,
+            methods=["PUT"],
+            response_model=AccountResponse,
+        )
         return router
 
     def list_accounts(self, request: Request) -> list[AccountResponse]:
@@ -79,3 +86,17 @@ class AccountRouter:
                 actor=actor, target_id=account_id
             )
             return {"status": "active"}
+
+    def set_percentage(
+        self, account_id: uuid.UUID, payload: ArtistPercentageRequest, request: Request
+    ) -> AccountResponse:
+        """`PUT` e não `PATCH`: o acordo é substituído por inteiro, e enviar
+        nulo o encerra. Um `PATCH` deixaria ambíguo se o campo ausente significa
+        "não mexa" ou "apague"."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+        with self._container.database.session() as session:
+            artist = self._container.identity.set_artist_percentage(session).execute(
+                actor=actor, artist_id=account_id, percentage=payload.percentage
+            )
+            return AccountResponse.from_model(artist)

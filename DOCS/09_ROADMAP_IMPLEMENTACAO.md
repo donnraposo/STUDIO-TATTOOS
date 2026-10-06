@@ -6,9 +6,10 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2, M3, M4, M5, M6 e M7.1 — a fatia vertical de
-interface, mais a etapa M7.2.1.
-**Próxima:** o restante da M7.2 — sessões, pagamentos, painel do residente e
-gestão de contas. Depois dela, a M8.
+interface —, mais as etapas M7.2.1, M7.2.2, M7.2.4 e M7.2.6.
+
+**Próxima:** o que resta da M7.2 — a tela de sinal e pagamentos (M7.2.3) e o
+painel do residente e do guest (M7.2.5). Depois dela, a M8.
 
 > **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
 > sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
@@ -20,7 +21,9 @@ gestão de contas. Depois dela, a M8.
 > confirmado, e até 30/09/2026 o `ApproveBooking` tinha um `_deposit_is_confirmed`
 > que devolvia `True` sempre — declarado como costura, mas na prática uma regra
 > escrita que o sistema não cumpria.
-**Progresso do MVP:** 9 das 11 entregas fechadas. Falta o resto da M7.2 e a M8.
+
+**Progresso do MVP:** 9 das 11 entregas fechadas. Falta o que resta da M7.2 — as
+etapas M7.2.3 e M7.2.5 — e a M8.
 
 > Esta tabela descrevia 26/09/2026 e **ficou congelada por cinco dias**, afirmando
 > 145 testes, migrações até a `0005` e "falta todo o dinheiro" com a M5 já
@@ -30,22 +33,22 @@ gestão de contas. Depois dela, a M8.
 | O que existe | Detalhe |
 |---|---|
 | Módulos com código | `health`, `identity`, `clients`, `scheduling`, `quotes`, `finance`, `reporting` (só auditoria) |
-| Migrações aplicadas | `0001` a `0009`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente e repasses |
+| Migrações aplicadas | `0001` a `0010`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente, repasses e percentual por artista |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 248 no backend e 115 no frontend, todos aprovados |
-| Frontend | Acesso, painel, clientes, agenda com a timeline, orçamentos com sessões, e repasses |
+| Testes | 258 no backend e 139 no frontend, todos aprovados |
+| Frontend | Acesso, painel, clientes, agenda com a timeline, orçamentos com sessões, repasses, e contas com o acordo de percentual |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
 > do login ao repasse de sexta. As duas dores que justificam o sistema têm
 > resposta: impedir choque de horário e saber quem recebe quanto.
 >
-> **Falta uma tela para o ciclo fechar pela interface.** Agenda, orçamentos,
-> sessões, painel e repasses têm tela; **o sinal não**. O gestor vê no painel
-> que há um pagamento aguardando confirmação, mas registrá-lo e confirmá-lo
-> ainda exige a API — e sem a confirmação o horário não pode ser aprovado
-> (RN-AGE-005). É a M7.2.3, e é o que separa a interface de ser utilizável de
-> ponta a ponta.
+> **Falta uma tela para o ciclo fechar pela interface, e é sempre a mesma.**
+> Agenda, orçamentos, sessões, painel, repasses e contas têm tela; **o sinal
+> não**. O gestor vê no painel que há um pagamento aguardando confirmação, mas
+> registrá-lo e confirmá-lo ainda exige a API — e sem a confirmação o horário
+> não pode ser aprovado (RN-AGE-005). É a M7.2.3, e é o que separa a interface
+> de ser utilizável de ponta a ponta.
 
 ### Pendências de costura entre sprints
 
@@ -140,7 +143,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
-| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1, M7.2.2 e M7.2.4 concluídas |
+| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1, M7.2.2, M7.2.4 e M7.2.6 concluídas |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1078,7 +1081,7 @@ backend.
 | M7.2.3 | Pagamentos, sinal e devoluções | Não iniciada |
 | M7.2.4 | Repasses e demonstrativo do artista | ✅ Concluída em 02/10/2026, junto com a M6 |
 | M7.2.5 | Painel do residente e do guest | Não iniciada |
-| M7.2.6 | Usuários e permissões | Não iniciada |
+| M7.2.6 | Usuários e permissões | ✅ Concluída em 06/10/2026, com o acordo de percentual por artista (ADR-030) |
 
 ### Etapa M7.2.1 — Painel do gestor: o que está esperando decisão
 
@@ -1261,6 +1264,95 @@ oferecer o atalho custa um clique, oferecê-lo custa um 403.
 
 - ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
   convenção sem apontamento.
+
+### Evidência da etapa M7.2.6 — 06/10/2026
+
+**O gestor passa a administrar contas e acordos pela tela.** Até aqui criar
+conta, bloquear e reativar só existiam na API, e o percentual do artista não
+existia em lugar nenhum: eram dois números fixos no código.
+
+#### O que a planilha do estúdio mostrou, e o código não previa
+
+A planilha de controle do mês traz **três divisões convivendo** — 85/15, 70/30 e
+50/50 — e o mesmo artista aparecendo em mais de uma. A RN-REP-001 e a RN-REP-002
+definem duas; a terceira não estava em lugar nenhum da documentação.
+
+**Isto foi perguntado, não suposto.** A decisão do responsável foi que o
+percentual mora **no artista e no atendimento**: um acordo padrão por pessoa, e
+a correção pontual que a RN-CLI-003 já dava ao gestor na aprovação do orçamento.
+É o que explica o mesmo artista em duas divisões no mesmo mês.
+
+| Decisão | Onde ficou |
+|---|---|
+| O percentual vira dado e deixa de ser constante | `user_account.default_artist_percentage`, migração `0010` |
+| Nulo significa "siga a regra da origem" | Os artistas existentes continuam em 70/30 e 50/50 sem ninguém preencher nada |
+| A ordem de precedência | Correção do atendimento, depois acordo do artista, depois regra da origem |
+| Orçamentos não passam a conhecer contas | Porta `ArtistTerms` no desenho do ADR-028 |
+
+**A regra que mais importa é a que não mudou.** Alterar o acordo **não alcança
+trabalho já aprovado** (RN-REP-006), e a garantia não está no caso de uso que
+altera: está na cópia que o orçamento congelou na aprovação. É o teste central
+do arquivo, e a tela repete o aviso para quem renegocia, porque sem ele o gestor
+esperaria ver o repasse da semana mudar e abriria um chamado quando não mudasse.
+
+#### A tela
+
+| Regra | Como a tela cumpre |
+|---|---|
+| **RN 2.2** | Os papéis oferecidos vêm da alçada de quem cria: o gerente não cria gerente nem proprietário |
+| **RN 2.3** | "Also tattoos" só aparece para gestão; residente e guest tatuam por definição |
+| **RN 2.5** | Bloquear exige motivo, e o botão fica travado sem ele. O texto diz o que o bloqueio **não** faz: não apaga histórico e não cancela agendamento futuro |
+| **RN 2.5** | Ninguém se bloqueia: quem o fizesse perderia a sessão no mesmo instante, sem volta |
+| **RN-CLI-003** | Só gestão altera o acordo, e a auditoria guarda o valor anterior |
+| **Banco** | Artista sem nome de artista o banco recusa; o formulário exige antes, em vez de deixar o gestor descobrir por um 422 depois de sete campos |
+
+**Conta bloqueada aparece na lista.** Escondê-la esconderia justamente o botão
+que devolve o acesso a ela — e não há exclusão de conta, de propósito: apagar
+quem assinou um atendimento apagaria o atendimento.
+
+**Acordo ausente aparece como "By origin", nunca como 0%.** Nulo não é zero: a
+regra depende do atendimento, então não existe um número único a mostrar, e
+escrever zero diria ao artista que ele trabalha de graça. A frase é explicada
+uma vez, abaixo do título, em vez de repetida em cada cartão.
+
+#### Exercitado contra a aplicação rodando
+
+| Passo | Resultado |
+|---|---|
+| Abrir `/accounts` como proprietário | 14 contas, com papel, estado, contato e acordo |
+| Definir 85% para um artista | Cartão passou a exibir `85%`; a lista recarregou antes de o modal fechar |
+| Reabrir e esvaziar o campo | Botão virou "End agreement"; o artista voltou a "By origin" |
+| Cartão da própria conta | Sem "Block" — ninguém se bloqueia |
+| Conta de gerente que não tatua | Sem "Share" e sem linha de acordo |
+| Trocar o papel para residente no formulário | "Artist name" ganhou obrigatoriedade e a caixa "Also tattoos" sumiu |
+
+#### Seed com a equipe real
+
+`seed_demo.py` passa a trazer os nove artistas do estúdio pelos nomes que ele
+usa. **Duas coisas ficaram em branco de propósito**, e as duas são decisão do
+estúdio na tela nova: o perfil de cada um — nada na documentação diz quem é
+guest, e chutar colocaria alguém fora da exigência de sinal da RN-GST-004 — e o
+percentual, porque a planilha mostra acordos de 85% sem dizer de quem, e
+escrever o acordo errado de alguém é pior do que não escrever nenhum.
+
+Junto saiu um defeito de documentação: o comando de execução registrado no
+próprio arquivo não funcionava, por faltarem `PYTHONPATH` e a senha de
+demonstração. Corrigido no cabeçalho.
+
+**Pendência que não é do código:** a RN-REP-001 e a RN-REP-002 continuam
+descrevendo dois percentuais. A decisão de 06/10/2026 as estende, e **cabe ao
+responsável atualizar o texto** — o documento de regras de negócio não é
+alterado por quem implementa.
+
+**Verificação:**
+
+- Migração `0010` aplicada; Ruff limpo; **258 testes** no backend, sendo 10 do
+  acordo de percentual.
+- ESLint e `vue-tsc` limpos; **139 testes** no frontend, sendo 24 novos.
+- As três verificações de convenção do frontend sem apontamento. A segunda delas
+  **acusou uma violação real durante a entrega**: o modal de conta nova importava
+  um tipo de `shared/api`. Corrigido na raiz — o que o componente emite passou a
+  ser tipo próprio, e quem traduz para o corpo da requisição é a tela.
 
 ### Evidência da sprint M6 — 02/10/2026
 

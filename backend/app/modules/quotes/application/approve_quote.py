@@ -5,6 +5,7 @@ from decimal import Decimal
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.quotes.application.generate_sessions import GenerateSessions
 from app.modules.quotes.domain.artist_percentage_policy import ArtistPercentagePolicy
+from app.modules.quotes.domain.artist_terms import ArtistTerms
 from app.modules.quotes.domain.quote_origin import QuoteOrigin
 from app.modules.quotes.domain.quote_policy import QuotePolicy
 from app.modules.quotes.domain.quote_status import QuoteStatus
@@ -23,7 +24,9 @@ class ApproveQuote:
     gravada, não a tabela de percentuais vigente na data do cálculo.
 
     `artist_percentage` permite ao gestor corrigir o percentual deste
-    atendimento, como a RN-CLI-003 prevê. Omitido, vale o padrão da origem. A
+    atendimento, como a RN-CLI-003 prevê. Omitido, vale o **acordo do artista**,
+    e na falta dele o padrão da origem — nessa ordem, porque um acordo negociado
+    é mais específico que uma regra geral (ADR-030). A
     correção fica na auditoria junto do valor que teria sido aplicado — um
     percentual fora do padrão precisa ser rastreável, ou vira um acordo
     particular sem registro.
@@ -39,12 +42,14 @@ class ApproveQuote:
         quotes: QuoteRepository,
         policy: QuotePolicy,
         percentages: ArtistPercentagePolicy,
+        terms: ArtistTerms,
         sessions: GenerateSessions,
         audit: AuditRecorder,
     ) -> None:
         self._quotes = quotes
         self._policy = policy
         self._percentages = percentages
+        self._terms = terms
         self._sessions = sessions
         self._audit = audit
 
@@ -64,7 +69,8 @@ class ApproveQuote:
         if quote.status != QuoteStatus.PENDING:
             raise BusinessRuleError("Only a pending quote can be approved.")
 
-        standard = self._percentages.for_origin(QuoteOrigin(quote.origin))
+        agreed = self._terms.default_percentage_for(quote.artist_id)
+        standard = self._percentages.for_origin(QuoteOrigin(quote.origin), agreed)
         frozen = artist_percentage if artist_percentage is not None else standard
 
         quote.status = QuoteStatus.APPROVED
@@ -85,6 +91,7 @@ class ApproveQuote:
                 "status": str(QuoteStatus.APPROVED),
                 "artist_percentage": str(frozen),
                 "standard_for_origin": str(standard),
+                "artist_agreement": str(agreed) if agreed is not None else None,
             },
         )
         return quote

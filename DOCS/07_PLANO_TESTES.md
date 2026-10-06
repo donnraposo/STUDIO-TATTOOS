@@ -8,8 +8,8 @@
 
 ## 0. Cobertura atual
 
-**212 testes aprovados** no backend, executados em container contra PostgreSQL
-real no banco isolado `tattoo_studio_test`. Conferido em 30/09/2026, com a suíte
+**258 testes aprovados** no backend, executados em container contra PostgreSQL
+real no banco isolado `tattoo_studio_test`. Conferido em 06/10/2026, com a suíte
 inteira num só comando.
 
 > **A suíte devolve as conexões entre testes.** Cada teste monta um `Container`
@@ -19,10 +19,11 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**97 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**139 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
-tradução de erro da API e ciclo de sessão.
+tradução de erro da API, ciclo de sessão e os espelhos de política que decidem o
+que a tela mostra.
 
 | Área | Situação |
 |---|---|
@@ -39,6 +40,9 @@ tradução de erro da API e ciclo de sessão.
 | **Fila do painel** | Coberta por 11 testes de classe pura: o item abre a agenda **no dia do agendamento** e não no de hoje, o sinal segue o agendamento que ele trava, e o dia fica de fora quando não se conhece; as três origens numa lista só, **ordenadas do mais antigo para o mais recente** qualquer que seja a origem, item que continua aparecendo quando o nome do cliente é desconhecido, e cada origem levando à tela que a decide |
 | **Estados da sessão na tela** | Coberta por 6 testes de classe pura: **realizada fica em tom de espera e só quitada fica positiva** — verde em realizada diria ao artista que o trabalho conta para o repasse quando ainda não conta; o artista corrige o que registrou mas não mexe em sessão quitada; confirmar só aparece em sessão que aconteceu |
 | **Exigência de sinal na tela** | Coberta por 5 testes: residente e proprietário que tatua exigem sinal, guest não (RN-GST-004), e artista desconhecido erra para o lado de exigir — não oferecer o atalho custa um clique, oferecê-lo custa um 403 |
+| **Acordo de percentual por artista** | Coberta por 10 testes de ponta a ponta (ADR-030): artista começa sem acordo, a gestão o define, o acordo vence a regra da origem, a correção na aprovação vence o acordo, esvaziar devolve à origem, artista não mexe no próprio, fora do intervalo recusado, conta que não tatua recusada, e a auditoria guarda o valor anterior |
+| **Acordo não alcança trabalho aprovado** | ✅ **Coberta, e é o teste que mais importa do campo.** Aprovado sob 85%, o orçamento e as sessões continuam em 85% depois de o acordo virar 50% (RN-REP-006). A garantia não está no caso de uso que altera: está na cópia congelada na aprovação |
+| **Contas na tela** | Coberta por 24 testes de classe pura: papéis e estados nomeados, **bloqueada em vermelho e pendente em alerta** — as duas em vermelho esconderiam que só uma foi decisão de alguém —, acordo ausente exibido como "By origin" e nunca como `0%`, alçada de quem cria e de quem bloqueia, ninguém bloqueia a si mesmo, e quem tatua decidido num lugar só — a resposta vale para a agenda, para o repasse e para a exigência de nome de artista, e escrita em cada tela divergiria em silêncio |
 | **Semana de repasse** | Coberta por 9 testes de classe pura: sabado pertence a sexta seguinte, sexta de manha a sexta do mesmo dia, **20h em ponto fecha a semana que termina** e um minuto depois cai na seguinte, 20h de Dublin dando 19h UTC no verao e 20h UTC no inverno, e **a semana que atravessa a virada do horario de verao com 169 horas** — subtrair sete dias em UTC deixaria uma hora de fora |
 | **Divisao do repasse** | Coberta por 5 testes: 70% e 50% de valores redondos, o exemplo da RN-PAG-005, meio centavo arredondando **para cima** e nao pelo padrao bancario do Python, e a diferenca entre arredondar por sessao e arredondar no total |
 | **Ciclo do repasse** | Coberta: fechamento com a parcela de cada sessao, um repasse por artista, **fechar duas vezes devolvendo o mesmo fechamento**, sessao nao quitada fora, sessao de outra semana fora, semana em curso recusada, artista sem fechar, artista vendo so os proprios repasses, artista recusado no demonstrativo do colega, o demonstrativo exibindo o que a RN-REP-007 lista, confirmacao registrando responsavel, segunda confirmacao recusada e artista sem confirmar |

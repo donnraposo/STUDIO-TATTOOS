@@ -152,6 +152,7 @@ frontend/src/
 │   ├── scheduling/
 │   ├── clients/
 │   ├── quotes/
+│   ├── accounts/       contas e artistas, incluindo o acordo de percentual
 │   ├── finance/
 │   ├── guests/
 │   ├── aftercare/
@@ -237,7 +238,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Recurso | Endpoints principais |
 |---|---|
 | Autenticação | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password-reset` |
-| Usuários | `GET/POST /users`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock` |
+| Usuários | `GET/POST /users`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
@@ -253,6 +254,11 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**`PUT /users/{id}/percentage` é `PUT` e não `PATCH`** de propósito: o acordo é
+substituído por inteiro, e enviar `null` o **encerra**, devolvendo o artista à
+regra da origem. Num `PATCH` ficaria ambíguo se o campo ausente significa "não
+mexa" ou "apague" — e os dois sentidos mudam quanto alguém recebe (ADR-030).
 
 **Os três filtros por estado servem ao painel do gestor** (RN-AGE-012 e seção
 10.1). A pergunta do painel é "o que está esperando decisão", sem data e sem

@@ -48,7 +48,13 @@ class Container:
             settlement_gate=self._finance.settlement_gate,
         )
         self._storage: ObjectStorage = FilesystemObjectStorage(self._settings.storage_root)
-        self._quotes = QuotesFactory(settings=self._settings, storage=self._storage)
+        # O orcamento pergunta a identidade o acordo do artista; os dois se
+        # encontram aqui, pela porta que o orcamento declarou (ADR-028).
+        self._quotes = QuotesFactory(
+            settings=self._settings,
+            storage=self._storage,
+            artist_terms=self._identity.artist_terms,
+        )
 
     @classmethod
     def instance(cls) -> "Container":
