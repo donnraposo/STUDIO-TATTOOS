@@ -37,15 +37,9 @@ export class PendingWorkAssembler {
     quotes: Quote[];
     clientNames: Record<string, string>;
   }): PendingWorkItem[] {
-    const dayByBooking = Object.fromEntries(
-      sources.bookings.map((booking) => [booking.id, this.clock.dayKey(booking.startsAt)]),
-    );
-
     return [
       ...sources.bookings.map((booking) => this.fromBooking(booking, sources.clientNames)),
-      ...sources.payments.map((payment) =>
-        this.fromPayment(payment, sources.clientNames, dayByBooking),
-      ),
+      ...sources.payments.map((payment) => this.fromPayment(payment, sources.clientNames)),
       ...sources.quotes.map((quote) => this.fromQuote(quote, sources.clientNames)),
     ].sort((first, second) => first.since.localeCompare(second.since));
   }
@@ -67,25 +61,20 @@ export class PendingWorkAssembler {
   /** O sinal aparece com o valor porque é ele que o gestor confere contra o
    * comprovante. Sem o valor, confirmar exigiria abrir o item para saber o quê.
    *
-   * O dia vem do agendamento a que o sinal pertence, **quando ele está entre os
-   * que esperam decisão** — que é o caso comum, porque um sinal por confirmar é
-   * justamente o que trava aquela aprovação (RN-AGE-005). Não estando, o item
-   * leva à agenda sem data: melhor abrir no dia de hoje do que num dia errado. */
-  private fromPayment(
-    payment: Payment,
-    names: Record<string, string>,
-    dayByBooking: Record<string, string>,
-  ): PendingWorkItem {
+   * **Leva à tela de pagamentos, e não à agenda.** Até a M7.2.3 o item levava
+   * ao dia do agendamento, porque era o mais perto que existia de um lugar onde
+   * resolver — mas lá não havia o que fazer com ele, e o gestor chegava a uma
+   * agenda sem botão nenhum para confirmar o recebimento. Agora o destino é a
+   * tela que decide. */
+  private fromPayment(payment: Payment, names: Record<string, string>): PendingWorkItem {
     const who = payment.clientId ? (names[payment.clientId] ?? "Client") : "Studio";
-    const day = payment.bookingId ? dayByBooking[payment.bookingId] : undefined;
     return {
       id: payment.id,
       kind: "PAYMENT",
       title: who,
       detail: `${this.money.amount(payment.amount)} · ${PendingWorkAssembler.KIND_LABEL[payment.kind]}`,
       since: payment.reportedAt,
-      route: "schedule",
-      ...(day ? { query: { day } } : {}),
+      route: "payments",
     };
   }
 

@@ -26,7 +26,13 @@ import type { Booking, Bench, RejectionReason } from "@/shared/domain/Booking";
  *
  * **`requestedAt` é mostrado sempre.** A RN-AGE-004 manda exibir as
  * solicitações concorrentes com a data e a hora em que cada uma foi enviada —
- * é o critério que o gestor usa para escolher qual aprovar. */
+ * é o critério que o gestor usa para escolher qual aprovar.
+ *
+ * **O sinal entra por `slot`.** Até a M7.2.3 o botão de aprovar levava 403
+ * quando não havia recebimento confirmado, sem nada na tela que dissesse o quê
+ * (RN-AGE-005). O painel do sinal passa a ficar aqui, onde a pergunta aparece —
+ * mas por `slot`, para que este componente continue decidindo sobre horário e
+ * não passe a conhecer pagamento. */
 type Mode = "view" | "reject" | "cancel" | "reschedule";
 
 const REJECTION_REASONS: SelectOption[] = [
@@ -114,6 +120,15 @@ function back(): void {
     <p class="requested">
       Requested {{ props.requestedAt }}
     </p>
+
+    <!-- O sinal entra por `slot` e não por `props`: este componente decide
+         sobre o horário e não precisa saber que pagamento existe. Quem monta o
+         painel é a tela, que é quem fala com a API. Só no modo de leitura — no
+         meio de uma recusa ou de um remarcar, ele seria ruído. -->
+    <slot
+      v-if="mode === 'view'"
+      name="deposit"
+    />
 
     <p
       v-if="consequence"

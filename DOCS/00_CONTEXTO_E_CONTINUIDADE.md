@@ -3,7 +3,7 @@
 **Última atualização:** 06/10/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5, M6 e a fatia vertical de interface M7.1 concluídas, mais as etapas M7.2.1, M7.2.2, M7.2.4 e M7.2.6. **O fio condutor do MVP fechou em 02/10/2026**, do login ao repasse de sexta. Falta a tela de sinal e pagamentos (M7.2.3), o painel do residente e do guest (M7.2.5) e a M8. O desenho funcional está fechado desde 24/09/2026.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5, M6 e a fatia vertical de interface M7.1 concluídas, mais as etapas M7.2.1, M7.2.2, M7.2.3, M7.2.4 e M7.2.6. **O fio condutor do MVP fechou no backend em 02/10/2026 e passou a se percorrer inteiro pela interface em 06/10/2026**, do login ao repasse de sexta, sem a API em nenhum passo. Falta o painel do residente e do guest (M7.2.5) e a M8. O desenho funcional está fechado desde 24/09/2026.
 
 > **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
 > sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),

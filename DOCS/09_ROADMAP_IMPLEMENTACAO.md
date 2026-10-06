@@ -6,10 +6,10 @@
 ## Onde o projeto está agora
 
 **Concluído:** sprint 01, M1, M2, M3, M4, M5, M6 e M7.1 — a fatia vertical de
-interface —, mais as etapas M7.2.1, M7.2.2, M7.2.4 e M7.2.6.
+interface —, mais as etapas M7.2.1, M7.2.2, M7.2.3, M7.2.4 e M7.2.6.
 
-**Próxima:** o que resta da M7.2 — a tela de sinal e pagamentos (M7.2.3) e o
-painel do residente e do guest (M7.2.5). Depois dela, a M8.
+**Próxima:** o que resta da M7.2 — o painel do residente e do guest (M7.2.5).
+Depois dela, a M8.
 
 > **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
 > sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
@@ -22,8 +22,11 @@ painel do residente e do guest (M7.2.5). Depois dela, a M8.
 > que devolvia `True` sempre — declarado como costura, mas na prática uma regra
 > escrita que o sistema não cumpria.
 
-**Progresso do MVP:** 9 das 11 entregas fechadas. Falta o que resta da M7.2 — as
-etapas M7.2.3 e M7.2.5 — e a M8.
+**Progresso do MVP:** 8 das 10 sprints fechadas. Falta o que resta da
+M7.2 — a etapa M7.2.5 — e a M8.
+
+> Este número dizia "9 das 11" e **não batia com a tabela logo abaixo**, que tem
+> dez linhas. Conferido contra ela em 06/10/2026.
 
 > Esta tabela descrevia 26/09/2026 e **ficou congelada por cinco dias**, afirmando
 > 145 testes, migrações até a `0005` e "falta todo o dinheiro" com a M5 já
@@ -36,19 +39,22 @@ etapas M7.2.3 e M7.2.5 — e a M8.
 | Migrações aplicadas | `0001` a `0010`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente, repasses e percentual por artista |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 258 no backend e 139 no frontend, todos aprovados |
-| Frontend | Acesso, painel, clientes, agenda com a timeline, orçamentos com sessões, repasses, e contas com o acordo de percentual |
+| Testes | 258 no backend e 166 no frontend, todos aprovados |
+| Frontend | Acesso, painel, clientes, agenda com a timeline e o sinal, orçamentos com sessões, pagamentos, repasses, e contas com o acordo de percentual |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
 > do login ao repasse de sexta. As duas dores que justificam o sistema têm
 > resposta: impedir choque de horário e saber quem recebe quanto.
 >
-> **Falta uma tela para o ciclo fechar pela interface, e é sempre a mesma.**
-> Agenda, orçamentos, sessões, painel, repasses e contas têm tela; **o sinal
-> não**. O gestor vê no painel que há um pagamento aguardando confirmação, mas
-> registrá-lo e confirmá-lo ainda exige a API — e sem a confirmação o horário
-> não pode ser aprovado (RN-AGE-005). É a M7.2.3, e é o que separa a interface
-> de ser utilizável de ponta a ponta.
+> **O ciclo passou a se percorrer inteiro pela interface em 06/10/2026.**
+> `entrar → cliente → solicitar horário → lançar e confirmar o sinal → aprovar →
+> sessão feita e quitada → repasse de sexta`, sem a API em nenhum passo. O
+> último elo era o sinal, e era também o único ponto em que a interface
+> prometia uma ação que o servidor recusava.
+>
+> **O que falta da M7.2 é a M7.2.5**, o painel de entrada do residente e do
+> guest. É conforto, não bloqueio: o artista já vê agenda, orçamentos e os
+> próprios repasses.
 
 ### Pendências de costura entre sprints
 
@@ -58,9 +64,8 @@ seguinte fecha sem saber tudo o que tinha de fechar.
 
 | Ponto no código | O que falta | Fecha em |
 |---|---|---|
-| `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008). **Não fechou na M6:** o repasse lê a sessão, então fazê-la lá misturaria dois assuntos numa entrega só | M7.2.3 |
+| `ConfirmSessionPayment` | O recebimento da sessão ainda é um valor digitado; passa a se apoiar num `payment` de tipo `BALANCE` confirmado (RN-PAG-008). **Não fechou na M7.2.3:** aquela etapa era de interface, e esta é mudança de backend — passa a existir um estado intermediário entre a sessão realizada e a quitada, e o repasse lê a sessão. Precisa de decisão antes de código | Pendente de decisão |
 | `payment.guest_week_id` | Coluna e origem da taxa semanal; a tabela `guest_week` ainda não existe (RN-GST-001) | Sprint do guest |
-| Tela de sinal e pagamentos | Registrar, confirmar, recusar e devolver. O painel **mostra** o que aguarda confirmação desde a M7.2.1, mas quem decide ainda precisa da tela | M7.2.3 |
 
 **Fechadas na M5, em 30/09/2026:**
 
@@ -143,7 +148,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | **M7.1** | ⚠️ Fatia vertical de interface | Frontend | ✅ Concluída em 29/09/2026 |
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
-| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** M7.2.1, M7.2.2, M7.2.4 e M7.2.6 concluídas |
+| **M7.2** | Restante da interface do MVP | Frontend | ⬅️ **Em andamento:** só falta a M7.2.5 |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1078,7 +1083,7 @@ backend.
 |---|---|---|
 | **M7.2.1** | ⚠️ Painel do gestor: o que está esperando decisão | ✅ Concluída em 30/09/2026 |
 | M7.2.2 | Sessões e atendimentos | ✅ Concluída em 02/10/2026 |
-| M7.2.3 | Pagamentos, sinal e devoluções | Não iniciada |
+| M7.2.3 | Pagamentos, sinal e devoluções | ✅ Concluída em 06/10/2026 |
 | M7.2.4 | Repasses e demonstrativo do artista | ✅ Concluída em 02/10/2026, junto com a M6 |
 | M7.2.5 | Painel do residente e do guest | Não iniciada |
 | M7.2.6 | Usuários e permissões | ✅ Concluída em 06/10/2026, com o acordo de percentual por artista (ADR-030) |
@@ -1264,6 +1269,96 @@ oferecer o atalho custa um clique, oferecê-lo custa um 403.
 
 - ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
   convenção sem apontamento.
+
+### Evidência da etapa M7.2.3 — 06/10/2026
+
+**O sinal era a última peça que faltava para o ciclo se percorrer inteiro pela
+interface.** O backend existia desde a M5 e nenhuma tela o consumia: o gestor
+via no painel que havia um pagamento esperando, e precisava da API para fazer
+qualquer coisa a respeito.
+
+#### Onde cada coisa ficou, e por quê
+
+Um recebimento pertence **ou** ao agendamento **ou** à sessão, nunca a nenhum
+dos dois: o sinal confirma o horário reservado (RN-PAG-001), o saldo quita a
+sessão (RN-PAG-008). Isso decidiu o desenho sozinho.
+
+| Peça | Onde | Por quê |
+|---|---|---|
+| **Lançar** o sinal | Dentro do agendamento, no modal de decisão | É onde a origem já é conhecida. Numa tela separada o gestor teria de procurar o agendamento numa lista para dizer de onde veio o dinheiro |
+| **Confirmar e recusar** | Nos dois lugares | A pergunta aparece nos dois: no agendamento é o que destrava a aprovação; na fila é o que está parado |
+| **Devolver** | Tela de pagamentos | Não acompanha decisão de horário: devolve-se depois, e às vezes muito depois |
+| **Histórico** | Tela de pagamentos, por estado | Seis anos de registro financeiro (RN-CLI-007) não cabem numa lista para o navegador peneirar |
+
+#### O defeito que isto fecha
+
+Até aqui o botão de aprovar devolvia **403** quando não havia recebimento
+confirmado, e nada na tela dizia o quê. A RN-AGE-005 estava sendo cumprida pelo
+servidor e comunicada por um código de erro.
+
+Agora o painel do sinal fica no mesmo modal, acima dos botões, e diz em que pé
+está: nada recebido, recebido e não conferido, ou confirmado. **Informado não
+basta** — é exatamente a diferença que o 403 estava tentando explicar sozinho.
+
+O painel entra por `slot`, e não por `props`: o `BookingDecision` decide sobre
+horário e continua sem conhecer pagamento. Quem monta é a tela, que é quem fala
+com a API.
+
+#### Decisões de tela
+
+| O que | Decisão |
+|---|---|
+| Valor do sinal | **Não é campo.** A RN-PAG-001 diz €50, e um campo aberto convidaria a digitar outro valor — que o estúdio descobriria no fechamento de sexta. Aparece como fato. O campo só existe no pagamento integral antecipado (RN-PAG-004), livre por definição |
+| Recusado, devolvido e estornado | **Sem botão nenhum.** A RN-PAG-007 proíbe o retorno, e um botão que o servidor recusa ensina a equipe a desconfiar dos próprios botões |
+| `REFUNDED` | **Neutro, não vermelho.** Devolver é o desfecho correto quando o estúdio recusa a solicitação (RN-PAG-003). Vermelho ali ensinaria a tratar o certo como erro — e aí o vermelho da recusa deixaria de significar alguma coisa |
+| `REPORTED` | **Alerta, não cinza.** É a única coisa desta tela que trava outra |
+| Sinal retido | Mostrado como tal. Um sinal retido continua `CONFIRMED` (RN-AGE-009); quem lesse só o estado procuraria a devolução que nunca houve |
+| Decidir sobre o sinal | **Não fecha o agendamento.** Lançar, confirmar e aprovar é uma sequência só; fechar o modal a cada passo mandaria o gestor procurar o mesmo horário três vezes |
+
+#### Dois textos que tinham apodrecido
+
+**A fila do painel levava o sinal para a agenda.** Era o mais perto que existia
+de um lugar onde resolver, porque esta tela não existia — mas lá não havia botão
+nenhum para confirmar recebimento, e o gestor chegava sem o que fazer. Passa a
+levar à tela que decide, e o teste que guardava o destino antigo foi reescrito
+dizendo por que mudou.
+
+**A frase da aprovação dizia que o sinal não era registrado no sistema** e
+mandava confirmá-lo por fora. Verdade até esta etapa, e falsa a partir dela —
+e agora contradizia o painel logo acima, no mesmo modal. Um texto que contradiz
+o que está na tela ao lado é pior do que texto nenhum: ensina a não ler nenhum
+dos dois. Corrigido, e o `BookingConsequence` **ganhou o teste que não tinha** —
+é uma classe que guarda o que cada decisão faz com o dinheiro, e foi o texto
+dela que apodreceu em silêncio.
+
+#### Exercitado contra a aplicação rodando
+
+| Passo | Resultado |
+|---|---|
+| Criar solicitação e abri-la | Painel do sinal: "Nothing received for this booking yet. It cannot be approved until a payment is confirmed." |
+| Lançar o sinal | €50 fixo, sem campo de valor; modal continuou aberto |
+| Logo após o lançamento | `AWAITING CONFIRMATION`, com "Reported, not confirmed — approval stays blocked until then" |
+| Confirmar o recebimento | `CONFIRMED`, sem fechar o agendamento |
+| Aprovar | Aceito — **o mesmo botão que devolvia 403** |
+| `/payments` com "Awaiting confirmation" | Vazio, porque a fila tinha acabado de ser resolvida |
+| Filtro "Confirmed" | O sinal, com "Record refund" como única ação — confirmar e recusar somem, como manda a transição |
+| Registrar devolução de €50 em dinheiro | Aceito; a forma da devolução difere da original, como a RN-PAG-009 prevê |
+| Filtro "Refunded" | O lançamento continua lá, agora `REFUNDED` e **sem ação nenhuma**. Nada foi apagado |
+
+> O banco de desenvolvimento ficou com esse agendamento aprovado e o sinal dele
+> devolvido — combinação que a operação não produziria. É resíduo da
+> verificação, e some no próximo `seed_demo`.
+
+**Armadilha reencontrada:** o Vite dentro do container serviu o módulo antigo
+duas vezes, e na segunda eu só percebi porque fui conferir o texto corrigido na
+aplicação em vez de confiar no arquivo em disco. `docker compose restart
+frontend` resolve, e é o que a seção 5 da `CLAUDE.md` já registra.
+
+**Verificação:**
+
+- ESLint e `vue-tsc` limpos; **166 testes** no frontend, sendo 25 novos.
+- As quatro verificações de convenção do frontend sem apontamento.
+- Nenhuma alteração no backend: a API de pagamentos estava pronta desde a M5.
 
 ### Evidência da etapa M7.2.6 — 06/10/2026
 

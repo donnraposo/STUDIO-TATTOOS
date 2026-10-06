@@ -3,6 +3,11 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import { BookingPlacement, type Placement } from "@/features/scheduling/BookingPlacement";
+import DepositPanel from "@/features/payments/components/DepositPanel.vue";
+import RefusePaymentModal from "@/features/payments/components/RefusePaymentModal.vue";
+import RegisterPaymentModal, {
+  type PaymentDraft,
+} from "@/features/payments/components/RegisterPaymentModal.vue";
 import { ApiError } from "@/shared/api/ApiError";
 import AppButton from "@/shared/components/AppButton.vue";
 import BookingDecision from "@/features/scheduling/components/BookingDecision.vue";
@@ -25,6 +30,7 @@ import type {
   RejectionReason,
 } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
+import type { Payment } from "@/shared/domain/Payment";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 import { StudioClock } from "@/shared/format/StudioClock";
 import { useSession } from "@/shared/session/useSession";
@@ -77,7 +83,7 @@ function readDay(value: unknown): string | null {
   return typeof value === "string" && DAY_PATTERN.test(value) ? value : null;
 }
 
-const { scheduling, clients: clientsApi, accounts } = useApi();
+const { scheduling, clients: clientsApi, accounts, payments: paymentsApi } = useApi();
 const { session, permissions } = useSession();
 const route = useRoute();
 const router = useRouter();
@@ -99,6 +105,15 @@ const conflict = ref<BookingConflict | null>(null);
 const composing = ref(false);
 const deciding = ref(false);
 const decisionFailure = ref<string | null>(null);
+
+/** Os pagamentos do agendamento aberto (RN-AGE-005).
+ *
+ * Buscados ao abrir e não junto com o dia: a agenda mostra dezenas de horários
+ * e carregar os pagamentos de todos seria dezenas de requisições para desenhar
+ * uma grade que não os exibe. */
+const bookingPayments = ref<Payment[]>([]);
+const registering = ref(false);
+const refusing = ref<Payment | null>(null);
 
 const heading = computed(() => {
   const schedule = state.data.value;
@@ -299,6 +314,80 @@ async function create(draft: BookingDraft): Promise<void> {
   );
 }
 
+/** Os pagamentos seguem o agendamento aberto. Fechado o modal, a lista é
+ * esvaziada: deixá-la sobrando mostraria o sinal do horário anterior por um
+ * instante ao abrir o próximo. */
+watch(selected, async (booking) => {
+  bookingPayments.value = [];
+  if (booking && canDecide.value) {
+    await loadBookingPayments(booking.id);
+  }
+});
+
+async function loadBookingPayments(bookingId: string): Promise<void> {
+  try {
+    bookingPayments.value = await paymentsApi.listForBooking(bookingId);
+  } catch {
+    bookingPayments.value = [];
+  }
+}
+
+async function registerPayment(draft: PaymentDraft): Promise<void> {
+  const booking = selected.value;
+  if (booking) {
+    await onPayment(
+      () =>
+        paymentsApi.register({
+          bookingId: booking.id,
+          sessionId: null,
+          clientId: booking.clientId,
+          amount: draft.amount,
+          kind: draft.kind,
+          method: draft.method,
+          note: draft.note,
+        }),
+      () => (registering.value = false),
+    );
+  }
+}
+
+async function confirmPayment(payment: Payment): Promise<void> {
+  await onPayment(() => paymentsApi.confirm(payment.id));
+}
+
+async function refusePayment(reason: string): Promise<void> {
+  const payment = refusing.value;
+  if (payment) {
+    await onPayment(() => paymentsApi.refuse(payment.id, reason), () => (refusing.value = null));
+  }
+}
+
+/** Decidir sobre o sinal **não fecha o agendamento**, ao contrário de decidir
+ * sobre o horário.
+ *
+ * É a sequência que o gestor percorre de uma vez: lança o sinal, confirma o
+ * recebimento e aprova. Fechar o modal a cada passo o mandaria procurar o mesmo
+ * horário três vezes — e a etapa existe justamente para acabar com a procura. */
+async function onPayment(action: () => Promise<unknown>, done?: () => void): Promise<void> {
+  const booking = selected.value;
+  if (!booking) {
+    return;
+  }
+
+  deciding.value = true;
+  decisionFailure.value = null;
+  try {
+    await action();
+    await loadBookingPayments(booking.id);
+    done?.();
+  } catch (error) {
+    decisionFailure.value =
+      error instanceof ApiError ? error.message : "Could not reach the studio system.";
+  } finally {
+    deciding.value = false;
+  }
+}
+
 async function approve(): Promise<void> {
   const booking = selected.value;
   if (booking) {
@@ -461,6 +550,36 @@ onMounted(() => {
       @cancel="cancel"
       @reschedule="reschedule"
       @close="selected = null"
+    >
+      <template #deposit>
+        <DepositPanel
+          v-if="canDecide"
+          :payments="bookingPayments"
+          :can-decide="canDecide"
+          :busy="deciding"
+          @register="registering = true"
+          @confirm="confirmPayment"
+          @refuse="refusing = $event"
+        />
+      </template>
+    </BookingDecision>
+
+    <RegisterPaymentModal
+      v-if="registering && selected"
+      :subject="`${selectedLabel.clientName} · ${selectedLabel.timeRange}`"
+      :busy="deciding"
+      :failure="decisionFailure"
+      @submit="registerPayment"
+      @close="registering = false"
+    />
+
+    <RefusePaymentModal
+      v-if="refusing"
+      :payment="refusing"
+      :busy="deciding"
+      :failure="decisionFailure"
+      @confirm="refusePayment"
+      @close="refusing = null"
     />
 
     <ConflictModal

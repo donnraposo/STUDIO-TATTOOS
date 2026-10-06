@@ -154,7 +154,12 @@ describe("PendingWorkAssembler", () => {
     expect(items[0]?.query).toEqual({ day: "2026-11-20" });
   });
 
-  it("opens a deposit on the day of the booking it is holding up", () => {
+  /** **Mudou na M7.2.3, e o teste antigo guardava um desvio.** Até então o
+   * sinal levava ao dia do agendamento que ele travava — o mais perto que
+   * existia de um lugar onde resolver, porque a tela de pagamentos não existia.
+   * Só que a agenda não tinha botão nenhum para confirmar recebimento, e o
+   * gestor chegava lá sem o que fazer. Agora o destino é a tela que decide. */
+  it("sends a deposit to the payments screen, which is where it gets confirmed", () => {
     const items = assembler.assemble({
       bookings: [booking({ id: "b9", startsAt: "2026-11-20T14:00:00+00:00" })],
       payments: [payment({ bookingId: "b9" })],
@@ -163,20 +168,20 @@ describe("PendingWorkAssembler", () => {
     });
 
     const deposit = items.find((item) => item.kind === "PAYMENT");
-    expect(deposit?.query).toEqual({ day: "2026-11-20" });
+    expect(deposit?.route).toBe("payments");
   });
 
-  /** Melhor abrir no dia de hoje do que num dia errado: o sinal de um
-   * agendamento que não está na fila não tem data conhecida aqui. */
-  it("leaves the day out when the booking is not among the pending ones", () => {
+  /** A tela de pagamentos não tem dia para abrir, e mandar-lhe um seria
+   * inventar um parâmetro que ninguém lê. */
+  it("sends no day with a payment", () => {
     const items = assembler.assemble({
-      bookings: [],
-      payments: [payment({ bookingId: "somewhere-else" })],
+      bookings: [booking({ id: "b9", startsAt: "2026-11-20T14:00:00+00:00" })],
+      payments: [payment({ bookingId: "b9" })],
       quotes: [],
       clientNames: NAMES,
     });
 
-    expect(items[0]?.query).toBeUndefined();
+    expect(items.find((item) => item.kind === "PAYMENT")?.query).toBeUndefined();
   });
 
   it("does not send a day to the quotes screen, which has none", () => {
@@ -198,7 +203,7 @@ describe("PendingWorkAssembler", () => {
       clientNames: NAMES,
     });
 
-    expect(items.map((item) => item.route)).toEqual(["schedule", "schedule", "quotes"]);
+    expect(items.map((item) => item.route)).toEqual(["schedule", "payments", "quotes"]);
   });
 
   it("returns nothing when nothing is waiting", () => {

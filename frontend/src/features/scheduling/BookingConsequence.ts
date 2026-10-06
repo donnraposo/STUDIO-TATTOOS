@@ -9,15 +9,19 @@
  * Classe pura, sem Vue: é texto de regra, e não comportamento de tela.
  *
  * **Nada disso é executado pela interface.** O efeito financeiro pertence ao
- * módulo de pagamentos, que é a sprint M5. Aqui a tela apenas informa o que a
- * regra determina — e dizer isso em voz alta é melhor do que deixar o gestor
- * decidir sem saber. */
+ * módulo de pagamentos. Aqui a tela apenas informa o que a regra determina — e
+ * dizer isso em voz alta é melhor do que deixar o gestor decidir sem saber.
+ *
+ * **A frase da aprovação dizia que o sinal não era registrado no sistema**, e
+ * deixou de ser verdade na M7.2.3: o painel do sinal fica logo acima dela, no
+ * mesmo modal. Um texto que contradiz o que está na tela ao lado é pior do que
+ * texto nenhum — ensina a não ler nenhum dos dois. */
 export type BookingDecisionKind = "approve" | "reject" | "cancel" | "noShow" | "reschedule";
 
 export class BookingConsequence {
   private static readonly TEXT: Record<BookingDecisionKind, string> = {
     approve:
-      "The studio must confirm the €50 deposit before approving. Deposits are not recorded in the system yet, so confirm it outside the system first.",
+      "The €50 deposit has to be confirmed before the booking can be approved.",
     reject:
       "The studio returns the deposit when it is the studio that rejects the request.",
     cancel:

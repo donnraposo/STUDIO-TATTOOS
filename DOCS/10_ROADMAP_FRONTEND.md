@@ -39,10 +39,11 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Repasses | `PayoutsView` com lista, demonstrativo e confirmação de transferência |
 | Sessões | `SessionList` e `SessionDecisionModal` dentro do detalhe do orçamento |
 | Contas e artistas | `AccountsView` com criação, bloqueio e o acordo de percentual (ADR-030) |
-| 139 testes | Classes puras, sem montar componente |
+| Pagamentos e sinal | `PaymentsView` com a fila e o histórico; `DepositPanel` dentro do agendamento |
+| 166 testes | Classes puras, sem montar componente |
 
-**Não existe ainda:** o sinal — e é a última peça do ciclo que ainda exige a
-API. É a M7.2.3.
+**O ciclo fecha inteiro pela interface desde 06/10/2026.** O que falta da M7.2
+é o painel de entrada do residente e do guest (M7.2.5) — conforto, não bloqueio.
 
 **O `DashboardView` da sprint 01 continua em `/status`**, agora como tela de
 diagnóstico do gestor, e não como página inicial.
@@ -60,13 +61,13 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Macas e agenda | ✅ | ✅ M7.1.3 |
 | Orçamentos e imagens de referência | ✅ | ✅ M7.1.4 |
 | Sessões | ✅ M4.4 | ✅ M7.2.2 |
-| Pagamentos e sinal | ✅ M5 | ❌ M7.2 |
+| Pagamentos e sinal | ✅ M5 | ✅ M7.2.3 |
 | Repasses | ✅ M6 | ✅ M6 |
 | Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
 
-**O teto deixou de ser o backend.** Até 29/09/2026 a coluna da API era o limite;
-hoje a distância é de uma tela só. Pagamentos existem desde a M5 e nenhuma tela
-os consome — é a única linha da tabela com API pronta e interface ausente.
+**O teto deixou de ser o backend, e deixou de haver distância.** Até 29/09/2026 a
+coluna da API era o limite; hoje não há linha do MVP com API pronta e interface
+ausente. O que resta da M7.2 não espera backend nenhum.
 
 **A leitura honesta para a demonstração:** das duas dores que justificam o
 sistema, a interface resolve **uma inteira** — impedir choque de horário nas
@@ -447,7 +448,7 @@ que o sistema não tem. O aviso informa; o que impede é o que o servidor recusa
 |---|---|---|
 | **Painel do gestor com o que está esperando decisão** | RN-AGE-012 e seção 10.1 | ✅ **Etapa M7.2.1, concluída em 30/09/2026** |
 | Corrigir "Approve straight away" no `BookingForm` | ADR-027 | ✅ **Corrigido em 02/10/2026** |
-| Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ Pronta |
+| Sinal: registrar, confirmar, recusar e devolver | M5 | ✅ **Entregue em 06/10/2026** |
 | Sessões e atendimentos | M4.4 | ✅ **Entregue em 02/10/2026** |
 | Repasses semanais e demonstrativo | M6 | ✅ **Entregue junto com a M6, em 02/10/2026** |
 | Painel do proprietário e do gerente | M5 e M6 | Metade pronta |
@@ -552,6 +553,7 @@ autenticado.
 | Sessões | Artista registra; gestor confirma | `GET /quotes/{id}/sessions`, `POST /sessions/{id}/mark-done`, `/confirm-payment` |
 | Repasses | Artista vê os próprios; gestor vê todos | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `/confirm-paid` |
 | Contas e artistas | **Só gestor** | `GET/POST /users`, `POST /users/{id}/block`, `/unblock`, `PUT /users/{id}/percentage` |
+| Pagamentos | **Só gestor** | `GET /payments` (filtro `status`), `GET /bookings/{id}/payments`, `POST /payments`, `/confirm`, `/refuse`, `/refund` |
 
 ## 10. Testes
 

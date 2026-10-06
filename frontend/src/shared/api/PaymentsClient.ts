@@ -3,6 +3,7 @@ import type {
   Payment,
   PaymentKind,
   PaymentMethod,
+  PaymentRefund,
   PaymentStatus,
 } from "@/shared/domain/Payment";
 
@@ -22,6 +23,16 @@ interface PaymentPayload {
   refusal_reason: string | null;
   retained_at: string | null;
   retained_reason: string | null;
+}
+
+interface RefundPayload {
+  id: string;
+  payment_id: string;
+  amount: string;
+  method: string;
+  reason: string;
+  note: string | null;
+  refunded_at: string;
 }
 
 /** Pagamentos e sinal (`/payments`).
@@ -46,7 +57,16 @@ export class PaymentsClient {
    * aprovação do horário, então esta fila é a mesma dor das solicitações
    * esquecidas, por outro caminho. */
   async listAwaitingConfirmation(): Promise<Payment[]> {
-    const payload = await this.http.get<PaymentPayload[]>("/payments?status=REPORTED");
+    return this.listByStatus("REPORTED");
+  }
+
+  /** Os pagamentos num estado qualquer, para o gestor percorrer o histórico.
+   *
+   * O estado vai na consulta e não é filtrado aqui: a lista inteira do estúdio
+   * no navegador para peneirar seria trazer seis anos de registro financeiro
+   * (RN-CLI-007) a cada abertura da tela. */
+  async listByStatus(status: PaymentStatus): Promise<Payment[]> {
+    const payload = await this.http.get<PaymentPayload[]>(`/payments?status=${status}`);
     return payload.map(PaymentsClient.toPayment);
   }
 
@@ -87,6 +107,32 @@ export class PaymentsClient {
     return PaymentsClient.toPayment(
       await this.http.post<PaymentPayload>(`/payments/${paymentId}/refuse`, { reason }),
     );
+  }
+
+  /** Registra uma devolução **já realizada** (RN-PAG-009).
+   *
+   * O sistema não movimenta dinheiro nesta versão: o gestor devolve por fora e
+   * lança aqui. O valor é texto do campo ao corpo da requisição, sem passar por
+   * `number`. */
+  async refund(
+    paymentId: string,
+    refund: { amount: string; method: PaymentMethod; reason: string; note: string | null },
+  ): Promise<PaymentRefund> {
+    const payload = await this.http.post<RefundPayload>(`/payments/${paymentId}/refund`, {
+      amount: refund.amount,
+      method: refund.method,
+      reason: refund.reason,
+      note: refund.note,
+    });
+    return {
+      id: payload.id,
+      paymentId: payload.payment_id,
+      amount: payload.amount,
+      method: payload.method as PaymentMethod,
+      reason: payload.reason,
+      note: payload.note,
+      refundedAt: payload.refunded_at,
+    };
   }
 
   private static toPayment(payload: PaymentPayload): Payment {

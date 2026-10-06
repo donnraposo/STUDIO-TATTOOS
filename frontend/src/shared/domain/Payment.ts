@@ -38,3 +38,21 @@ export interface Payment {
   retainedAt: string | null;
   retainedReason: string | null;
 }
+
+/** Uma devolução registrada (RN-PAG-009).
+ *
+ * Linha própria, e não um campo no pagamento: o histórico precisa mostrar os
+ * três números que importam — quanto entrou, quanto voltou e quanto o estúdio
+ * reteve. Um saldo único teria apagado os outros dois.
+ *
+ * `method` é da devolução e não herdado do pagamento: um depósito devolvido em
+ * dinheiro é caso previsto pela regra. */
+export interface PaymentRefund {
+  id: string;
+  paymentId: string;
+  amount: string;
+  method: PaymentMethod;
+  reason: string;
+  note: string | null;
+  refundedAt: string;
+}
