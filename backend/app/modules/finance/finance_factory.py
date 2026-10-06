@@ -3,9 +3,11 @@ from collections.abc import Callable
 from sqlalchemy.orm import Session
 
 from app.modules.finance.application.close_weekly_payouts import CloseWeeklyPayouts
+from app.modules.finance.application.compare_revenue_months import CompareRevenueMonths
 from app.modules.finance.application.confirm_payment import ConfirmPayment
 from app.modules.finance.application.confirm_payout_paid import ConfirmPayoutPaid
 from app.modules.finance.application.get_payout_statement import GetPayoutStatement
+from app.modules.finance.application.get_revenue_report import GetRevenueReport
 from app.modules.finance.application.list_payments import ListPayments
 from app.modules.finance.application.list_payments_by_status import ListPaymentsByStatus
 from app.modules.finance.application.list_payouts import ListPayouts
@@ -23,6 +25,9 @@ from app.modules.finance.domain.payment_transition import PaymentTransition
 from app.modules.finance.domain.payout_policy import PayoutPolicy
 from app.modules.finance.domain.payout_share import PayoutShare
 from app.modules.finance.domain.payout_week import PayoutWeek
+from app.modules.finance.domain.revenue_ledger import RevenueLedger
+from app.modules.finance.domain.revenue_month import RevenueMonth
+from app.modules.finance.domain.revenue_policy import RevenuePolicy
 from app.modules.finance.domain.settled_sessions import SettledSessions
 from app.modules.finance.infrastructure.payment_refund_repository import (
     PaymentRefundRepository,
@@ -62,6 +67,9 @@ class FinanceFactory:
         self._payout_policy = PayoutPolicy()
         self._week = PayoutWeek()
         self._share = PayoutShare()
+        self._revenue_policy = RevenuePolicy()
+        self._months = RevenueMonth()
+        self._ledger = RevenueLedger(self._share)
         self._settled_sessions = settled_sessions
 
     @property
@@ -177,4 +185,22 @@ class FinanceFactory:
             items=self.payout_items(session),
             adjustments=self.payout_adjustments(session),
             policy=self._payout_policy,
+        )
+
+    def revenue_report(self, session: Session) -> GetRevenueReport:
+        return GetRevenueReport(
+            sessions=self._settled_sessions(session),
+            items=self.payout_items(session),
+            ledger=self._ledger,
+            months=self._months,
+            policy=self._revenue_policy,
+        )
+
+    def compare_revenue(self, session: Session) -> CompareRevenueMonths:
+        return CompareRevenueMonths(
+            sessions=self._settled_sessions(session),
+            items=self.payout_items(session),
+            ledger=self._ledger,
+            months=self._months,
+            policy=self._revenue_policy,
         )

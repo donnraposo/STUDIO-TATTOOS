@@ -5,6 +5,7 @@ from app.core.error_handlers import ErrorHandlers
 from app.modules.clients.api.client_router import ClientRouter
 from app.modules.finance.api.payment_router import PaymentRouter
 from app.modules.finance.api.payout_router import PayoutRouter
+from app.modules.finance.api.revenue_router import RevenueRouter
 from app.modules.health.api.health_router import HealthRouter
 from app.modules.identity.api.account_router import AccountRouter
 from app.modules.identity.api.auth_router import AuthRouter
@@ -44,4 +45,5 @@ class Application:
             SessionRouter(self._container).build(),
             PaymentRouter(self._container).build(),
             PayoutRouter(self._container).build(),
+            RevenueRouter(self._container).build(),
         ]

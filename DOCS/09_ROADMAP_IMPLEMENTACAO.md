@@ -8,7 +8,11 @@
 **Concluído:** sprint 01, M1, M2, M3, M4, M5, M6, M7.1 e **a M7.2 inteira**, nas
 seis etapas.
 
-**Próxima:** a M8 — implantação mínima. É a última do MVP.
+**Fora do plano original e ja entregue:** a **M9**, o faturamento do estudio
+(07/10/2026) — o controle mensal que o estudio mantinha em planilha, pedido pelo
+responsavel durante a M7.2.
+
+**Próxima:** a M8 — implantação mínima.
 
 > **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
 > sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
@@ -37,7 +41,7 @@ seis etapas.
 | Migrações aplicadas | `0001` a `0010`: extensões, identidade e auditoria, clientes, agenda, orçamentos e sessões, pagamentos, renomeação `bench`, origem do cliente, repasses e percentual por artista |
 | Endpoints | `/health`, `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*`, `/quotes/*` com imagens e sessões, `/payments/*` e `/payouts/*` |
 | Containers | Três: `postgres`, `api`, `frontend`. Arquivos enviados ficam no volume nomeado `object_storage` (ADR-024) |
-| Testes | 258 no backend e 176 no frontend, todos aprovados |
+| Testes | 279 no backend e 189 no frontend, todos aprovados |
 | Frontend | Acesso, painel, clientes, agenda com a timeline e o sinal, orçamentos com sessões, pagamentos, repasses, e contas com o acordo de percentual |
 
 > **Leitura honesta do avanço.** O fio condutor do MVP está completo no backend,
@@ -150,6 +154,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M5 | Pagamentos e sinal | Backend | ✅ Concluída em 30/09/2026 |
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
 | **M7.2** | Restante da interface do MVP | Frontend | ✅ **Concluída em 06/10/2026**, nas seis etapas |
+| **M9** | Faturamento do estúdio | Ambas | ✅ **Concluída em 07/10/2026** |
 | M8 | Implantação mínima | Infra | Não iniciada |
 
 **O detalhamento do frontend está em
@@ -1270,6 +1275,92 @@ oferecer o atalho custa um clique, oferecê-lo custa um 403.
 
 - ESLint e `vue-tsc` limpos; **115 testes** no frontend; quatro verificações de
   convenção sem apontamento.
+
+### Evidência da sprint M9 — Faturamento do estúdio — 07/10/2026
+
+**A planilha do estúdio passou a existir dentro do sistema.** O controle mensal
+que o estúdio mantinha à mão — cada atendimento com valor, percentual, comissão
+do tatuador e parte da casa — é agora uma tela, com as mesmas colunas e na mesma
+ordem.
+
+#### O que o responsável pediu, e o que isso quis dizer
+
+A conversa começou com "controle de **gastos**", e a planilha mostrava
+faturamento. Perguntado, o responsável esclareceu: *"as despesas gastas são os
+pagamentos que entram e que saem do estúdio"* e *"por enquanto teremos
+detalhamento apenas de pagamentos e lucros com as tatuagens lançadas apenas"*.
+
+Ou seja: **o gasto do estúdio é a comissão que ele paga ao tatuador, e o lucro é
+a parte que fica.** Aluguel, material e contas ficam de fora por enquanto.
+
+Isso eliminou a entidade nova inteira. Nenhuma migração: o relatório lê o que já
+está gravado.
+
+#### A prova de que o número é o mesmo
+
+`tests/finance/test_revenue_report.py` reproduz **o controle real de outubro de
+2026**, atendimento por atendimento, e confere os três totais:
+
+| | Planilha do estúdio | Sistema |
+|---|---|---|
+| VALOR TOTAL TATTOOS | € 1.640,00 | € 1.640,00 |
+| VALOR STUDIO | € 421,50 | € 421,50 |
+| VALOR TOTAL TATUADORES | € 1.218,50 | € 1.218,50 |
+
+É o teste mais valioso do módulo, e não por ser o maior: é a única prova de que
+o sistema devolve o mesmo número que a planilha — que é a pergunta que o estúdio
+vai fazer no primeiro mês de uso.
+
+**A planilha também confirma o ADR-030 na prática:** três divisões convivendo no
+mesmo mês, e o mesmo artista em mais de uma. YTALO aparece em 85/15 e em 50/50;
+FARPA em 85/15 e em 70/30.
+
+#### Decisões
+
+| O que | Decisão |
+|---|---|
+| Onde mora | No **financeiro**, reusando `SettledSessions` e `PayoutShare` (ADR-031). Em `reporting` exigiria três portas novas para fazer uma leitura |
+| O cálculo | O **mesmo** que paga o artista. Um cálculo próprio daria ao estúdio dois números para a mesma coisa, e um centavo de diferença não é conversa sobre software |
+| Parte do estúdio | **O resto**, não uma segunda multiplicação: calculadas em separado, as duas falhariam a soma quando o arredondamento subisse |
+| O sinal | **Não abate** (RN-PAG-005): já integra o preço e a base do repasse. A coluna "Depósito" é informativa, e está vazia em todas as linhas do controle de outubro |
+| Comparação entre meses | **Tabela e não gráfico de barras.** O estúdio compara três números por mês; barras mostram um. A barra continua, deitada, ao lado do número |
+| Mês vazio | Fica na tabela, zerado. Sumir com ele faria a comparação mentir sobre o tempo |
+| Quem vê | Só gerente e proprietário (RN 10.4). O relatório mostra quanto **todos** receberam, e a RN-REP-004 limita o artista aos próprios valores |
+| Escrita | **Não existe.** Um relatório que corrigisse dado ao passar seria um relatório que muda o passado |
+
+#### Duas coisas que a verificação pegou
+
+**`--border-thin` é shorthand de borda, não comprimento.** Eu o usei como altura
+da barra e como medida de um utilitário de leitor de tela — CSS inválido nos
+dois casos. A barra ganhou token próprio (`--chart-bar-height`), e o utilitário
+foi substituído por um cabeçalho de coluna com nome, que a tabela merecia.
+
+**A comparação entre meses nasceu como gráfico de barras clicáveis**, com um
+`<button>` cru — violação da convenção, cuja única exceção documentada é o
+`BookingBlock`. Refeita como tabela, o que resolveu a convenção **e** o
+problema de fundo: barras mostram um número por mês, e o estúdio precisa de
+três.
+
+#### Exercitado contra a aplicação rodando
+
+| Passo | Resultado |
+|---|---|
+| Abrir `/revenue` como proprietário | Outubro de 2026 com os três indicadores no topo |
+| Conferir a tabela | `Ytalo €250 → €212,50 / €37,50`, `Farpa €130 → €110,50 / €19,50`, `Ytalo €120 → €60,00 / €60,00` — idêntico à planilha |
+| Totais exibidos | € 1.790,00, porque o banco de desenvolvimento tinha **um atendimento residual de €150** de uma verificação anterior. € 1.640,00 + € 150,00, e as três colunas batem na soma |
+| Comparação entre meses | Doze meses, com os vazios zerados e em ordem; outubro marcado como o mês aberto |
+
+**Pendência que precisa de decisão:** o responsável pediu que "os valores e
+porcentagens cobradas possam ser alterados". Para trabalho **futuro** isso já
+existe (ADR-030 e RN-CLI-003). Alterar atendimento **já quitado** contraria a
+RN-REP-006 e a RN-PAG-007, e está registrada no ADR-031 como pendente.
+
+**Verificação:**
+
+- Nenhuma migração: o relatório não cria tabela.
+- Ruff limpo; **279 testes** no backend, sendo 21 novos.
+- ESLint e `vue-tsc` limpos; **189 testes** no frontend, sendo 13 novos.
+- As quatro verificações de convenção sem apontamento.
 
 ### Evidência da etapa M7.2.5 — 06/10/2026
 

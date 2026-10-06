@@ -41,7 +41,8 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Contas e artistas | `AccountsView` com criação, bloqueio e o acordo de percentual (ADR-030) |
 | Pagamentos e sinal | `PaymentsView` com a fila e o histórico; `DepositPanel` dentro do agendamento |
 | Painel do artista | `ArtistPanel` no `HomeView`: o dia, o que espera o estúdio e o último repasse |
-| 176 testes | Classes puras, sem montar componente |
+| Faturamento | `RevenueView` com os três indicadores, a comparação entre meses e o detalhamento |
+| 189 testes | Classes puras, sem montar componente |
 
 **A M7.2 fechou em 06/10/2026**, nas seis etapas. O ciclo se percorre inteiro
 pela interface e cada perfil tem a sua entrada. O que falta do MVP é a M8.
@@ -64,7 +65,8 @@ O frontend não pode demonstrar o que o backend ainda não tem. Este é o limite
 | Sessões | ✅ M4.4 | ✅ M7.2.2 |
 | Pagamentos e sinal | ✅ M5 | ✅ M7.2.3 |
 | Repasses | ✅ M6 | ✅ M6 |
-| Pós-venda, relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
+| Faturamento do estúdio | ✅ M9 | ✅ M9 |
+| Pós-venda, demais relatórios, guest | ❌ Fase 2 | ❌ Fase 2 |
 
 **O teto deixou de ser o backend, e deixou de haver distância.** Até 29/09/2026 a
 coluna da API era o limite; hoje não há linha do MVP com API pronta e interface
@@ -554,6 +556,7 @@ autenticado.
 | Sessões | Artista registra; gestor confirma | `GET /quotes/{id}/sessions`, `POST /sessions/{id}/mark-done`, `/confirm-payment` |
 | Repasses | Artista vê os próprios; gestor vê todos | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `/confirm-paid` |
 | Contas e artistas | **Só gestor** | `GET/POST /users`, `POST /users/{id}/block`, `/unblock`, `PUT /users/{id}/percentage` |
+| Faturamento | **Só gestor** | `GET /revenue`, `GET /revenue/monthly` |
 | Pagamentos | **Só gestor** | `GET /payments` (filtro `status`), `GET /bookings/{id}/payments`, `POST /payments`, `/confirm`, `/refuse`, `/refund` |
 
 ## 10. Testes

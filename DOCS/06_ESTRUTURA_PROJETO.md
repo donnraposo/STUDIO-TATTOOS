@@ -153,6 +153,8 @@ frontend/src/
 │   ├── clients/
 │   ├── quotes/
 │   ├── accounts/       contas e artistas, incluindo o acordo de percentual
+│   ├── payments/       sinal, confirmação, recusa e devolução
+│   ├── revenue/        faturamento do mês e comparação entre meses
 │   ├── finance/
 │   ├── guests/
 │   ├── aftercare/
@@ -248,12 +250,17 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
 | Pagamentos | `POST /payments`, `GET /payments` (filtro `status`, só gestor), `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
 | Repasses | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `POST /payouts/{id}/confirm-paid` |
+| Faturamento | `GET /revenue` (filtros `year` e `month`), `GET /revenue/monthly` (com `count`) |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
 | Pós-venda | `GET /aftercare`, `POST /aftercare/{id}/complete`, `/reopen`, `/photos` |
 | Relatórios | `GET /reports/{name}`, `GET /reports/{name}/export` |
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**O faturamento não tem rota de escrita, e é decisão** (ADR-031): um relatório
+que corrigisse dado ao passar seria um relatório que muda o passado. Correção
+entra onde o fato aconteceu, como lançamento vinculado (RN-PAG-007).
 
 **`PUT /users/{id}/percentage` é `PUT` e não `PATCH`** de propósito: o acordo é
 substituído por inteiro, e enviar `null` o **encerra**, devolvendo o artista à

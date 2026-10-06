@@ -1,9 +1,9 @@
 # Contexto do Projeto e Continuidade para Próxima IA
 
-**Última atualização:** 06/10/2026  
+**Última atualização:** 07/10/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5, M6 e a fatia vertical de interface M7.1 concluídas, e a M7.2 inteira, nas seis etapas. **O fio condutor do MVP fechou no backend em 02/10/2026 e passou a se percorrer inteiro pela interface em 06/10/2026**, do login ao repasse de sexta, sem a API em nenhum passo. Falta apenas a M8, implantação mínima. O desenho funcional está fechado desde 24/09/2026.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5, M6 e a fatia vertical de interface M7.1 concluídas, e a M7.2 inteira, nas seis etapas. **O fio condutor do MVP fechou no backend em 02/10/2026 e passou a se percorrer inteiro pela interface em 06/10/2026**, do login ao repasse de sexta, sem a API em nenhum passo. Em 07/10/2026 entrou tambem a **M9**, o faturamento do estudio: o controle mensal que o estudio mantinha em planilha, com o detalhamento por atendimento, os tres totais e a comparacao entre meses (ADR-031). Falta apenas a M8, implantação mínima. O desenho funcional está fechado desde 24/09/2026.
 
 > **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
 > sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),

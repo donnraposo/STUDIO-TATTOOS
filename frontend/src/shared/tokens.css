@@ -152,6 +152,12 @@
      garante legibilidade quando o dia inteiro nao cabe na tela: abaixo disso o
      bloco deixa de mostrar o nome do cliente, e a grade vira enfeite. */
   --slot-width: 2.5rem;
+
+  /* Comparacao entre meses: a largura da barra proporcional dentro da
+     linha. Token proprio porque emprestar a medida de outra coisa faz a
+     outra coisa mudar junto no primeiro ajuste. */
+  --chart-bar-width: 8rem;
+  --chart-bar-height: 0.25rem;
   --lane-label-width: 9rem;
   --lane-label-width-compact: 5rem;
   --hero-height: 22rem;

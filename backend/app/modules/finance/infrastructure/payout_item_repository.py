@@ -3,6 +3,8 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.modules.finance.domain.payout_status import PayoutStatus
+from app.modules.finance.infrastructure.models.payout import Payout
 from app.modules.finance.infrastructure.models.payout_item import PayoutItem
 
 
@@ -33,3 +35,18 @@ class PayoutItemRepository:
         precisa saber antes -- senao o fechamento inteiro falharia por causa de
         uma sessao que nao deveria estar na lista."""
         return set(self._session.execute(select(PayoutItem.session_id)).scalars())
+
+    def transferred_session_ids(self) -> set[uuid.UUID]:
+        """As sessoes cujo repasse ja foi **transferido** ao artista.
+
+        Diferente de `paid_session_ids`, que diz se a sessao entrou em algum
+        fechamento. Entrar num fechamento calculado nao e ter sido pago: entre a
+        sexta e a transferencia, o artista ainda nao recebeu. A coluna "Status"
+        do controle do estudio pergunta a segunda coisa, e responder com a
+        primeira diria que esta pago o que nao esta."""
+        statement = (
+            select(PayoutItem.session_id)
+            .join(Payout, Payout.id == PayoutItem.payout_id)
+            .where(Payout.status == PayoutStatus.PAID)
+        )
+        return set(self._session.execute(statement).scalars())

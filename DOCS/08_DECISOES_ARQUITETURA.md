@@ -645,6 +645,63 @@ documento de regras de negócio não é alterado por quem implementa.
 
 **Data:** 06/10/2026.
 
+## ADR-031 — O faturamento é leitura do financeiro, e divide pelo mesmo cálculo que paga
+
+**Decisão:** o relatório de faturamento mora no módulo **financeiro**, reusa a
+porta `SettledSessions` e o `PayoutShare` que já existiam, e **não cria tabela
+nenhuma**. É só leitura: não há rota de escrita, e a migração não foi necessária.
+
+**Motivo — o cálculo.** Se o relatório dividisse por conta própria, o estúdio
+teria dois números para a mesma coisa: o que o painel mostra e o que o artista
+recebe. Divergindo em um centavo por arredondamento, a conversa que se segue não
+é sobre software. O `PayoutShare` arredonda por sessão com `ROUND_HALF_UP`
+porque a RN-REP-007 manda; o faturamento usa exatamente aquele, e a parte do
+estúdio é **o resto**, não uma segunda multiplicação — calculadas em separado,
+as duas falhariam a soma por um centavo sempre que o arredondamento subisse, e é
+por `total = artistas + casa` que o estúdio confere o mês.
+
+**Motivo — o lugar.** `reporting` existe e guarda a trilha de auditoria. Levar o
+faturamento para lá exigiria três portas novas — sessões, repasses e nomes de
+artista — para fazer **uma leitura**. No financeiro, `SettledSessions` já está
+declarada e ligada, e `payout_item` é de casa. O nome do artista não vem: a tela
+já resolve identificador em nome na tela de repasses, com a lista de contas que
+consome de qualquer forma.
+
+**Consequência:** `GET /revenue` devolve o mês com as linhas e os três totais;
+`GET /revenue/monthly` devolve só os totais de até 36 meses. São duas chamadas
+de propósito — juntá-las traria o ano inteiro de atendimentos para desenhar doze
+linhas de tabela.
+
+**Consequência de regra:** **o sinal não abate.** A RN-PAG-005 diz que ele
+"integrará o preço da tatuagem e a base de cálculo do repasse": já está dentro
+do valor cobrado, e subtraí-lo pagaria o artista a menos. A coluna "Depósito" da
+planilha do estúdio é informativa, e está vazia em todas as linhas do controle
+de outubro de 2026.
+
+**Só gerente e proprietário** (RN 10.4). O relatório mostra quanto **todos**
+receberam; a RN-REP-004 limita o artista aos próprios valores, e abri-lo a ele
+contradiria aquela regra por outra porta.
+
+**Alternativa considerada:** um módulo `reporting` com portas para orçamentos,
+financeiro e identidade. Recusada por ser cerimônia para uma leitura — e porque
+a primeira coisa que ele faria seria reimplementar a divisão, que é exatamente o
+que não pode acontecer duas vezes.
+
+**O mês é um intervalo de instantes, não de datas.** Outubro começa à
+meia-noite de Dublin do dia 1º, que é 23h de 30 de setembro em UTC no horário de
+verão. É o mesmo cuidado do `PayoutWeek`, pela mesma razão: o erro seria de uma
+hora na virada do mês, pegando o atendimento confirmado no fim da última noite.
+
+**Pendência que não é do código:** o responsável pediu que "os valores e
+porcentagens cobradas possam ser alterados pelo gerente ou proprietário". Para
+trabalho **futuro** isso já existe — acordo por artista (ADR-030) e correção na
+aprovação do orçamento (RN-CLI-003). Alterar um atendimento **já quitado**
+contraria a RN-REP-006, que congela o percentual na aprovação, e a RN-PAG-007,
+que manda corrigir por lançamento vinculado em vez de edição. Precisa de decisão
+antes de qualquer código.
+
+**Data:** 07/10/2026.
+
 ## Processo de alteração
 
 Nenhuma decisão acima pode ser alterada sem explicar o impacto, apresentar
