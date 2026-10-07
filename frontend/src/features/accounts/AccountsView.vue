@@ -75,22 +75,31 @@ async function create(draft: AccountDraft): Promise<void> {
   );
 }
 
-/** Ato separado do `salvar`, de propósito (RN 2.7): definir uma senha encerra
- * as sessões da conta, e junto com os demais campos o gestor derrubaria alguém
- * ao corrigir um telefone. O modal continua aberto — quem acabou de dar a senha
- * nova costuma ter mais o que arrumar ali. */
-async function setPassword(password: string): Promise<void> {
-  const account = editing.value;
-  if (account) {
-    await act(() => accountsApi.setPassword(account.id, password));
-  }
-}
-
+/** Grava o cadastro e, quando o campo de senha veio preenchido, a senha também.
+ *
+ * **São duas chamadas porque são dois atos**, com rotas próprias: a senha
+ * encerra as sessões da conta (RN 2.7) e por isso não é um campo que o
+ * `PUT /users/{id}` aceite. Mas quem opera a tela não precisa saber disso — ele
+ * preenche o formulário e salva.
+ *
+ * A senha vem **depois** do cadastro: se o e-mail mudou na mesma edição, ele
+ * precisa estar gravado antes, senão a pessoa receberia a senha nova atrelada
+ * ao endereço antigo e não entraria com nenhum dos dois.
+ *
+ * Esta tela já errou isso ao contrário: a senha tinha botão próprio e "Save
+ * changes" a ignorava em silêncio (07/10/2026). */
 async function save(draft: AccountDraft): Promise<void> {
   const account = editing.value;
-  if (account) {
-    await act(() => accountsApi.update(account.id, draft), () => (editing.value = null));
+  if (!account) {
+    return;
   }
+
+  await act(async () => {
+    await accountsApi.update(account.id, draft);
+    if (draft.password) {
+      await accountsApi.setPassword(account.id, draft.password);
+    }
+  }, () => (editing.value = null));
 }
 
 async function setShare(percentage: string | null): Promise<void> {
@@ -213,7 +222,6 @@ onMounted(load);
       :busy="busy"
       :failure="failure"
       @submit="save"
-      @set-password="setPassword"
       @close="editing = null"
     />
 
