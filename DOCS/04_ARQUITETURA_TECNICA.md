@@ -1,7 +1,7 @@
-# Arquitetura Técnica — Proposta em Validação
+# Arquitetura Técnica
 
 **Status:** Arquitetura aprovada e em implementação.  
-**Última atualização:** 26/09/2026  
+**Última atualização:** 27/09/2026  
 **Escopo:** primeira versão do sistema interno do estúdio em Cork City.
 
 > Este documento descreve a arquitetura da solução. A implementação foi autorizada
@@ -112,15 +112,51 @@ Em uma etapa futura, o PWA poderá oferecer Web Push. O usuário terá de conced
 
 ## 8. Containers e execução
 
-Topologia lógica prevista:
+Desenvolvimento e produção **não executam o mesmo conjunto de containers**. A
+diferença que mais confunde quem vai implantar: o frontend é container em
+desenvolvimento e não é em produção.
 
-- **Web/proxy:** entrega o frontend compilado e encaminha chamadas à API pelo mesmo domínio.
-- **API:** serviço FastAPI sem estado local durável; arquivos enviados não dependerão do sistema de arquivos efêmero do container.
-- **PostgreSQL:** banco persistente com volume/cópias de segurança; não perder dados ao recriar containers.
-- **Worker/agendador:** execução de e-mails, lista diária de pós-venda às 08h em `Europe/Dublin`, tentativas de envio e futura entrega de push.
-- **Serviços externos:** e-mail e armazenamento privado de arquivos, ainda a selecionar.
+### Desenvolvimento
 
-Docker será usado nos ambientes de desenvolvimento, teste e execução. A forma de hospedagem, proxy/TLS, armazenamento persistente em produção, gestão de segredos e cópias de segurança ainda será definida. O mecanismo de fila/agendamento não está escolhido; a proposta é usar uma fila durável/outbox para não perder envios quando um container reiniciar.
+| Container | Papel |
+|---|---|
+| `postgres` | Banco. O banco isolado `tattoo_studio_test` da suíte vive aqui dentro; **não é um container à parte** |
+| `api` | FastAPI com recarga automática, código montado por volume. Os arquivos enviados ficam no volume nomeado `object_storage` |
+| `frontend` | Servidor de desenvolvimento do Vite, com recarga automática |
+
+**Três containers, e a M4.3 não acrescentou nenhum.** O armazenamento de arquivos é
+um diretório em volume nomeado, não um serviço (ADR-024).
+
+### Produção
+
+| Container | Papel |
+|---|---|
+| `caddy` | TLS automático, encaminha `/api/v1` à API **e entrega os arquivos estáticos do frontend compilado** |
+| `api` | FastAPI, sem estado local durável; arquivo enviado nunca depende do sistema de arquivos efêmero do container |
+| `postgres` | Banco com volume persistente; recriar o container não perde dado |
+
+**Três no cenário mínimo.** O Vue é compilado em arquivos estáticos servidos pelo
+Caddy: o container `frontend` existe apenas para o servidor de desenvolvimento.
+Interface e API no mesmo domínio é o que dispensa CORS e mantém o cookie de sessão
+simples (seção 3).
+
+### Containers cuja existência ainda é decisão aberta
+
+| Container | Existe se | Consequência da escolha |
+|---|---|---|
+| Armazenamento de arquivos | A M8 trocar o volume local por provedor gerenciado compatível com S3 (ADR-006, ADR-024) | **Nenhum container em qualquer caso.** Com volume local, as fotos moram no VPS e a cópia de segurança tem dois alvos. Com provedor gerenciado, os arquivos sobrevivem à perda do VPS e a cópia volta a ter um alvo |
+| Worker/agendador | O fechamento semanal da RN-REP-004 for calculado por agendamento, e não sob demanda | Ver a sprint M6 em `09_ROADMAP_IMPLEMENTACAO.md`. Na Fase 2 o worker passa a ser obrigatório de qualquer forma, pela lista diária das 08h e pelo outbox (ADR-007, ADR-008) |
+| Backup | A rotina de cópia for containerizada em vez de `cron` no host chamando `pg_dump` | Nenhuma das duas formas dispensa o requisito da M8: cópia cifrada diária saindo do servidor, com restauração testada |
+
+Somando: **3 em produção no mínimo, 4 no cenário provável, e 4 a 5 ao fim da Fase 2**,
+quando o worker deixa de ser opcional. O armazenamento de arquivos saiu da conta:
+desde o ADR-024 ele é volume ou serviço externo, nunca container próprio.
+
+Docker é usado em desenvolvimento, teste e execução. Hospedagem, proxy e TLS estão
+decididos em ADR-005; fila e agendamento, em ADR-007 e ADR-008; e-mail e
+armazenamento, em ADR-006, com o provedor final a confirmar. Permanecem abertas a
+gestão de segredos em produção e a forma exata da rotina de cópia de segurança,
+ambas tratadas na sprint M8.
 
 ## 9. Decisões fechadas em 24/09/2026
 
@@ -171,6 +207,20 @@ alternativas avaliadas, está em `08_DECISOES_ARQUITETURA.md`.
 - [OWASP — gestão de sessões](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html)
 - [MDN — Progressive Web Apps](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps)
 
-## 12. Próxima etapa
+## 12. O que ainda depende de decisão
 
-Continuar a Fase 12: decidir os componentes pendentes, concluir o modelo de dados e definir módulos e estrutura de projeto. Em seguida, preparar os cenários de teste e critérios de aceite da Fase 13. A implementação só poderá começar após apresentação da arquitetura completa e aprovação explícita do usuário, conforme `02_ROADMAP_PRE_IMPLEMENTACAO.md`.
+A arquitetura está aprovada e em implementação desde 24/09/2026; o andamento por
+sprint fica em `09_ROADMAP_IMPLEMENTACAO.md`. O que continua aberto:
+
+| Assunto | Onde é decidido |
+|---|---|
+| Provedor de e-mail transacional | Fase 2, sprint F2. A integração fica atrás de adaptador (ADR-006) |
+| Provedor de armazenamento de arquivos | Sprint M8. O MinIO da M4.3 é de desenvolvimento |
+| Worker no MVP | Sprint M6, conforme a decisão sobre o fechamento semanal |
+| Rotina de cópia de segurança, RPO e RTO | Sprint M8 |
+| Gestão de segredos em produção | Sprint M8 |
+| Limite de tentativas de login | Sem sprint definida; não bloqueia o MVP |
+
+Nenhum desses pontos bloqueia a sprint em andamento. Todos estão registrados na
+sprint que os resolve, para que a decisão apareça no momento em que ela importa e não
+por descoberta no meio da implantação.

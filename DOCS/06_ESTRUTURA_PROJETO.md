@@ -6,10 +6,17 @@
 > Define a árvore de diretórios, a responsabilidade de cada pasta, as convenções de
 > código e os contratos de API.
 >
-> **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling` e a
-> tabela de auditoria de `reporting`. Os contratos da seção 4 descrevem o destino
-> final da API; hoje existem `/health`, `/ready`, `/auth/*`, `/users/*`,
-> `/clients/*`, `/booths` e `/bookings/*`.
+> **Módulos já implementados:** `health`, `identity`, `clients`, `scheduling`,
+> `quotes` e a tabela de auditoria de `reporting`. Em `quotes`, a M4.2 entregou o
+> ciclo do orçamento e a M4.3 as imagens de referência; as sessões entram na M4.4. Os
+> contratos da seção 4 descrevem o destino final da API; hoje existem `/health`,
+> `/ready`, `/auth/*`, `/users/*`, `/clients/*`, `/benches`, `/bookings/*` e
+> `/quotes/*`.
+>
+> **Peça compartilhada nova:** `app/shared/storage/` guarda a porta `ObjectStorage` e
+> a implementação em sistema de arquivos (ADR-024). Fica em `shared/` porque
+> pós-venda e pagamentos vão usá-la; dentro de `quotes/` obrigaria os outros módulos
+> a importar o módulo de orçamentos.
 
 ## 1. Árvore geral
 
@@ -145,6 +152,9 @@ frontend/src/
 │   ├── scheduling/
 │   ├── clients/
 │   ├── quotes/
+│   ├── accounts/       contas e artistas, incluindo o acordo de percentual
+│   ├── payments/       sinal, confirmação, recusa e devolução
+│   ├── revenue/        faturamento do mês e comparação entre meses
 │   ├── finance/
 │   ├── guests/
 │   ├── aftercare/
@@ -170,7 +180,7 @@ macas × horário será construída com CSS Grid próprio, sem licença paga.
 
 ```text
 features/scheduling/components/
-├── BoothTimeline.vue        grade: macas no eixo Y, horas no eixo X
+├── BenchTimeline.vue        grade: macas no eixo Y, horas no eixo X
 ├── BookingBlock.vue         bloco posicionado por início e duração
 ├── ConflictModal.vue        modal de RN-AGE-007, sem opção de ignorar
 └── AvailabilityFilter.vue
@@ -179,6 +189,50 @@ features/scheduling/components/
 O posicionamento usa `grid-column` calculado a partir do intervalo, evitando
 cálculo manual de pixels.
 
+### 3.1.1 Fronteira entre agenda e financeiro
+
+A RN-AGE-005 exige sinal confirmado antes de aprovar, e a RN-AGE-008, a
+RN-AGE-009 e a RN-AGE-010 dão destino ao sinal em cada desfecho. As duas metades
+se encontram por **portas declaradas pela agenda**, não por importação direta:
+
+```text
+scheduling/domain/deposit_gate.py            porta: o sinal está confirmado?
+scheduling/domain/booking_settlement_gate.py porta: o desfecho mudou
+finance/application/payment_deposit_gate.py     adaptador que responde
+finance/application/payment_settlement_gate.py  adaptador que aplica
+
+finance/domain/settled_sessions.py              porta: o que foi quitado na semana?
+quotes/application/quote_settled_sessions.py    adaptador que responde
+```
+
+A terceira porta segue a mesma direção, e desta vez quem pergunta é o financeiro:
+o repasse precisa saber o que foi quitado, e quem sabe é o módulo de orçamentos.
+Consultar a tabela de sessões direto faria o cálculo do repasse depender do
+desenho interno daquele módulo, e mexer lá quebraria o pagamento dos artistas.
+
+A direção importa. Se a agenda importasse o financeiro, a regra de aprovação
+passaria a depender do desenho interno de pagamento, e trocar aquele desenho
+quebraria esta. Com a porta na agenda, quem liga os dois é o `Container`
+(ADR-016), e a agenda continua sem saber o que é um pagamento.
+
+### 3.2 Componentes de orçamento
+
+```text
+features/quotes/
+├── QuotesView.vue              tela: a única peça da pasta que fala com a API
+├── QuoteDisplay.ts             estados, origens e percentual padrão por origem
+├── QuoteDraftCheck.ts          validação do rascunho e soma das sessões em centavos
+└── components/
+    ├── QuoteList.vue           cartões do recorte que o backend devolveu
+    ├── QuoteForm.vue           criação e edição, com o aviso da RN-ORC-003
+    ├── QuoteDetail.vue         leitura e decisão: aprovar e rejeitar
+    └── ReferenceImages.vue     miniaturas, envio e remoção
+```
+
+A imagem é buscada pelo `content_path` devolvido pela API, que confere o cookie
+de sessão a cada leitura. Não há endereço assinado nem temporário: o caminho pode
+ficar à vista no HTML porque, sem sessão, ele não responde.
+
 ## 4. Contratos de API
 
 Prefixo `/api/v1`, mesmo domínio do frontend.
@@ -186,21 +240,65 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Recurso | Endpoints principais |
 |---|---|
 | Autenticação | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password-reset` |
-| Usuários | `GET/POST /users`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock` |
+| Usuários | `GET/POST /users`, `PUT /users/{id}`, `PUT /users/{id}/password`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
-| Macas | `GET/POST /booths`, `POST /schedule-exceptions` |
-| Agenda | `GET /bookings`, `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
-| Orçamentos | `GET/POST /quotes`, `POST /quotes/{id}/approve`, `/reject` |
-| Sessões | `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
-| Pagamentos | `GET/POST /payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
-| Repasses | `GET /payouts`, `POST /payouts/{id}/mark-paid` |
+| Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
+| Agenda | `GET /bookings` (filtros `starts_at`/`ends_at` e `status`), `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
+| Orçamentos | `GET /quotes` (filtro `status`), `POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
+| Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
+| Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |
+| Pagamentos | `POST /payments`, `GET /payments` (filtro `status`, só gestor), `GET /bookings/{id}/payments`, `POST /payments/{id}/confirm`, `/refuse`, `/refund` |
+| Repasses | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `POST /payouts/{id}/confirm-paid` |
+| Faturamento | `GET /revenue` (filtros `year` e `month`), `GET /revenue/monthly` (com `count`) |
 | Guests | `GET/POST /guest-weeks`, `POST /guest-weeks/{id}/activate` |
 | Pós-venda | `GET /aftercare`, `POST /aftercare/{id}/complete`, `/reopen`, `/photos` |
 | Relatórios | `GET /reports/{name}`, `GET /reports/{name}/export` |
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**A senha tem rota própria** e não é campo do cadastro: defini-la encerra as
+sessões da conta (RN 2.7), e num `salvar` junto com telefone e e-mail o gestor
+derrubaria alguém sem saber que o faria. A senha nunca volta em resposta e não
+entra na auditoria — a regra proíbe que gestores **visualizem** senhas, e
+definir uma nova não é ver a antiga.
+
+**Não há rota de exclusão de conta**, e é decisão: a conta é referenciada por
+orçamento, agendamento, cliente, pagamento, repasse e auditoria. Apagá-la
+apagaria quem assinou cada um deles — o banco recusaria pelas chaves
+estrangeiras, e forçar a remoção levaria junto o histórico financeiro que a
+RN-CLI-007 manda guardar por seis anos. Quem sai do estúdio é **bloqueado**:
+perde o acesso na hora e o histórico fica.
+
+**O faturamento não tem rota de escrita, e é decisão** (ADR-031): um relatório
+que corrigisse dado ao passar seria um relatório que muda o passado. Correção
+entra onde o fato aconteceu, como lançamento vinculado (RN-PAG-007).
+
+**`PUT /users/{id}/percentage` é `PUT` e não `PATCH`** de propósito: o acordo é
+substituído por inteiro, e enviar `null` o **encerra**, devolvendo o artista à
+regra da origem. Num `PATCH` ficaria ambíguo se o campo ausente significa "não
+mexa" ou "apague" — e os dois sentidos mudam quanto alguém recebe (ADR-030).
+
+**Os três filtros por estado servem ao painel do gestor** (RN-AGE-012 e seção
+10.1). A pergunta do painel é "o que está esperando decisão", sem data e sem
+agendamento em mão; sem o filtro, cada uma dessas perguntas traria o histórico
+inteiro do estúdio para o navegador filtrar. `GET /payments` é o único dos três
+restrito ao gestor: confirmar recebimento é dele (RN-PAG-002), e a fila é dele.
+
+**Pagamento não tem rota de exclusão nem `PATCH` de estado.** A RN-PAG-007 diz
+que um pagamento nunca é apagado e que correção entra como ajuste vinculado ao
+registro original. Confirmar, recusar e devolver são ações próprias porque
+registram coisas diferentes — quem confirmou, o motivo da recusa, a forma da
+devolução — e um `PATCH` genérico permitiria o caminho que a regra proíbe: voltar
+um recusado a confirmado, apagando a recusa do histórico.
+
+**Sessões não têm rota de criação.** Elas nascem da aprovação do orçamento, na
+mesma transação (RN-ORC-005). Um `POST /sessions` permitiria criar sessão sem
+orçamento aprovado, que é o estado que a regra impede ao exigir que só sessão
+concluída entre em repasse. A listagem pende do orçamento porque a sessão não
+existe fora dele; marcar e confirmar pendem da sessão, porque quem age já a tem
+em mão.
 
 **Convenções:**
 - Autenticação por cookie de sessão; token CSRF obrigatório em operações que alteram dados.

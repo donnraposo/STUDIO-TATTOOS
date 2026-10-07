@@ -3,22 +3,8 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from app.core.orm_base import OrmBase
+from app.core.orm_registry import METADATA
 from app.core.settings import Settings
-
-# Importados para que os modelos se registrem no metadata antes do autogenerate.
-from app.modules.clients.infrastructure.models.client import Client  # noqa: F401
-from app.modules.identity.infrastructure.models.password_reset_token import (  # noqa: F401
-    PasswordResetToken,
-)
-from app.modules.identity.infrastructure.models.user_account import UserAccount  # noqa: F401
-from app.modules.identity.infrastructure.models.user_session import UserSession  # noqa: F401
-from app.modules.identity.infrastructure.models.user_status_history import (  # noqa: F401
-    UserStatusHistory,
-)
-from app.modules.reporting.infrastructure.models.audit_log import AuditLog  # noqa: F401
-from app.modules.scheduling.infrastructure.models.booking import Booking  # noqa: F401
-from app.modules.scheduling.infrastructure.models.booth import Booth  # noqa: F401
 
 config = context.config
 
@@ -30,7 +16,7 @@ if config.config_file_name is not None:
 if not config.get_main_option("sqlalchemy.url", None):
     config.set_main_option("sqlalchemy.url", Settings().database_url)
 
-target_metadata = OrmBase.metadata
+target_metadata = METADATA
 
 
 def run_migrations_offline() -> None:

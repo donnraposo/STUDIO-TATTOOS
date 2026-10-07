@@ -11,3 +11,12 @@ class BookingConflictError(Exception):
         self.scope = scope
         self.message = message
         self.conflicting_booking_id = conflicting_booking_id
+
+    @property
+    def details(self) -> dict[str, str | None]:
+        """O que a resposta HTTP precisa levar alem da mensagem.
+
+        Sem isto o modal da RN-AGE-007 nao teria o que mostrar: ele exige
+        apresentar a reserva existente, e um texto de erro nao permite abrir o
+        agendamento conflitante nem destaca-lo na agenda."""
+        return {"scope": self.scope, "conflicting_booking_id": self.conflicting_booking_id}

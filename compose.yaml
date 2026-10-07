@@ -2,14 +2,20 @@ name: tattoo-studio
 
 services:
   postgres:
-    image: postgres:17-alpine
+    # Variante Debian, e nao alpine. A alpine quebrava neste Docker Desktop ao
+    # inicializar um cluster novo: "Exec format error" carregando
+    # dict_snowball.so durante o initdb, com arquitetura correta dos dois lados.
+    # Mesmo PostgreSQL 17 e mesmas extensoes; muda so a libc da imagem.
+    image: postgres:17
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-tattoo_studio}
       POSTGRES_USER: ${POSTGRES_USER:-tattoo_studio}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tattoo_studio}
       TZ: Europe/Dublin
+    # Porta publicada em 5433 para conviver com outros projetos na mesma maquina.
+    # Dentro da rede do compose o banco continua em 5432, que e o que a API usa.
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -28,10 +34,16 @@ services:
         required: false
     environment:
       POSTGRES_HOST: postgres
+    # Mesmo motivo do postgres. O proxy do Vite fala com http://api:8000 pela
+    # rede interna, entao esta mudanca so afeta o acesso a partir do host --
+    # /api/v1/docs passa a ser http://localhost:8001/api/v1/docs.
     ports:
-      - "8000:8000"
+      - "8001:8000"
     volumes:
       - ./backend:/app
+      # Arquivos enviados ficam em volume nomeado, nao no sistema de arquivos da
+      # imagem: recriar o container ou reconstruir a imagem nao pode perde-los.
+      - object_storage:/var/lib/tattoo-studio/objects
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,4 +65,5 @@ services:
 
 volumes:
   postgres_data:
+  object_storage:
   frontend_node_modules:

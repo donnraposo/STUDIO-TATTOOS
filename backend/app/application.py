@@ -3,9 +3,14 @@ from fastapi import APIRouter, FastAPI
 from app.core.container import Container
 from app.core.error_handlers import ErrorHandlers
 from app.modules.clients.api.client_router import ClientRouter
+from app.modules.finance.api.payment_router import PaymentRouter
+from app.modules.finance.api.payout_router import PayoutRouter
+from app.modules.finance.api.revenue_router import RevenueRouter
 from app.modules.health.api.health_router import HealthRouter
 from app.modules.identity.api.account_router import AccountRouter
 from app.modules.identity.api.auth_router import AuthRouter
+from app.modules.quotes.api.quote_router import QuoteRouter
+from app.modules.quotes.api.session_router import SessionRouter
 from app.modules.scheduling.api.scheduling_router import SchedulingRouter
 
 
@@ -36,4 +41,9 @@ class Application:
             AccountRouter(self._container).build(),
             ClientRouter(self._container).build(),
             SchedulingRouter(self._container).build(),
+            QuoteRouter(self._container).build(),
+            SessionRouter(self._container).build(),
+            PaymentRouter(self._container).build(),
+            PayoutRouter(self._container).build(),
+            RevenueRouter(self._container).build(),
         ]

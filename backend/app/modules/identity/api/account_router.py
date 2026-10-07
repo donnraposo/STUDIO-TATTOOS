@@ -4,9 +4,12 @@ from fastapi import APIRouter, Request, status
 
 from app.core.container import Container
 from app.modules.identity.api.account_response import AccountResponse
+from app.modules.identity.api.artist_percentage_request import ArtistPercentageRequest
 from app.modules.identity.api.block_account_request import BlockAccountRequest
 from app.modules.identity.api.create_account_request import CreateAccountRequest
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
+from app.modules.identity.api.set_password_request import SetPasswordRequest
+from app.modules.identity.api.update_account_request import UpdateAccountRequest
 
 
 class AccountRouter:
@@ -31,8 +34,26 @@ class AccountRouter:
             response_model=AccountResponse,
             status_code=status.HTTP_201_CREATED,
         )
+        router.add_api_route(
+            "/{account_id}",
+            self.update_account,
+            methods=["PUT"],
+            response_model=AccountResponse,
+        )
+        router.add_api_route(
+            "/{account_id}/password",
+            self.set_password,
+            methods=["PUT"],
+            response_model=AccountResponse,
+        )
         router.add_api_route("/{account_id}/block", self.block_account, methods=["POST"])
         router.add_api_route("/{account_id}/unblock", self.unblock_account, methods=["POST"])
+        router.add_api_route(
+            "/{account_id}/percentage",
+            self.set_percentage,
+            methods=["PUT"],
+            response_model=AccountResponse,
+        )
         return router
 
     def list_accounts(self, request: Request) -> list[AccountResponse]:
@@ -58,6 +79,42 @@ class AccountRouter:
             )
             return AccountResponse.from_model(account)
 
+    def update_account(
+        self, account_id: uuid.UUID, payload: UpdateAccountRequest, request: Request
+    ) -> AccountResponse:
+        """`PUT` e não `PATCH`: o formulário manda o cadastro inteiro, e um campo
+        ausente seria ambíguo entre "não mexa" e "apague"."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+
+        with self._container.database.session() as session:
+            account = self._container.identity.update_account(session).execute(
+                actor=actor,
+                account_id=account_id,
+                email=payload.email,
+                full_name=payload.full_name,
+                phone=payload.phone,
+                role=payload.role,
+                acts_as_artist=payload.acts_as_artist,
+                artist_name=payload.artist_name,
+            )
+            return AccountResponse.from_model(account)
+
+    def set_password(
+        self, account_id: uuid.UUID, payload: SetPasswordRequest, request: Request
+    ) -> AccountResponse:
+        """Rota propria e não campo do cadastro: trocar senha encerra as sessões
+        da conta, e no meio de um `salvar` de telefone o gestor derrubaria
+        alguém sem querer."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+
+        with self._container.database.session() as session:
+            account = self._container.identity.set_account_password(session).execute(
+                actor=actor, account_id=account_id, password=payload.password
+            )
+            return AccountResponse.from_model(account)
+
     def block_account(
         self, account_id: uuid.UUID, payload: BlockAccountRequest, request: Request
     ) -> dict[str, int | str]:
@@ -79,3 +136,17 @@ class AccountRouter:
                 actor=actor, target_id=account_id
             )
             return {"status": "active"}
+
+    def set_percentage(
+        self, account_id: uuid.UUID, payload: ArtistPercentageRequest, request: Request
+    ) -> AccountResponse:
+        """`PUT` e não `PATCH`: o acordo é substituído por inteiro, e enviar
+        nulo o encerra. Um `PATCH` deixaria ambíguo se o campo ausente significa
+        "não mexa" ou "apague"."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+        with self._container.database.session() as session:
+            artist = self._container.identity.set_artist_percentage(session).execute(
+                actor=actor, artist_id=account_id, percentage=payload.percentage
+            )
+            return AccountResponse.from_model(artist)

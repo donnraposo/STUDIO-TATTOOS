@@ -1,16 +1,18 @@
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Request, status
 
 from app.core.container import Container
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
+from app.modules.scheduling.api.bench_request import BenchRequest
+from app.modules.scheduling.api.bench_response import BenchResponse
 from app.modules.scheduling.api.booking_request import BookingRequest
 from app.modules.scheduling.api.booking_response import BookingResponse
-from app.modules.scheduling.api.booth_request import BoothRequest
-from app.modules.scheduling.api.booth_response import BoothResponse
 from app.modules.scheduling.api.cancel_booking_request import CancelBookingRequest
 from app.modules.scheduling.api.reject_booking_request import RejectBookingRequest
 from app.modules.scheduling.api.reschedule_booking_request import RescheduleBookingRequest
+from app.modules.scheduling.domain.booking_status import BookingStatus
 
 
 class SchedulingRouter:
@@ -26,13 +28,13 @@ class SchedulingRouter:
     def build(self) -> APIRouter:
         router = APIRouter(tags=["scheduling"])
         router.add_api_route(
-            "/booths", self.list_booths, methods=["GET"], response_model=list[BoothResponse]
+            "/benches", self.list_benches, methods=["GET"], response_model=list[BenchResponse]
         )
         router.add_api_route(
-            "/booths",
-            self.create_booth,
+            "/benches",
+            self.create_bench,
             methods=["POST"],
-            response_model=BoothResponse,
+            response_model=BenchResponse,
             status_code=status.HTTP_201_CREATED,
         )
         router.add_api_route(
@@ -71,25 +73,37 @@ class SchedulingRouter:
         )
         return router
 
-    def list_booths(self, request: Request) -> list[BoothResponse]:
+    def list_benches(self, request: Request) -> list[BenchResponse]:
         self._authenticator.require_user(request)
         with self._container.database.session() as session:
-            booths = self._container.scheduling.booths(session).list_all()
-            return [BoothResponse.from_model(booth) for booth in booths]
+            benches = self._container.scheduling.benches(session).list_all()
+            return [BenchResponse.from_model(bench) for bench in benches]
 
-    def create_booth(self, payload: BoothRequest, request: Request) -> BoothResponse:
+    def create_bench(self, payload: BenchRequest, request: Request) -> BenchResponse:
         actor = self._authenticator.require_user(request)
         self._container.csrf_guard.validate(request)
         with self._container.database.session() as session:
-            booth = self._container.scheduling.create_booth(session).execute(
+            bench = self._container.scheduling.create_bench(session).execute(
                 actor=actor, label=payload.label
             )
-            return BoothResponse.from_model(booth)
+            return BenchResponse.from_model(bench)
 
-    def list_bookings(self, request: Request) -> list[BookingResponse]:
+    def list_bookings(
+        self,
+        request: Request,
+        starts_at: datetime | None = None,
+        ends_at: datetime | None = None,
+        status: BookingStatus | None = None,
+    ) -> list[BookingResponse]:
+        """A agenda consulta um dia por vez, informando os dois extremos.
+
+        Sem intervalo, devolve tudo — que e o uso de historico. A validacao de
+        meia janela fica no caso de uso, nao aqui: e regra, nao formato."""
         actor = self._authenticator.require_user(request)
         with self._container.database.session() as session:
-            bookings = self._container.scheduling.list_bookings(session).execute(actor)
+            bookings = self._container.scheduling.list_bookings(session).execute(
+                actor, starts_at, ends_at, status
+            )
             return [BookingResponse.from_model(booking) for booking in bookings]
 
     def request_booking(self, payload: BookingRequest, request: Request) -> BookingResponse:
@@ -99,7 +113,7 @@ class SchedulingRouter:
             booking = self._container.scheduling.request_booking(session).execute(
                 actor=actor,
                 client_id=payload.client_id,
-                booth_id=payload.booth_id,
+                bench_id=payload.bench_id,
                 starts_at=payload.starts_at,
                 ends_at=payload.ends_at,
                 artist_id=payload.artist_id,
@@ -152,6 +166,6 @@ class SchedulingRouter:
                 booking_id=booking_id,
                 starts_at=payload.starts_at,
                 ends_at=payload.ends_at,
-                booth_id=payload.booth_id,
+                bench_id=payload.bench_id,
             )
             return BookingResponse.from_model(booking)

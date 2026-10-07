@@ -15,6 +15,12 @@
 | `audit_log` (append-only por gatilho) | `0002` | M1.1 |
 | `client` | `0003` | M2 |
 | `booth`, `booking` com as duas restrições `EXCLUDE` | `0004` | M3.1 |
+| `quote`, `quote_reference_image`, `tattoo_session` e `booking.session_id` | `0005` | M4.1 |
+| `payment` e `payment_refund` | `0006` | M5 |
+| `booth` → `bench`, com colunas, índices e restrições | `0007` | M7.2.1 |
+| `client.brought_by_artist_id` | `0008` | M7.2.1 |
+| `payout`, `payout_item` e `payout_adjustment` | `0009` | M6 |
+| `user_account.default_artist_percentage` | `0010` | M7.2.6 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições
@@ -42,7 +48,7 @@ teste de concorrência** desde 26/09/2026.
 
 | Extensão | Uso |
 |---|---|
-| `btree_gist` | Permite combinar igualdade (`booth_id`, `artist_id`) com sobreposição de intervalo na mesma restrição `EXCLUDE` |
+| `btree_gist` | Permite combinar igualdade (`bench_id`, `artist_id`) com sobreposição de intervalo na mesma restrição `EXCLUDE` |
 | `citext` | E-mail único sem diferenciar maiúsculas |
 
 ## 3. Identidade e acesso
@@ -59,6 +65,7 @@ teste de concorrência** desde 26/09/2026.
 | `phone` | text NOT NULL | |
 | `role` | enum NOT NULL | `OWNER`, `MANAGER`, `RESIDENT`, `GUEST` |
 | `acts_as_artist` | boolean NOT NULL | Proprietário/gerente que também tatua |
+| `default_artist_percentage` | numeric(5,2) NULL | Percentual acordado com este artista. **Nulo significa "siga a regra da origem"** — 70% cliente próprio, 50% indicação (ADR-030) |
 | `status` | enum NOT NULL | `PENDING_APPROVAL`, `ACTIVE`, `BLOCKED`, `REJECTED` |
 | `requested_role` | enum NULL | Perfil pedido no autocadastro |
 | `created_by` | uuid FK NULL | Nulo quando é autocadastro |
@@ -67,6 +74,8 @@ teste de concorrência** desde 26/09/2026.
 **Regras:**
 - `CHECK (NOT (acts_as_artist OR role IN ('RESIDENT','GUEST')) OR artist_name IS NOT NULL)` — garante nome artístico de quem tatua.
 - O último proprietário ativo não pode ser bloqueado (RN 2.5). Verificação em caso de uso transacional, não em constraint, por depender de contagem.
+- `CHECK (default_artist_percentage IS NULL OR (default_artist_percentage > 0 AND default_artist_percentage <= 100))` — mesmo intervalo do percentual congelado no orçamento: zero seria trabalho de graça e acima de cem seria o estúdio pagando para trabalhar.
+- **O campo não alcança trabalho já aprovado** (RN-REP-006). Ele decide o que a **próxima** aprovação vai congelar; o que já foi aprovado guarda a própria cópia em `quote.artist_percentage`. Alterá-lo é ato de gestor e fica na auditoria com o valor anterior.
 
 ### `user_status_history`
 
@@ -113,7 +122,14 @@ Instagram, projeção feita na camada de aplicação a partir do agendamento.
 
 ## 5. Agenda
 
-### `booth` (maca)
+### `bench` (maca)
+
+> **Chamava-se `booth` até 30/09/2026.** O estúdio corrigiu o termo em inglês: a
+> unidade reservável é uma bench, e `booth` descreve uma cabine fechada, que não
+> é o que existe no salão. A migração `0007` renomeou tabela, coluna
+> `booking.bench_id`, índices e as duas restrições — inclusive
+> `booking_bench_no_overlap`, cujo nome é contrato entre o banco e o
+> `BookingRepository`, que o traduz no `scope` do modal da RN-AGE-007.
 
 `id`, `number` (int UNIQUE), `label`, `active` (boolean), `created_at`.
 
@@ -124,7 +140,7 @@ Padrão: terça a domingo 10h–20h, segunda fechado.
 
 ### `schedule_exception`
 
-`id`, `date`, `booth_id` (NULL = todas as macas), `opens_at`, `closes_at`,
+`id`, `date`, `bench_id` (NULL = todas as macas), `opens_at`, `closes_at`,
 `blocked` (boolean), `reason`, `actor_id`, `created_at`, `removed_at`.
 
 Cobre abertura excepcional e bloqueio de maca ou do estúdio inteiro (RN-AGE-011).
@@ -137,10 +153,10 @@ Uma exceção prevalece sobre `studio_hours` na data afetada.
 | `id` | uuid PK | |
 | `client_id` | uuid FK NOT NULL | |
 | `artist_id` | uuid FK NOT NULL | |
-| `booth_id` | uuid FK NOT NULL | |
+| `bench_id` | uuid FK NOT NULL | |
 | `period` | tstzrange NOT NULL | Início e fim; sem blocos fixos |
 | `status` | enum NOT NULL | `REQUESTED`, `APPROVED`, `REJECTED`, `DONE`, `CANCELLED`, `NO_SHOW` |
-| `session_id` | uuid FK NULL | Liga à sessão do orçamento |
+| `session_id` | uuid FK NULL | Liga à sessão do orçamento. Acrescentado na migração `0005`, quando a tabela `session` passou a existir |
 | `requested_at` | timestamptz NOT NULL | Ordena solicitações concorrentes |
 | `decided_at` / `decided_by` | | |
 | `rejection_reason` | enum NULL | `SLOT_TAKEN`, `STUDIO_CLOSED`, `RESCHEDULED` |
@@ -155,8 +171,8 @@ semânticas diferentes**, e ambos precisam ser garantidos pelo banco.
 pendentes de artistas diferentes podem concorrer pelo mesmo horário:
 
 ```sql
-ALTER TABLE booking ADD CONSTRAINT booking_booth_no_overlap
-EXCLUDE USING gist (booth_id WITH =, period WITH &&)
+ALTER TABLE booking ADD CONSTRAINT booking_bench_no_overlap
+EXCLUDE USING gist (bench_id WITH =, period WITH &&)
 WHERE (status = 'APPROVED');
 ```
 
@@ -178,10 +194,13 @@ conflito exigido por RN-AGE-007, que não permite ignorar o conflito.
 Rejeitados e cancelados saem das cláusulas `WHERE` e deixam de ocupar a agenda,
 preservando o registro histórico (RN-AGE-014).
 
-### `booking_history`
+### Histórico de estado do agendamento
 
-`id`, `booking_id`, `from_status`, `to_status`, `reason`, `note`, `actor_id`,
-`created_at`. Registra aprovação, rejeição, remarcação, transferência e cancelamento.
+**Não existe tabela `booking_history`.** O histórico de aprovação, rejeição,
+remarcação e cancelamento fica no `audit_log`, que já é append-only por gatilho e já
+guarda ator, ação, valores antigo e novo na mesma transação da operação. Uma segunda
+tabela gravando a mesma transição criaria duas fontes para a mesma verdade, com o
+risco de divergirem (ADR-023).
 
 ## 6. Orçamentos e sessões
 
@@ -200,18 +219,55 @@ preservando o registro histórico (RN-AGE-014).
 | `notes` | text | |
 | `status` | enum NOT NULL | `PENDING`, `APPROVED`, `REJECTED` |
 | `artist_percentage` | numeric(5,2) NULL | **Congelado na aprovação** (RN-REP-006) |
+| `created_by` | uuid FK NOT NULL | Quem criou; residente, gerente ou proprietário (RN-ORC-001) |
 | `approved_at` / `approved_by` | | |
-| `rejection_reason` / `rejection_note` | | |
+| `rejection_reason` / `rejection_note` | text NULL | Motivo é texto livre: a RN-ORC-003 exige motivo e não define lista fechada, diferente da rejeição de agendamento |
 
 Alterar um orçamento aprovado devolve `status` para `PENDING` e exige nova
 aprovação (RN-ORC-003).
 
+**Restrições que o banco garante** (migração `0005`):
+
+| Restrição | Garante |
+|---|---|
+| `ck_quote_approved_freezes_percentage` | Orçamento `APPROVED` não existe sem `artist_percentage`, `approved_at` e `approved_by`. Aprovar e congelar o percentual são o mesmo ato (RN-REP-006) |
+| `ck_quote_rejected_needs_reason` | Orçamento `REJECTED` não existe sem motivo (RN-ORC-003) |
+| `ck_quote_percentage_range` | Percentual entre 0 exclusivo e 100 |
+| Valores positivos | `total_value`, `planned_value_per_session`, `planned_sessions` e `estimated_duration_minutes` |
+
+`total_value` **não** é obrigado a ser igual a `planned_sessions ×
+planned_value_per_session`: sessões de um mesmo trabalho podem ter valores
+diferentes, e travar a soma impediria o caso legítimo.
+
 ### `quote_reference_image`
 
-`id`, `quote_id`, `object_key`, `uploaded_by`, `uploaded_at`.
-Somente a chave privada do objeto; nunca URL pública.
+`id`, `quote_id`, `object_key`, `content_type`, `byte_size`, `uploaded_by`,
+`uploaded_at`. Somente a chave privada do objeto; nunca URL pública — a
+referência fica associada ao nome do cliente, e um endereço público permanente
+seria exposição de dado pessoal. `object_key` é único. `content_type` e
+`byte_size` são gravados no upload para que listar um orçamento não precise
+consultar o armazenamento uma vez por imagem.
 
-### `session`
+**A chave é sorteada, no formato `quotes/{quote_id}/{uuid}.{ext}`** (ADR-024). O nome
+do arquivo enviado não entra nela: vem do cliente e pode trazer caminho, acento ou o
+nome da pessoa retratada.
+
+**`content_type` é a fonte usada para responder a imagem**, não o conteúdo do
+arquivo. É o valor que foi validado contra a lista de tipos aceitos no upload;
+deduzir o tipo dos bytes na hora de responder permitiria servir como imagem algo que
+entrou por outro caminho.
+
+A tabela guarda a referência, e o arquivo vive no armazenamento descrito pelo
+ADR-024. **A cópia de segurança precisa levar os dois** — uma que leve só o
+`pg_dump` restauraria linhas apontando para arquivos inexistentes.
+
+### `tattoo_session`
+
+> **A tabela se chama `tattoo_session`, não `session`.** Renomeada na
+> implementação, conforme a pendência da seção 14 deste documento: `Session` já é
+> a sessão de banco do SQLAlchemy, importada em todo repositório, e `user_session`
+> é a sessão de login. Três coisas com o mesmo nome é confusão garantida na
+> leitura. A classe é `TattooSession`.
 
 | Campo | Tipo | Notas |
 |---|---|---|
@@ -219,6 +275,7 @@ Somente a chave privada do objeto; nunca URL pública.
 | `quote_id` | uuid FK NOT NULL | |
 | `sequence_number` | int NOT NULL | Ordem dentro do orçamento |
 | `status` | enum NOT NULL | `SCHEDULED`, `DONE`, `PARTIALLY_DONE`, `PAID_OFF`, `CANCELLED`, `NO_SHOW` |
+| `origin` | enum NOT NULL | Cópia do orçamento na aprovação, pelo mesmo motivo do percentual |
 | `planned_value` | numeric(12,2) | |
 | `charged_value` | numeric(12,2) NULL | Valor efetivo, pode diferir em sessão parcial |
 | `performed_at` | timestamptz NULL | Data real, base do vencimento do pós-venda |
@@ -226,11 +283,30 @@ Somente a chave privada do objeto; nunca URL pública.
 | `confirmed_by` / `confirmed_at` | | Gestor confirma recebimento |
 | `artist_percentage` | numeric(5,2) | Cópia do orçamento no momento da aprovação |
 
-`UNIQUE (quote_id, sequence_number)`.
-
 **Conclusão:** só entra em repasse quando realizada **e** integralmente quitada
 (RN-ORC-005). Sessão parcial gera repasse apenas sobre o valor recebido
 (RN-ORC-006).
+
+**Restrições que o banco garante** (migração `0005`):
+
+| Restrição | Garante |
+|---|---|
+| `uq_tattoo_session_sequence` | `UNIQUE (quote_id, sequence_number)`. Duas sessões número 1 tornariam ambígua a ordem que liga cada sinal de €50 à sua sessão |
+| `ck_tattoo_session_partial_requires_charged` | `PARTIALLY_DONE` não existe sem `charged_value`: é sobre ele que o repasse parcial é calculado (RN-ORC-006) |
+| `ck_tattoo_session_performed_requires_date` | `DONE`, `PARTIALLY_DONE` e `PAID_OFF` exigem `performed_at`, de onde sai o vencimento do pós-venda (RN-POS-001) |
+| `ck_tattoo_session_paid_off_requires_confirmation` | `PAID_OFF` exige `charged_value`, `confirmed_at` e `confirmed_by`: quitada é decisão do gestor, não do artista (RN-ORC-005) |
+
+### Ligação com a agenda
+
+`booking.session_id` aponta para a sessão e é nulo enquanto o horário não
+pertence a um trabalho orçado — é o caso de toda a agenda entregue na M3.
+
+Uma sessão tem **no máximo um agendamento vivo**, garantido pelo índice parcial
+`uq_booking_live_session` sobre `booking (session_id)` com
+`WHERE session_id IS NOT NULL AND status IN ('REQUESTED', 'APPROVED')`.
+Cancelado e recusado saem da conta, pelo mesmo critério das restrições `EXCLUDE`
+da seção 5.1 (RN-AGE-014): remarcar depois de cancelar continua possível,
+executar a mesma sessão duas vezes em horários diferentes não.
 
 ## 7. Financeiro
 
@@ -239,8 +315,9 @@ Somente a chave privada do objeto; nunca URL pública.
 | Campo | Tipo | Notas |
 |---|---|---|
 | `id` | uuid PK | |
-| `session_id` | uuid FK NULL | Nulo em taxa de guest |
-| `guest_week_id` | uuid FK NULL | Nulo em pagamento de sessão |
+| `booking_id` | uuid FK NULL | **Acrescentado na migração `0006`.** O sinal pertence ao agendamento |
+| `session_id` | uuid FK NULL | Nulo em sinal e em taxa de guest |
+| `guest_week_id` | uuid FK NULL | Entra com a tabela `guest_week`, na sprint do guest |
 | `client_id` | uuid FK NULL | |
 | `amount` | numeric(12,2) NOT NULL | |
 | `kind` | enum NOT NULL | `DEPOSIT` (sinal €50), `BALANCE`, `FULL_PREPAY`, `GUEST_WEEK` |
@@ -249,7 +326,25 @@ Somente a chave privada do objeto; nunca URL pública.
 | `confirmed_at` / `confirmed_by` | | Só gerente/proprietário |
 | `receipt_object_key` | text NULL | Comprovante privado |
 
-`CHECK` garantindo exatamente uma origem: `session_id` ou `guest_week_id` preenchido.
+`CHECK` garantindo exatamente uma origem preenchida.
+
+**Por que `booking_id` entrou.** O desenho original previa só `session_id` ou
+`guest_week_id`. A RN-PAG-001 diz "**todo agendamento** exigirá um sinal de €50",
+e `booking.session_id` é nulo em todo horário que não pertence a um trabalho
+orçado — o caso de toda a agenda entregue na M3 e de qualquer reserva de guest,
+que não acessa orçamento (RN-ORC-001). Sem a coluna, o sinal desses agendamentos
+não tinha onde ser gravado e a RN-AGE-005 não tinha o que conferir antes de
+aprovar. O saldo continua pendurado na sessão, que é o que é quitado
+(RN-PAG-008) e a unidade do repasse (RN-REP-003).
+
+| Campo acrescentado | Motivo |
+|---|---|
+| `retained_at` / `retained_reason` | A RN-AGE-008 diz que, fora do prazo de 24 horas, o cliente **perde** o sinal e paga um novo. O sinal perdido continua `CONFIRMED` — o estúdio ficou com ele, não foi devolvido —, mas deixa de valer para a aprovação daquele horário. Sem marcar a retirada, o sinal velho continuaria satisfazendo o portão da RN-AGE-005 |
+
+`uq_payment_live_deposit`: índice parcial sobre `payment (booking_id)` com
+`WHERE kind = 'DEPOSIT' AND retained_at IS NULL AND status IN ('REPORTED',
+'CONFIRMED')`. Um sinal vivo por agendamento (RN-PAG-001); recusado e retido
+saem da conta, porque em ambos os casos o cliente paga outro.
 
 **Imutabilidade:** sem `UPDATE` de valor. Correção entra como `payment_refund` ou
 `payout_adjustment` vinculado (RN-PAG-007).
@@ -266,19 +361,40 @@ Somente a chave privada do objeto; nunca URL pública.
 `adjustments_total`, `net_total`, `status` (`CALCULATED`, `PAID`, `ADJUSTED`),
 `paid_at`, `paid_by`, `receipt_object_key`, `created_at`.
 
-`UNIQUE (artist_id, period_end)`. O `period_end` é a sexta às 20h `Europe/Dublin`
-convertida para UTC (RN-REP-004).
+`uq_payout_period` sobre `(artist_id, period_end)`. O `period_end` é a sexta às
+20h `Europe/Dublin` convertida para UTC (RN-REP-004).
+
+**É essa restrição que impede fechar a mesma semana duas vezes**, e ela não é
+acessório: com o cálculo sob demanda, duas abas abertas na tela de repasses são
+dois processos, e só o banco arbitra isso.
+
+`ck_payout_net_total` mantém `net_total = gross_total + adjustments_total`. O
+líquido poderia ser somado na leitura, mas é o número que o artista recebe:
+derivado, cada tela repetiria a soma, e bastaria uma errar para o demonstrativo
+discordar do extrato.
 
 ### `payout_item`
 
 `id`, `payout_id`, `session_id`, `received_amount`, `percentage`, `amount`.
 O cálculo é por sessão, arredondado a duas casas (RN-REP-007).
 
+`uq_payout_item_session` impede a mesma sessão em dois repasses. Pagar duas vezes
+pelo mesmo trabalho aparece no extrato do estúdio, não num teste.
+
+**`percentage` e `amount` são guardados, não recalculados.** O percentual é o
+congelado na sessão no momento do fechamento (RN-REP-006): lê-lo do orçamento na
+hora de exibir o demonstrativo mostraria o acordo de hoje sobre um pagamento de
+semanas atrás.
+
 ### `payout_adjustment`
 
 `id`, `payout_id`, `related_payment_id`, `amount` (negativo), `reason`, `actor_id`.
 Devolução posterior a um repasse pago não altera o fechamento anterior: entra como
 ajuste negativo no seguinte (RN-REP-005).
+
+`uq_payout_adjustment_payment` garante que um pagamento devolvido gera **um**
+ajuste. Sem ela, dois fechamentos consecutivos descontariam o mesmo valor duas
+vezes, e o artista pagaria em dobro por uma devolução só.
 
 ## 8. Guest
 
@@ -376,12 +492,13 @@ user_account 1 ── N guest_week
 client       1 ── N quote
 quote        1 ── N session
 session      1 ── 0..1 booking
-session      1 ── N payment
+booking      1 ── N payment          (sinal, RN-PAG-001)
+session      1 ── N payment          (saldo, RN-PAG-008)
 session      1 ── 0..1 aftercare
 payment      1 ── N payment_refund
 payout       1 ── N payout_item ── 1 session
 payout       1 ── N payout_adjustment
-booth        1 ── N booking
+bench        1 ── N booking
 ```
 
 ## 13. Decisões de modelagem que merecem destaque
@@ -392,12 +509,16 @@ booth        1 ── N booking
 | Acesso do guest derivado das semanas | Elimina divergência entre flag e realidade quando a semana vence |
 | "Atrasado" derivado no pós-venda | Dispensa job só para trocar rótulo de estado |
 | `artist_percentage` copiado em `quote` e `session` | Congela o percentual da aprovação; mudança de padrão não afeta o passado |
+| Sinal pendurado no `booking`, saldo na `session` | A RN-PAG-001 exige sinal de todo agendamento, inclusive os que não vêm de orçamento; o saldo é da sessão porque é ela que é quitada e é a unidade do repasse |
+| `retained_at` separado de `REFUNDED` | Retido e devolvido são coisas diferentes: num o estúdio ficou com o dinheiro, no outro ele saiu do caixa. Um estado só esconderia qual dos dois aconteceu |
 | Outbox em tabela, sem Redis | Durabilidade sem infraestrutura adicional no porte atual |
 | `audit_log` append-only por gatilho | Imutabilidade garantida pelo banco, resistente inclusive à role dona da tabela |
 | Estados como texto com `CHECK` | Mesma garantia do `ENUM` nativo, sem `ALTER TYPE` a cada novo estado |
 
 ## 14. Pendências deste documento
 
-- Validar os nomes finais de tabelas e colunas na revisão de implementação.
+- Validar os nomes finais de tabelas e colunas na revisão de implementação. Um caso
+  já resolvido: `session` virou `tattoo_session` na M4.1, por colisão com a sessão
+  de banco do SQLAlchemy e com `user_session`.
 - Definir índices adicionais depois de conhecer os relatórios mais usados.
 - Confirmar política de retenção da tabela `user_session`.

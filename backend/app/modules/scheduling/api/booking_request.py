@@ -12,7 +12,7 @@ class BookingRequest(BaseModel):
     que permite ao gestor criar já aprovado."""
 
     client_id: uuid.UUID
-    booth_id: uuid.UUID
+    bench_id: uuid.UUID
     starts_at: datetime
     ends_at: datetime
     artist_id: uuid.UUID | None = None

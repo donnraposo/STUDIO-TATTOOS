@@ -48,6 +48,36 @@ a {
   font: inherit;
 }
 
+/* Receita unica do controle de formulario: pilula com preenchimento sutil, para
+   que o campo se leia como area clicavel sem competir com o botao.
+
+   Fica aqui, e nao repetida em cada componente base, porque input, select e o
+   que vier depois precisam ser identicos -- tres copias da mesma pilula ja
+   comecariam a divergir no primeiro ajuste de espacamento. base.css e o unico
+   lugar de estilo global previsto no projeto. */
+.control {
+  min-height: var(--touch-target);
+  padding: var(--space-2) var(--space-5);
+  border: var(--border-thin);
+  border-color: transparent;
+  border-radius: var(--radius-round);
+  background: var(--color-field);
+  color: var(--color-on-light);
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--color-border);
+}
+
+.control:disabled {
+  background: var(--color-surface-soft);
+  opacity: var(--opacity-disabled);
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
 button {
   min-height: var(--touch-target);
   cursor: pointer;

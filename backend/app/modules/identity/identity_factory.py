@@ -1,13 +1,17 @@
 from sqlalchemy.orm import Session
 
 from app.core.settings import Settings
+from app.modules.identity.application.account_artist_terms import AccountArtistTerms
 from app.modules.identity.application.authenticate_user import AuthenticateUser
 from app.modules.identity.application.block_account import BlockAccount
 from app.modules.identity.application.create_account import CreateAccount
 from app.modules.identity.application.end_session import EndSession
 from app.modules.identity.application.list_accounts import ListAccounts
 from app.modules.identity.application.resolve_session import ResolveSession
+from app.modules.identity.application.set_account_password import SetAccountPassword
+from app.modules.identity.application.set_artist_percentage import SetArtistPercentage
 from app.modules.identity.application.unblock_account import UnblockAccount
+from app.modules.identity.application.update_account import UpdateAccount
 from app.modules.identity.domain.account_management_policy import AccountManagementPolicy
 from app.modules.identity.infrastructure.password_hasher import PasswordHasher
 from app.modules.identity.infrastructure.session_repository import SessionRepository
@@ -36,6 +40,13 @@ class IdentityFactory:
     @property
     def policy(self) -> AccountManagementPolicy:
         return self._policy
+
+    def set_artist_percentage(self, session: Session) -> SetArtistPercentage:
+        return SetArtistPercentage(users=self.users(session), audit=AuditRecorder(session))
+
+    def artist_terms(self, session: Session) -> AccountArtistTerms:
+        """O adaptador que o orçamento consome por porta (ADR-028)."""
+        return AccountArtistTerms(users=self.users(session))
 
     def users(self, session: Session) -> UserRepository:
         return UserRepository(session)
@@ -95,3 +106,20 @@ class IdentityFactory:
 
     def list_accounts(self, session: Session) -> ListAccounts:
         return ListAccounts(users=self.users(session), policy=self._policy)
+
+    def update_account(self, session: Session) -> UpdateAccount:
+        return UpdateAccount(
+            users=self.users(session),
+            history=self.status_history(session),
+            policy=self._policy,
+            audit=self.audit(session),
+        )
+
+    def set_account_password(self, session: Session) -> SetAccountPassword:
+        return SetAccountPassword(
+            users=self.users(session),
+            sessions=self.sessions(session),
+            hasher=self._hasher,
+            policy=self._policy,
+            audit=self.audit(session),
+        )

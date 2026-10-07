@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from psycopg.types.range import Range
-from sqlalchemy import select, text
+from sqlalchemy import Select, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -19,12 +19,12 @@ class BookingRepository:
     agendamento conflitante junto — o que a RN-AGE-007 exige para o modal."""
 
     _CONSTRAINT_SCOPE = {
-        "booking_booth_no_overlap": "booth",
+        "booking_bench_no_overlap": "bench",
         "booking_artist_no_overlap": "artist",
     }
 
     _CONFLICT_MESSAGE = {
-        "booth": "This booth is already booked for an overlapping period.",
+        "bench": "This bench is already booked for an overlapping period.",
         "artist": "This artist already has an overlapping request or booking.",
     }
 
@@ -46,25 +46,46 @@ class BookingRepository:
     def find_by_id(self, booking_id: uuid.UUID) -> Booking | None:
         return self._session.get(Booking, booking_id)
 
-    def list_for_artist(self, artist_id: uuid.UUID) -> list[Booking]:
-        statement = (
-            select(Booking)
-            .where(Booking.artist_id == artist_id)
-            .order_by(Booking.requested_at.desc())
-        )
-        return list(self._session.execute(statement).scalars())
+    def list_for_artist(
+        self,
+        artist_id: uuid.UUID,
+        window: Range | None = None,
+        status: BookingStatus | None = None,
+    ) -> list[Booking]:
+        statement = select(Booking).where(Booking.artist_id == artist_id)
+        return self._fetch(statement, window, status)
 
-    def list_all(self) -> list[Booking]:
-        statement = select(Booking).order_by(Booking.requested_at.desc())
-        return list(self._session.execute(statement).scalars())
+    def list_all(
+        self, window: Range | None = None, status: BookingStatus | None = None
+    ) -> list[Booking]:
+        return self._fetch(select(Booking), window, status)
 
-    def list_pending(self) -> list[Booking]:
-        statement = (
-            select(Booking)
-            .where(Booking.status == BookingStatus.REQUESTED)
-            .order_by(Booking.requested_at)
-        )
-        return list(self._session.execute(statement).scalars())
+    def _fetch(
+        self,
+        statement: Select[tuple[Booking]],
+        window: Range | None,
+        status: BookingStatus | None = None,
+    ) -> list[Booking]:
+        """Aplica a janela de tempo, quando houver, e ordena.
+
+        O recorte usa o operador de sobreposicao do PostgreSQL, `&&`, e nao uma
+        comparacao com o inicio do agendamento: uma sessao que comeca as 19h de
+        terca e termina as 21h **pertence** ao dia de terca, e um filtro por
+        `inicio >= :de` a perderia ao consultar so a partir das 20h.
+
+        Sem janela, devolve tudo. A agenda sempre informa uma; quem nao informa
+        esta consultando historico, e ai o conjunto inteiro e o que se quer.
+
+        O filtro por estado existe para a pergunta que o painel do gestor faz: as
+        solicitacoes esperando decisao, sem janela de data (RN-AGE-012). Sem ele,
+        perguntar isso traria o historico inteiro do estudio para o navegador
+        filtrar -- custo que cresce toda semana sem ninguem ter mudado nada."""
+        if window is not None:
+            statement = statement.where(Booking.period.op("&&")(window))
+        if status is not None:
+            statement = statement.where(Booking.status == status)
+        ordered = statement.order_by(Booking.requested_at.desc())
+        return list(self._session.execute(ordered).scalars())
 
     @staticmethod
     def build_period(starts_at: datetime, ends_at: datetime) -> Range:
@@ -91,9 +112,9 @@ class BookingRepository:
 
         A transação está abortada após a violação, então a consulta roda em
         `SAVEPOINT` próprio; sem isso o PostgreSQL recusaria qualquer comando."""
-        column = "booth_id" if scope == "booth" else "artist_id"
+        column = "bench_id" if scope == "bench" else "artist_id"
         statuses = (
-            "('APPROVED')" if scope == "booth" else "('REQUESTED', 'APPROVED')"
+            "('APPROVED')" if scope == "bench" else "('REQUESTED', 'APPROVED')"
         )
         self._session.rollback()
         found = self._session.execute(
@@ -102,7 +123,7 @@ class BookingRepository:
                 f" AND status IN {statuses} AND period && CAST(:period AS tstzrange) LIMIT 1"
             ),
             {
-                "owner": booking.booth_id if scope == "booth" else booking.artist_id,
+                "owner": booking.bench_id if scope == "bench" else booking.artist_id,
                 "period": self._period_literal(booking),
             },
         ).scalar_one_or_none()

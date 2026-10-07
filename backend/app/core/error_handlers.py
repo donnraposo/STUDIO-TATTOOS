@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -25,6 +27,21 @@ class ErrorHandlers:
     @staticmethod
     def _build_handler(status_code: int):  # noqa: ANN205 - assinatura exigida pelo FastAPI
         def handle(_: Request, exc: Exception) -> JSONResponse:
-            return JSONResponse(status_code=status_code, content={"detail": str(exc)})
+            return JSONResponse(status_code=status_code, content=ErrorHandlers._body(exc))
 
         return handle
+
+    @staticmethod
+    def _body(exc: Exception) -> dict[str, Any]:
+        """Mensagem sempre; campos extras quando o erro tiver o que dizer.
+
+        Um erro de dominio que precise ser tratado de forma propria pela
+        interface expoe um dicionario `details` -- e o caso do conflito de
+        agenda, que precisa entregar a reserva existente para o modal da
+        RN-AGE-007. A extensao e por dados e nao por condicional: nenhum erro
+        novo exige tocar neste tradutor."""
+        body: dict[str, Any] = {"detail": str(exc)}
+        details = getattr(exc, "details", None)
+        if isinstance(details, dict):
+            body.update(details)
+        return body

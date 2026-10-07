@@ -1,9 +1,13 @@
 # Contexto do Projeto e Continuidade para Próxima IA
 
-**Última atualização:** 23/09/2026  
+**Última atualização:** 07/10/2026  
 **Idioma desta documentação:** português  
 **Idioma planejado da interface:** inglês  
-**Estado geral:** descoberta e validação funcional em andamento; nenhuma implementação de software foi autorizada.
+**Estado geral:** implementação em andamento. Sprint 01, M1, M2, M3, M4, M5, M6 e a fatia vertical de interface M7.1 concluídas, e a M7.2 inteira, nas seis etapas. **O fio condutor do MVP fechou no backend em 02/10/2026 e passou a se percorrer inteiro pela interface em 06/10/2026**, do login ao repasse de sexta, sem a API em nenhum passo. Em 07/10/2026 entrou tambem a **M9**, o faturamento do estudio: o controle mensal que o estudio mantinha em planilha, com o detalhamento por atendimento, os tres totais e a comparacao entre meses (ADR-031). Falta apenas a M8, implantação mínima. O desenho funcional está fechado desde 24/09/2026.
+
+> **Onde ler o andamento:** este arquivo resume o contexto e as decisões. O estado
+> sprint por sprint fica em [`09_ROADMAP_IMPLEMENTACAO.md`](09_ROADMAP_IMPLEMENTACAO.md),
+> que é a fonte em caso de divergência.
 
 ## Leia primeiro
 
@@ -34,7 +38,10 @@ O escopo desta versão é **um único estúdio**. Não projetar agora uma plataf
 
 - Backend: Python com FastAPI.
 - Banco de dados: PostgreSQL.
-- Execução: componentes containerizados com Docker.
+- Execução: componentes containerizados com Docker. **Desenvolvimento e produção não
+  sobem o mesmo conjunto** — em produção o frontend compilado é servido pelo Caddy e
+  não tem container próprio. A contagem e as decisões abertas estão na seção 8 de
+  `04_ARQUITETURA_TECNICA.md` e na sprint M8 do roadmap.
 - Frontend: Vue 3, TypeScript e Vite.
 - Primeira versão: sistema web responsivo e instalável como PWA; não será um aplicativo nativo separado.
 - Interface na raiz do domínio e API sob `/api/v1`, pelo mesmo domínio.
@@ -93,6 +100,8 @@ O escopo desta versão é **um único estúdio**. Não projetar agora uma plataf
 ### Finanças e repasses
 
 - Residente, proprietário e gerente quando atuam como tatuadores: cliente próprio = 70% artista / 30% estúdio; indicação do estúdio = 50%/50%.
+- **Percentual acordado por artista, decidido em 06/10/2026 (ADR-030).** A planilha de controle do estúdio mostra três divisões convivendo no mesmo mês — 85/15, 70/30 e 50/50 — e o mesmo artista em mais de uma. Cada conta que tatua pode ter um percentual próprio, alterável por gerente e proprietário na tela de contas. Vazio significa "siga a regra acima". A ordem é: correção do gestor para **aquele** atendimento, depois o acordo do artista, depois a regra da origem. **Mudar o acordo não alcança trabalho já aprovado.**
+- **Pendência de texto, não de código:** a RN-REP-001 e a RN-REP-002 em [`01_REGRAS_DE_NEGOCIO.md`](01_REGRAS_DE_NEGOCIO.md) continuam descrevendo só os dois percentuais. A decisão acima as estende, e **cabe ao responsável atualizar aquele texto** — o documento de regras de negócio não é alterado por quem implementa.
 - Guest: cliente próprio paga diretamente a ele, além da taxa semanal de €600; indicação do estúdio paga ao estúdio e divide 50%/50%, inclusive se a semana guest já estiver paga.
 - Para sessão de múltiplas etapas, repasse proporcional ao valor da sessão efetivamente paga. Tatuagem de €10.000 em quatro sessões de €2.500 calcula a porcentagem em cada €2.500.
 - Pagamentos inseridos manualmente por gerente/proprietário; formas registráveis: depósito, dinheiro, cartão. Sem integração de cartão nesta versão; taxas de cartão são absorvidas pelo estúdio.
@@ -220,7 +229,7 @@ duplicidade, visibilidade em três níveis e união preservando histórico. Os t
 níveis da RN-CLI-004 estão cobertos por teste, incluindo o artista indicado que vê
 apenas nome, telefone e Instagram.
 
-**Sprint M3 — Agenda e macas: em andamento**, etapa 1 de 3.
+**Sprint M3 — Agenda e macas: concluída em 26/09/2026**, nas três etapas.
 
 **A etapa M3.1 retirou o maior risco técnico do projeto.** As duas restrições
 `EXCLUDE` estão no banco e comprovadas por oito testes, incluindo uma corrida com
@@ -239,16 +248,269 @@ RN-AGE-007.
 financeiro de cancelamento, não comparecimento e remarcação fora de 24h dependem do
 módulo de pagamentos. A costura está em `ApproveBooking._deposit_is_confirmed`.
 
-**Próximo passo:** sprint M4 — orçamentos e sessões, com o percentual congelado na
-aprovação (RN-REP-006).
+**Sprint M4 — Orçamentos e sessões: em andamento**, etapa 1 de 3.
+
+**A etapa M4.1 entregou o modelo.** Migração `0005` com `quote`,
+`quote_reference_image`, `tattoo_session` e a coluna `booking.session_id`. O
+percentual congelado da RN-REP-006 deixou de depender da aplicação: o banco recusa
+orçamento aprovado sem percentual gravado, do mesmo modo que recusa sessão parcial
+sem valor cobrado e sessão quitada sem confirmação do gestor. **104 testes
+aprovados.**
+
+Duas decisões da etapa: a tabela é `tattoo_session`, não `session`, por colisão com
+a sessão de banco do SQLAlchemy e com `user_session`; e `origin` e
+`artist_percentage` são copiados do orçamento para a sessão, nunca lidos de volta no
+momento do repasse, porque o orçamento pode ser reaprovado com outro percentual e o
+que já foi executado precisa continuar valendo o que valia.
+
+**A etapa M4.2 entregou o ciclo do orçamento.** Criar, editar, aprovar e rejeitar,
+em `/quotes/*`. O percentual é congelado na aprovação, com 70% para cliente próprio
+e 50% para indicação do estúdio, e o gestor pode corrigir o percentual deste
+atendimento — a correção fica na auditoria junto do padrão que teria sido aplicado.
+
+Duas regras que só existem juntas: editar um orçamento aprovado o devolve a
+pendente **e apaga o percentual congelado**. Um percentual sobrevivente num
+orçamento pendente pareceria inofensivo e permitiria à próxima aprovação passar sem
+regravá-lo, aplicando o acordo antigo a um valor novo. Há teste para isso.
+
+O guest não acessa orçamentos (RN-ORC-001), e a política confere o **perfil**, não
+se a pessoa tatua: o guest tatua, então qualquer verificação por "atua como artista"
+o deixaria passar. **119 testes aprovados.**
+
+**A etapa M4.3 entregou as imagens de referência**, e com uma decisão revista: a
+imagem do MinIO deixou de ser distribuída livremente, e o armazenamento passou a ser
+um diretório em volume nomeado atrás da porta `ObjectStorage`, **sem container novo**
+(ADR-024). O provedor gerenciado compatível com S3 do ADR-006 segue como destino de
+produção, retomado na M8.
+
+A troca melhorou a segurança. Sem S3 não há URL assinada: a imagem é entregue por
+`GET /quotes/{id}/reference-images/{id}/content`, que confere a sessão como qualquer
+rota. **Nenhum endereço devolve a foto sem o cookie do usuário.** **139 testes
+aprovados.**
+
+Duas coisas para quem continuar o trabalho:
+
+- **A cópia de segurança passou a ter dois alvos**, o banco e o diretório de
+  arquivos. Está registrado na M8, junto da exigência de o teste de restauração
+  cobrir os dois.
+- **A ordem entre banco e arquivo é inversa nas duas operações**, de propósito:
+  anexar grava o arquivo antes da linha, remover apaga a linha antes do arquivo. A
+  regra é que o banco nunca aponte para arquivo inexistente, então a sobra possível é
+  sempre arquivo órfão — lixo invisível — e nunca imagem quebrada na tela.
+
+**Backend pausado em 28/09/2026 para a construção da interface** (ADR-025). A M4
+ficou em três quartos: falta a etapa M4.4, com as sessões, que volta ao fim da M7.1.
+A sprint está marcada como **pausada**, não concluída.
+
+**Em andamento: M7.1 — fatia vertical de interface.** O detalhamento está em
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md); o andamento, no `09`.
+
+O motivo da mudança: o risco "toda a interface concentrada na M7" estava aberto
+desde a reorganização em MVP e Fase 2, e a mitigação registrada — exercitar o
+`/api/v1/docs` — não mitigava o que importa. Contrato de API mostra que o endpoint
+responde, não que a regra foi entendida como o estúdio precisa.
+
+**O que a fatia antecipada permite demonstrar:** acesso, clientes, agenda com
+prevenção de conflito e orçamento até a aprovação com percentual congelado. **O que
+ela não permite:** sinal, pagamento, sessão executada e repasse. Das duas dores que
+justificam o sistema, a demonstração resolve inteira a de choque de horário nas
+macas e nenhuma parte da de saber quem recebe quanto.
+
+**A etapa M7.1.1 está fechada.** Login em tela dividida, casca com barra lateral,
+cliente HTTP com CSRF e tratamento central do 401, sessão, componentes base,
+formatadores de fuso e dinheiro, e o mecanismo dos quatro estados de tela.
+
+Os quatro critérios de aceite foram exercitados contra a API, não apenas lidos no
+código: navegação diferente por perfil, 401 devolvendo ao login com o destino
+preservado, **conta bloqueada respondendo 200 antes e 401 depois** do bloqueio sem
+nova autenticação no meio, e o **mesmo cookie** recusado depois do logout — a sessão
+deixa de existir no servidor, não só na interface.
+
+
+**A linguagem visual foi definida em 28/09/2026**, a partir do monograma e de telas
+de referência entregues pelo responsável: cromo escuro com área de trabalho clara,
+barra lateral, rótulo em caixa alta sobre todo título, título de display grande,
+tudo em pílula, cartão herói com uma única ação, e o ouro do monograma no lugar do
+carmim da referência. Está registrada na seção 4.0 de
+[`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md). O banner é a fotografia do
+estúdio em `frontend/public/brand/studio.webp`, e o monograma vetorizado está em
+`frontend/public/brand/logo.svg`.
+
+**A etapa M7.1.2 entregou a tela de clientes** em 29/09/2026: lista, cadastro,
+edição e alerta de duplicidade. A RN-CLI-004 foi verificada com dados reais — o
+proprietário vê três clientes, cada residente vê apenas os que cadastrou.
+
+O ambiente foi destravado e o `scripts/seed_demo.py` existe. Duas correções de
+ambiente ficaram registradas: as portas publicadas mudaram para **5433** e
+**8001**, para conviver com outro projeto na máquina, e a imagem do banco passou
+a ser `postgres:17` em vez da variante alpine, que quebrava ao criar cluster novo.
+
+**A etapa M7.1.3 está fechada.** A timeline de macas existe em `/schedule`:
+macas no eixo Y, horas no eixo X, em CSS Grid sem biblioteca (ADR-004). Aprovar,
+recusar com motivo de lista fechada e o **modal de conflito da RN-AGE-007**, que
+não oferece caminho para ignorar. O maior risco de estimativa do frontend saiu do
+caminho.
+
+**A interface encontrou dois defeitos que nenhum teste pegava:**
+
+1. O `409` de conflito não levava a reserva existente — o modal exigido pela
+   RN-AGE-007 era impossível de construir, e nada acusava.
+2. A API **não conseguia gravar agendamento nenhum**: `booking.session_id` aponta
+   para `tattoo_session` e nenhum caminho de importação da aplicação carregava
+   esse modelo. Os testes passavam porque o pytest carrega tudo no mesmo
+   processo. Corrigido por `app/core/orm_registry.py` (ADR-026).
+
+**A M7.1.3 foi fechada em duas partes**, e a primeira foi declarada concluída
+antes de estar: cobria RN-AGE-001 a 007 e 014, mas deixava a RN-AGE-004 pela
+metade e as RN-AGE-008, 009 e 010 de fora. A segunda parte fechou o que faltava,
+conferindo tela a tela contra a seção 4 das regras.
+
+O defeito mais sério estava na **RN-AGE-004**: duas solicitações no mesmo horário
+se empilhavam e a de cima escondia a de baixo, então o gestor decidia sem saber
+que havia concorrência.
+
+**A etapa M7.1.4 fechou a fatia antecipada** em 29/09/2026: orçamentos e imagens
+de referência em `/quotes`. Criar, editar, aprovar com o percentual congelado,
+rejeitar com motivo, e anexar, listar e remover imagens pela rota autenticada.
+
+**A regra que a tela precisava explicar, e explica:** editar um orçamento
+aprovado o devolve a Pendente e descarta o percentual acordado (RN-ORC-003 e
+RN-REP-006). O formulário avisa **antes** de salvar, com o percentual que será
+perdido escrito no aviso. Verificado com dados reais: um orçamento aprovado a
+70% voltou a Pendente com a participação zerada ao ter o valor total alterado.
+
+**A M7.1.4 encontrou um defeito de interface:** decidido o orçamento, o modal
+continuava no modo de decisão, oferecendo "Confirm approval" sobre algo já
+aprovado — e o segundo clique voltava do servidor com "Only a pending quote can
+be approved.", que quem acabara de aprovar lia como falha da própria aprovação.
+
+**Interface: 83 testes.** Componentes base agora cobrem todo controle — nenhum
+`<button>`, `<input>`, `<select>` ou `<textarea>` cru fora de
+`shared/components`, com uma exceção declarada. Responsividade de celular e
+tablet entregue.
+
+**A etapa M4.4 fechou a M4** em 30/09/2026: as sessões existem, e com elas o ciclo
+vai do orçamento aprovado à sessão concluída — a unidade sobre a qual a M6 vai
+calcular repasse.
+
+**As sessões nascem da aprovação, na mesma transação.** Orçamento aprovado sem
+sessões não significa nada: ninguém tem o que marcar como realizado e o repasse
+não tem sobre o que incidir. Na reaprovação, sessão já resolvida fica onde está e
+só as agendadas são refeitas pelo plano novo.
+
+**Realizada e concluída são estados diferentes, e é de propósito.** O artista
+marca que a sessão aconteceu; o gestor confirma quanto entrou. Só depois das duas
+a sessão vale para repasse (RN-ORC-005). Confirmar um valor diferente do informado
+exige motivo, que fica na auditoria.
+
+**Sessão parcial e o ajuste da RN-ORC-006 funcionam:** uma sessão de €250 cobrada
+a €100 vira `PARTIALLY_DONE`, e quando o gestor refaz as restantes e o
+comprometido deixa de fechar com o valor aprovado, o orçamento volta a Pendente
+com o percentual congelado descartado.
+
+**`CANCELLED` e `NO_SHOW` ficaram fora**, embora existam na tabela desde a M4.1:
+quem os produz é o cancelamento e o não comparecimento do agendamento, cuja
+consequência é financeira (RN-PAG-004) e pertence à M5.
+
+**Backend: 172 testes.** Um defeito da própria suíte apareceu ao crescê-la — cada
+teste montava um engine que ninguém devolvia, e o PostgreSQL passou a recusar
+conexão com `too many clients`, derrubando treze testes sadios. `Database.dispose()`
+existe por causa disso.
+
+**A sprint M5 fechou em 30/09/2026, e com ela o portão do sinal.** Até então a
+RN-AGE-005 e a RN-PAG-002 estavam escritas mas não valiam: `ApproveBooking` tinha
+um `_deposit_is_confirmed` que devolvia `True` sempre. Aprovar um agendamento
+agora exige pagamento confirmado.
+
+As decisões desta sprint estão registradas como **ADR-027** (o sinal pertence ao
+agendamento), **ADR-028** (agenda e financeiro se falam por portas declaradas pela
+agenda) e **ADR-029** (o sistema retém sozinho e nunca devolve sozinho).
+
+**O sinal pertence ao agendamento, não à sessão.** Foi a pergunta que a
+documentação não fechava: a RN-PAG-001 diz "todo agendamento exigirá €50" e o
+modelo só previa pagamento ligado a sessão ou a semana de guest — mas
+`booking.session_id` é nulo em todo horário que não vem de orçamento. Decidido
+com o usuário: o sinal é pago e recebido pelo estúdio para que o horário possa
+ser confirmado, e a solicitação fica pendente até o gestor confirmar no sistema
+que recebeu. `payment.booking_id` entrou no modelo por isso.
+
+**Cliente próprio do guest não exige sinal** (RN-GST-004): esses valores não
+passam pelo estúdio. O sistema reconhece o caso sem campo novo — o guest não
+acessa orçamento (RN-ORC-001), então um agendamento de guest sem sessão ligada é
+necessariamente cliente próprio dele.
+
+**O sistema retém sozinho, mas nunca devolve sozinho.** Reter é escrituração: o
+estúdio já está com o dinheiro e a RN-AGE-009 diz que ele fica, mesmo com aviso
+de 24 horas. Devolver é movimento de caixa, e a RN-PAG-009 manda o gestor
+registrar a devolução **depois de realizá-la**. O sistema aponta o que deve
+voltar; não lança a saída por conta própria.
+
+**Criar agendamento já aprovado mudou.** A RN-AGE-005 permite ao gestor criar em
+Aprovada *"desde que confirmem o sinal"*, e o sinal pertence ao agendamento, que
+não existe no instante da criação. O atalho passa a ser recusado onde há sinal a
+confirmar e continua aberto onde a regra não o pede. O caminho é: criar,
+confirmar o sinal, aprovar.
+
+> **Pendência desta entrega.** A suíte inteira não completou num só comando: a VM
+> do Docker desta máquina passou a somente-leitura no meio da execução e derrubou
+> o container da API. As suítes de agenda (31 testes) e de financeiro (32)
+> passaram depois da última alteração, com Ruff limpo. Falta rodar `pytest`
+> inteiro depois de reiniciar o Docker.
+
+**A etapa M7.2.1 fechou em 30/09/2026** — painel do gestor com o que está
+esperando decisão, antecipada a pedido do estúdio.
+
+O problema relatado: o gerente precisa abrir o calendário para descobrir se existe
+solicitação de agendamento; se não abrir, não sabe, e se abrir e não reparar, passa
+batido. A RN-AGE-012 já previa que "uma nova solicitação aparecerá no painel de
+gerente e proprietário", e a seção 10.1 lista o conteúdo desse painel — nunca foi
+construído, e o `HomeView` é marcador de lugar.
+
+A área mostra as três origens da seção 10.1: solicitações de agendamento,
+pagamentos aguardando confirmação e orçamentos pendentes. O contador fica na barra
+lateral, visível em toda tela — é ele que resolve a dor, porque o problema é
+justamente não estar no painel. Atualiza sozinho a cada minuto.
+
+**Não há migração nem tabela nova.** Pendência é estado que já existe: agendamento
+em `REQUESTED`, pagamento em `REPORTED`, orçamento em `PENDING`. A tabela
+`notification` do modelo de dados serve à caixa interna com e-mail e é da sprint
+F2, junto do worker.
+
+No backend entraram três filtros por estado — `GET /bookings`, `GET /quotes` e o
+novo `GET /payments` — e nada além disso. `BookingRepository.list_pending`, que
+existia desde a M3 e nunca fora chamado, deu lugar ao filtro genérico.
+
+**O ciclo de atualização mora no estado compartilhado**, e não na tela do painel:
+se a tela carregasse, o contador só saberia de algo novo enquanto o gestor
+estivesse no painel — justamente onde ele não está quando o problema acontece.
+Quem liga e desliga o ciclo é a casca, que é onde se sabe quem entrou; o
+residente não vê a fila do estúdio, e buscá-la para ele seria pedir um 403 por
+minuto ao servidor.
+
+**Conferido contra a aplicação rodando:** um sinal foi confirmado pela API, sem
+tocar na tela, e o contador caiu de 4 para 3 em 20 segundos. Como residente, zero
+requisições em 15 segundos de observação.
+
+**Próximo passo:** sprint M6 — repasses e fechamento semanal. Cálculo por sessão,
+fechamento de sexta às 20h `Europe/Dublin`, demonstrativo do artista e ajustes
+negativos de devolução posterior (RN-REP-003 a RN-REP-007).
 
 ## Estado de aprovação e limite de trabalho
 
-- O usuário pediu documentação completa em Markdown dentro da pasta `DOCS`.
-- O usuário pediu explicitamente para documentar as decisões técnicas alinhadas; alterações realizadas permanecem restritas à documentação.
-- Essa autorização cobre documentação e análise. **Não existe autorização para escrever código, instalar dependências ou implementar o sistema.**
-- Não começar implementação ao concluir arquitetura sem perguntar e aguardar aprovação explícita.
-- A aprovação final esperada é uma resposta clara à pergunta: “Arquitetura aprovada. Posso iniciar a implementação?”
+**A implementação foi autorizada em 24/09/2026.** A pergunta "Arquitetura aprovada.
+Posso iniciar a implementação?" foi respondida e a Fase 14 abriu o desenvolvimento.
+Escrever código deixou de ser proibido.
+
+O que continua valendo, sprint após sprint:
+
+- **Aprovação é por sprint e por etapa, não geral.** Discutir não é autorizar;
+  planejar não é autorizar. Antes de aprovação explícita não se altera arquivo,
+  banco ou dependência. As palavras que liberam estão em `CLAUDE.md`, seção 2.
+- **Dependência nova exige autorização própria**, caso a caso. `pwdlib` foi
+  autorizada assim (ADR-010).
+- Não assumir requisito. Dúvida crítica se pergunta antes de propor solução.
+- Arquitetura já registrada não muda sem explicar o impacto, apresentar
+  alternativa e obter aprovação.
 
 ## Orientação para a próxima IA
 

@@ -4,10 +4,19 @@ from sqlalchemy.orm import Session
 
 from app.core.csrf_guard import CsrfGuard
 from app.core.database import Database
+
+# Importado pelo efeito de registrar todos os modelos no metadata antes de
+# qualquer gravacao. Ver o modulo para o defeito que isto evita.
+from app.core.orm_registry import METADATA  # noqa: F401
 from app.core.settings import Settings
 from app.modules.clients.clients_factory import ClientsFactory
+from app.modules.finance.finance_factory import FinanceFactory
 from app.modules.identity.identity_factory import IdentityFactory
+from app.modules.quotes.application.quote_settled_sessions import QuoteSettledSessions
+from app.modules.quotes.quotes_factory import QuotesFactory
 from app.modules.scheduling.scheduling_factory import SchedulingFactory
+from app.shared.storage.filesystem_object_storage import FilesystemObjectStorage
+from app.shared.storage.object_storage import ObjectStorage
 
 
 class Container:
@@ -29,7 +38,23 @@ class Container:
         )
         self._identity = IdentityFactory(self._settings)
         self._clients = ClientsFactory()
-        self._scheduling = SchedulingFactory()
+        # O repasse pergunta ao orcamento o que foi quitado; os dois se
+        # encontram aqui, pela porta que o financeiro declarou (ADR-028).
+        self._finance = FinanceFactory(settled_sessions=QuoteSettledSessions)
+        # A agenda recebe as portas, nao o modulo financeiro: e aqui, na raiz de
+        # composicao, que os dois se encontram (ADR-016).
+        self._scheduling = SchedulingFactory(
+            deposit_gate=self._finance.deposit_gate,
+            settlement_gate=self._finance.settlement_gate,
+        )
+        self._storage: ObjectStorage = FilesystemObjectStorage(self._settings.storage_root)
+        # O orcamento pergunta a identidade o acordo do artista; os dois se
+        # encontram aqui, pela porta que o orcamento declarou (ADR-028).
+        self._quotes = QuotesFactory(
+            settings=self._settings,
+            storage=self._storage,
+            artist_terms=self._identity.artist_terms,
+        )
 
     @classmethod
     def instance(cls) -> "Container":
@@ -65,6 +90,19 @@ class Container:
     @property
     def scheduling(self) -> SchedulingFactory:
         return self._scheduling
+
+    @property
+    def finance(self) -> FinanceFactory:
+        return self._finance
+
+    @property
+    def quotes(self) -> QuotesFactory:
+        return self._quotes
+
+    @property
+    def storage(self) -> ObjectStorage:
+        """Exposto para que a suíte confira o armazenamento sem recriar o cliente."""
+        return self._storage
 
     def open_session(self) -> Iterator[Session]:
         with self._database.session() as session:

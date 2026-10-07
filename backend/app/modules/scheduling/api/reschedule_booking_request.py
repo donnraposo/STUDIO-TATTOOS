@@ -9,4 +9,4 @@ class RescheduleBookingRequest(BaseModel):
 
     starts_at: datetime
     ends_at: datetime
-    booth_id: uuid.UUID | None = None
+    bench_id: uuid.UUID | None = None

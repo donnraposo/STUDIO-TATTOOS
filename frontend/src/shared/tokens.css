@@ -18,9 +18,22 @@
   --text-label-2: 1rem;
   --text-label-3: 0.875rem;
 
+  /* Display. A referencia de design apoia cada tela num titulo muito maior do
+     que o topo da escala original, e e dele que vem o silencio ao redor do
+     conteudo. Usa clamp para nao estourar no celular. */
+  --text-display-1: clamp(2.5rem, 6vw, 4rem);
+  --text-display-2: clamp(2rem, 4vw, 2.75rem);
+
+  /* Kicker: rotulo em caixa alta acima do titulo. Na referencia ele aparece
+     sobre TODO titulo, e e o que da ritmo a pagina. */
+  --text-kicker: 0.6875rem;
+
   --line-tight: 1.2;
+  --line-display: 1.04;
   --line-normal: 1.5;
   --tracking-wide: 0.1em;
+  --tracking-kicker: 0.18em;
+  --tracking-display: -0.02em;
 
   /* Marca: ouro extraido da logo */
   --color-gold-bright: #f7de95;
@@ -34,10 +47,15 @@
   --color-ink-soft: #1a1a1c;
   --color-ink-line: #2a2a2d;
 
-  /* Superficies claras */
-  --color-canvas: #f2f2f0;
+  /* Superficies claras. O off-white e levemente quente para conversar com o
+     ouro; um cinza neutro deixaria a marca parecendo deslocada na propria tela. */
+  --color-canvas: #f3f1ed;
   --color-surface: #ffffff;
-  --color-surface-soft: #e8e8e6;
+  --color-surface-soft: #e9e6e0;
+
+  /* Campo de formulario. A referencia usa preenchimento sutil em vez de borda
+     forte: o campo se le como area clicavel sem competir com o botao. */
+  --color-field: #f6f4f0;
 
   /* Texto */
   --color-on-dark: #f5f4f1;
@@ -81,12 +99,71 @@
   --border-thin: 0.0625rem solid var(--color-border);
   --border-dark: 0.0625rem solid var(--color-border-dark);
 
+  /* Midia de marca. O caminho fica aqui e nao no componente: trocar a foto
+     passa a ser uma linha, e nenhuma tela guarda endereco de arquivo. */
+  --image-studio: url("/brand/studio.webp");
+
+  /* O monograma entra como fundo, e nao como <img>, por dois motivos. E
+     decorativo -- o nome do estudio esta escrito ao lado --, e assim o Vite nao
+     tenta transformar o arquivo em modulo, que era o que devolvia JavaScript no
+     lugar da imagem. */
+  --image-logo: url("/brand/logo.svg");
+
+  /* Proporcao retrato do monograma. Quem desenhar caixa para ele usa isto, em
+     vez de descobrir na tela que o escudo ficou cortado. */
+  --brand-mark-ratio: 1054 / 1492;
+
+  /* Sobreposicao sobre foto. A imagem ja e escura a esquerda, mas o recorte
+     muda com a largura da tela -- em telas estreitas o lado claro sobe para
+     debaixo do texto. A sobreposicao garante a leitura em qualquer corte, que e
+     o tipo de coisa que so aparece no celular de outra pessoa. */
+  --overlay-media: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 92%) 0%,
+    rgb(0 0 0 / 70%) 38%,
+    rgb(0 0 0 / 25%) 70%,
+    rgb(0 0 0 / 10%) 100%
+  );
+
+  /* Versao para painel alto e estreito, como o lado de marca do login. Ali a
+     largura inteira e "esquerda", entao a sobreposicao horizontal cobriria a
+     foto por completo. Escurece de cima para baixo e mantem a imagem visivel. */
+  --overlay-media-panel: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 45%) 0%,
+    rgb(0 0 0 / 65%) 55%,
+    rgb(0 0 0 / 85%) 100%
+  );
+
+  /* Fundo do modal. Escuro o bastante para tirar a atencao do que esta atras
+     sem apagar o contexto -- no conflito de agenda, ver a agenda por tras e
+     parte da explicacao. */
+  --overlay-backdrop: rgb(14 14 15 / 62%);
+
   --shadow-card: 0 0.75rem 2rem rgb(14 14 15 / 6%);
   --shadow-raised: 0 1rem 2.5rem rgb(14 14 15 / 12%);
   --shadow-gold: 0 0 1.5rem rgb(217 164 65 / 28%);
   --shadow-focus: 0 0 0 0.1875rem rgb(217 164 65 / 45%);
 
   /* Dimensoes */
+  --sidebar-width: 17.5rem;
+
+  /* Timeline de macas. A largura minima da faixa de trinta minutos e o que
+     garante legibilidade quando o dia inteiro nao cabe na tela: abaixo disso o
+     bloco deixa de mostrar o nome do cliente, e a grade vira enfeite. */
+  --slot-width: 2.5rem;
+
+  /* Comparacao entre meses: a largura da barra proporcional dentro da
+     linha. Token proprio porque emprestar a medida de outra coisa faz a
+     outra coisa mudar junto no primeiro ajuste. */
+  --chart-bar-width: 8rem;
+  --chart-bar-height: 0.25rem;
+  --lane-label-width: 9rem;
+  --lane-label-width-compact: 5rem;
+  --hero-height: 22rem;
+  /* No celular o heroi ocupa menos: 22rem tomariam a tela inteira antes de
+     qualquer conteudo aparecer. */
+  --hero-height-compact: 14rem;
   --touch-target: 2.75rem;
   --icon-size: 1.25rem;
   --icon-box: 2.75rem;
@@ -94,7 +171,47 @@
   --brand-mark-size: 3.5rem;
   --content-measure: 42rem;
 
+  /* Miniatura de imagem de referencia. Grande o bastante para reconhecer o
+     desenho, pequena o bastante para caber quatro numa linha de celular. */
+  --thumb-size: 6rem;
+
+  /* Contador de pendencias. Pilula que cabe dois digitos sem esticar e some
+     quando nao ha nada a contar. */
+  --badge-size: 1.375rem;
+
   --opacity-disabled: 0.5;
+
+  /* Invisivel mas ainda presente para o teclado e para o leitor de tela. Usado
+     pelo campo de arquivo, que precisa continuar alcancavel por Tab enquanto
+     quem aparece na tela e o botao do projeto. */
+  --opacity-invisible: 0;
   --transition-fast: 160ms ease;
   --transition-slow: 380ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Trilhas de grade reutilizaveis, para que largura minima de cartao nao seja
+     escolhida de novo a cada tela. */
+  --track-card-min: 16rem;
+
+  /* Cartao de lista que carrega tres acoes no rodape. Em 16rem elas nao
+     cabem numa linha e quebram, deixando a ultima sozinha -- tres botoes
+     medem 279px e o rodape oferecia 217px. Token proprio em vez de alargar
+     o cartao de todas as listas, que nao precisam disso. */
+  --track-card-wide: 21rem;
+  --track-tile-min: 10rem;
+
+  /* Camadas. Existem para que sobreposicao seja decidida uma vez, aqui, e nao
+     com numeros escolhidos no susto quando duas coisas se cobrirem. */
+  --layer-base: 0;
+  --layer-raised: 10;
+  --layer-sticky: 100;
+  --layer-overlay: 900;
+  --layer-modal: 1000;
+
+  /* Pontos de quebra. NAO podem ser usados dentro de @media: variavel CSS nao e
+     avaliada na condicao da consulta. Ficam aqui como fonte unica do valor, que
+     e repetido literalmente nas consultas -- a unica excecao a regra de nenhum
+     literal em componente. Ver DOCS/10_ROADMAP_FRONTEND.md secao 4.3. */
+  --bp-sm: 40rem;
+  --bp-md: 64rem;
+  --bp-lg: 80rem;
 }

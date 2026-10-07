@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
 from app.modules.scheduling.domain.booking_status import BookingStatus
+from app.modules.scheduling.domain.deposit_gate import DepositGate
 from app.modules.scheduling.domain.scheduling_policy import SchedulingPolicy
 from app.modules.scheduling.infrastructure.booking_repository import BookingRepository
 from app.modules.scheduling.infrastructure.models.booking import Booking
@@ -19,18 +20,27 @@ class ApproveBooking:
     conflito de maca pode aparecer, mesmo que a solicitação tenha sido aceita
     sem problema — outra pode ter sido aprovada no intervalo.
 
-    **Pendência conhecida:** a RN-AGE-005 exige sinal confirmado antes de
-    aprovar. O módulo de pagamentos é a sprint M5; o portão financeiro entra
-    naquele momento, no ponto marcado por `_deposit_is_confirmed`."""
+    **O sinal é conferido antes de qualquer coisa mudar** (RN-AGE-005 e
+    RN-PAG-002): uma solicitação não pode ser aprovada enquanto o pagamento do
+    sinal não estiver confirmado. Quem responde é o módulo financeiro, através
+    da porta `DepositGate` — a agenda pergunta, não calcula.
+
+    O horário pertence a um trabalho orçado quando tem sessão ligada. A resposta
+    importa porque o agendamento de cliente próprio do guest não exige sinal
+    (RN-GST-004), e é por ausência de sessão que ele se reconhece: o guest não
+    acessa orçamento (RN-ORC-001), então o que o estúdio lhe indica é sempre o
+    gestor quem orça."""
 
     def __init__(
         self,
         bookings: BookingRepository,
         policy: SchedulingPolicy,
+        deposits: DepositGate,
         audit: AuditRecorder,
     ) -> None:
         self._bookings = bookings
         self._policy = policy
+        self._deposits = deposits
         self._audit = audit
 
     def execute(self, actor: AuthenticatedUser, booking_id: uuid.UUID) -> Booking:
@@ -44,8 +54,12 @@ class ApproveBooking:
         if booking.status != BookingStatus.REQUESTED:
             raise BusinessRuleError("Only a pending request can be approved.")
 
-        if not self._deposit_is_confirmed(booking):
-            raise BusinessRuleError("The deposit must be confirmed before approval.")
+        if not self._deposits.is_satisfied_for(
+            booking.id, booking.artist_id, booking.session_id is not None
+        ):
+            raise BusinessRuleError(
+                "The €50 deposit must be registered and confirmed before approving this booking."
+            )
 
         booking.status = BookingStatus.APPROVED
         booking.decided_at = datetime.now(UTC)
@@ -63,12 +77,3 @@ class ApproveBooking:
         )
         return booking
 
-    @staticmethod
-    def _deposit_is_confirmed(booking: Booking) -> bool:
-        """Costura para a sprint M5.
-
-        Enquanto o módulo de pagamentos não existe, não há como consultar o
-        sinal, e travar a aprovação aqui impediria qualquer uso da agenda. A
-        verificação real substitui este ponto na M5, sem alterar o restante do
-        caso de uso."""
-        return True

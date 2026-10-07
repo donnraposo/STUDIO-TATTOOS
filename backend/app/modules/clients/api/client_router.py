@@ -8,6 +8,7 @@ from app.modules.clients.api.client_request import ClientRequest
 from app.modules.clients.api.client_response import ClientResponse
 from app.modules.clients.api.merge_clients_request import MergeClientsRequest
 from app.modules.clients.api.registered_client_response import RegisteredClientResponse
+from app.modules.clients.api.update_client_request import UpdateClientRequest
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
 from app.shared.errors.business_rule_error import BusinessRuleError
 
@@ -58,6 +59,8 @@ class ClientRouter:
                 name=payload.name,
                 phone=payload.phone,
                 instagram=payload.instagram,
+                source=payload.source,
+                brought_by_artist_id=payload.brought_by_artist_id,
             )
             return RegisteredClientResponse(
                 client=ClientResponse.from_model(client),
@@ -86,7 +89,7 @@ class ClientRouter:
             return ClientContactResponse.from_model(client)
 
     def update_client(
-        self, client_id: uuid.UUID, payload: ClientRequest, request: Request
+        self, client_id: uuid.UUID, payload: UpdateClientRequest, request: Request
     ) -> ClientResponse:
         actor = self._authenticator.require_user(request)
         self._container.csrf_guard.validate(request)
@@ -98,6 +101,8 @@ class ClientRouter:
                 name=payload.name,
                 phone=payload.phone,
                 instagram=payload.instagram,
+                source=payload.source,
+                brought_by_artist_id=payload.brought_by_artist_id,
             )
             return ClientResponse.from_model(client)
 

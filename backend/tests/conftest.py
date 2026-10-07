@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -19,10 +20,24 @@ def test_database() -> DatabaseProvisioner:
 
 
 @pytest.fixture
-def container(test_database: DatabaseProvisioner) -> Iterator[Container]:
+def container(test_database: DatabaseProvisioner, tmp_path: Path) -> Iterator[Container]:
+    """Cada teste recebe uma raiz de armazenamento própria.
+
+    O banco é limpo entre testes, mas o sistema de arquivos não se limparia
+    sozinho: sem isto, um arquivo gravado por um teste continuaria visível para
+    os seguintes, e um teste de contagem de imagens passaria ou falharia conforme
+    a ordem de execução."""
     test_database.clear()
     Container.reset()
-    yield Container(settings=test_database.settings)
+    settings = test_database.settings.model_copy(
+        update={"storage_root": str(tmp_path / "objects")}
+    )
+    active = Container(settings=settings)
+    yield active
+    # Sem isto, o pool de cada teste segura conexoes ate o servidor recusar
+    # novas. A suite passou a estourar `too many clients` ao crescer, e a falha
+    # aparecia em testes que nao tinham nada de errado.
+    active.database.dispose()
     Container.reset()
 
 

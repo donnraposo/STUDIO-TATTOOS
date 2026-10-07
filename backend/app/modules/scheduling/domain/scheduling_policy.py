@@ -28,6 +28,6 @@ class SchedulingPolicy:
             return True
         return actor.id == artist_id
 
-    def can_manage_booths(self, actor: AuthenticatedUser) -> bool:
+    def can_manage_benches(self, actor: AuthenticatedUser) -> bool:
         """RN-AGE-011: acrescentar maca e bloquear horário são do gestor."""
         return actor.is_staff
