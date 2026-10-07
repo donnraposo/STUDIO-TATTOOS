@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { DepositRequirement } from "@/features/scheduling/DepositRequirement";
 import AppButton from "@/shared/components/AppButton.vue";
@@ -11,6 +11,7 @@ import AppTextarea from "@/shared/components/AppTextarea.vue";
 import type { Bench } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
 import type { QuoteOrigin } from "@/shared/domain/Quote";
+import { SessionValues } from "@/shared/domain/SessionValues";
 import { StudioSplit } from "@/shared/domain/StudioSplit";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 
@@ -60,7 +61,6 @@ export interface BookingWork {
   totalValue: string;
   valuePerSession: string;
   plannedSessions: number;
-  minutesPerSession: number;
   sessionNumber: number;
   notes: string | null;
 }
@@ -109,7 +109,6 @@ const sizeEstimate = ref("");
 const totalValue = ref("");
 const valuePerSession = ref("");
 const plannedSessions = ref("1");
-const minutesPerSession = ref("120");
 const sessionNumber = ref("1");
 const notes = ref("");
 
@@ -143,16 +142,55 @@ const split = new StudioSplit();
 const studioShare = computed(() => split.studioShareForOrigin(origin.value as QuoteOrigin));
 const artistShare = computed(() => `${split.artistShareFor(origin.value as QuoteOrigin)}%`);
 
+const values = new SessionValues();
+
+/** Preencher um preenche o outro. Pedir os dois seria pedir ao tatuador a conta
+ * que o sistema faz — e abrir a chance de os dois números discordarem, que é
+ * pior do que faltar um: o repasse sairia de um e o orçamento aprovado do
+ * outro. */
+/** Qual dos dois o tatuador escreveu por último. O outro é derivado dele, e
+ * nunca o contrário.
+ *
+ * **Sem isto, o sistema reescrevia o que a pessoa acabou de digitar.** Os
+ * observadores do Vue correm depois do evento: digitar três sessões e então mil
+ * de total fazia o observador rodar por último e devolver €999,99 ao campo —
+ * derivando o total de um valor por sessão que ele mesmo tinha arredondado.
+ * Quem digitou mil via novecentos e noventa e nove. */
+const driving = ref<"total" | "session">("total");
+
+function fillFromTotal(): void {
+  driving.value = "total";
+  valuePerSession.value = values.perSessionFrom(
+    totalValue.value,
+    Number(plannedSessions.value) || 1,
+  );
+}
+
+function fillFromSession(): void {
+  driving.value = "session";
+  totalValue.value = values.totalFrom(valuePerSession.value, Number(plannedSessions.value) || 1);
+}
+
+/** Mudar o número de sessões recalcula **o campo derivado**, nunca o que foi
+ * digitado: quem disse "são quatro em vez de três" não espera ver o próprio
+ * número trocar. */
+watch(plannedSessions, () => {
+  const sessions = Number(plannedSessions.value) || 1;
+  if (driving.value === "session") {
+    totalValue.value = values.totalFrom(valuePerSession.value, sessions);
+  } else {
+    valuePerSession.value = values.perSessionFrom(totalValue.value, sessions);
+  }
+});
+
 const workIncomplete = computed(
   () =>
     props.canQuote &&
     (description.value.trim() === "" ||
       bodyRegion.value.trim() === "" ||
       sizeEstimate.value.trim() === "" ||
-      Number(totalValue.value) <= 0 ||
-      Number(valuePerSession.value) <= 0 ||
-      Number(plannedSessions.value) < 1 ||
-      Number(minutesPerSession.value) < 1),
+      !values.isComplete(totalValue.value, valuePerSession.value) ||
+      Number(plannedSessions.value) < 1),
 );
 
 const incomplete = computed(
@@ -180,7 +218,6 @@ function submit(): void {
           totalValue: totalValue.value.trim(),
           valuePerSession: valuePerSession.value.trim(),
           plannedSessions: Number(plannedSessions.value) || 1,
-          minutesPerSession: Number(minutesPerSession.value) || 120,
           sessionNumber: Number(sessionNumber.value) || 1,
           notes: notes.value.trim() === "" ? null : notes.value.trim(),
         }
@@ -284,39 +321,33 @@ function submit(): void {
         />
       </div>
 
+      <AppInput
+        v-model="plannedSessions"
+        label="Planned sessions"
+        type="number"
+        required
+        :disabled="props.busy"
+      />
+
       <div class="period">
         <AppInput
           v-model="totalValue"
           label="Total value (€)"
           type="number"
-          required
           :disabled="props.busy"
+          @update:model-value="fillFromTotal"
         />
         <AppInput
           v-model="valuePerSession"
           label="Value per session (€)"
           type="number"
-          required
           :disabled="props.busy"
+          @update:model-value="fillFromSession"
         />
       </div>
-
-      <div class="period">
-        <AppInput
-          v-model="plannedSessions"
-          label="Planned sessions"
-          type="number"
-          required
-          :disabled="props.busy"
-        />
-        <AppInput
-          v-model="minutesPerSession"
-          label="Minutes per session"
-          type="number"
-          required
-          :disabled="props.busy"
-        />
-      </div>
+      <p class="hint">
+        Fill in whichever you have — the other one follows.
+      </p>
 
       <AppInput
         v-model="sessionNumber"

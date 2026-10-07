@@ -331,6 +331,12 @@ async function create(draft: BookingDraft): Promise<void> {
 
     if (draft.work) {
       const work = draft.work;
+      // A duracao sai do proprio horario marcado. Era campo do formulario e
+      // saiu: o tatuador ja disse a que horas comeca e termina, e perguntar de
+      // novo so abria a chance de os dois numeros discordarem.
+      const minutes = Math.round(
+        (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000,
+      );
       const created = await quotes.create(
         draft.clientId,
         {
@@ -341,7 +347,7 @@ async function create(draft: BookingDraft): Promise<void> {
           totalValue: work.totalValue,
           plannedSessions: work.plannedSessions,
           plannedValuePerSession: work.valuePerSession,
-          estimatedDurationMinutes: work.minutesPerSession,
+          estimatedDurationMinutes: minutes,
           notes: work.notes,
         },
         draft.artistId,
