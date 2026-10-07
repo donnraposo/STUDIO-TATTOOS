@@ -1,0 +1,127 @@
+# Producao. **Nao e o compose.yaml com outro nome.**
+#
+# A diferenca que mais confunde quem vai implantar esta na secao 8 de
+# 04_ARQUITETURA_TECNICA.md: o frontend e container em desenvolvimento e **nao
+# e** em producao. O Vue vira arquivos estaticos dentro da imagem do Caddy, que
+# ja esta ali para o TLS e para o proxy da API.
+#
+# Quem copiar o compose de desenvolvimento para o servidor sobe um servidor de
+# desenvolvimento em producao -- com recarga automatica, codigo montado por
+# volume e `ENVIRONMENT=development`, que desliga a exigencia de HTTPS no
+# cookie de sessao e libera o `seed_demo`. O roadmap chama isso de "o erro
+# previsivel aqui", e e por isso que este arquivo existe separado.
+#
+# Quatro containers: os tres minimos da secao 8 mais a copia de seguranca,
+# conforme a decisao de 07/10/2026.
+#
+# O ambiente vem de `.env.production`, e **nao** de `.env`. Nome distinto de
+# proposito: com o mesmo nome, rodar este compose numa maquina que tenha o
+# arquivo de desenvolvimento subiria producao com `ENVIRONMENT=development` --
+# cookie de sessao sem exigir HTTPS e `seed_demo` liberado. Um erro silencioso,
+# descoberto tarde.
+#
+#   docker compose -f compose.production.yaml --env-file .env.production up -d --build
+
+name: tattoo-studio-production
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Europe/Dublin
+    # **Sem `ports`.** "Banco acessivel publicamente" e um dos riscos declarados
+    # da M8: publicar 5432 no VPS poe o banco na internet, protegido so pela
+    # senha. Quem precisa dele -- a API e a copia -- fala pela rede interna do
+    # compose, que nao sai da maquina.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backend.Dockerfile
+      target: production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      ENVIRONMENT: production
+      POSTGRES_HOST: postgres
+      TZ: Europe/Dublin
+    # **Sem `ports`.** Quem fala com a API e o Caddy, pela rede interna. Publicar
+    # 8000 abriria um caminho sem TLS para o mesmo sistema -- e o cookie de
+    # sessao, marcado como `Secure` em producao, nao viajaria por ele: o acesso
+    # pareceria quebrado em vez de proibido, que e pior.
+    #
+    # A migracao roda antes do servidor subir, e esta escrita aqui para quem
+    # implanta ver. Um deploy que esquece a migracao sobe uma aplicacao que
+    # espera colunas que o banco nao tem.
+    command:
+      - sh
+      - -c
+      - "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      # Os arquivos enviados ficam no volume local do VPS (decisao de
+      # 07/10/2026). Por isso a copia tem dois alvos, e nao um.
+      - object_storage:/var/lib/tattoo-studio/objects
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  caddy:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/caddy.Dockerfile
+      target: production
+    restart: unless-stopped
+    environment:
+      STUDIO_DOMAIN: ${STUDIO_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # **`caddy_data` e critico.** Guarda os certificados emitidos. Perde-lo
+      # faz o Caddy pedir tudo de novo ao Let's Encrypt, que limita quantas
+      # vezes isso pode acontecer por semana -- e o sistema fica sem TLS ate o
+      # limite liberar.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+  backup:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/backup.Dockerfile
+      target: production
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_HOST: postgres
+      TZ: Europe/Dublin
+    volumes:
+      # Somente leitura: a copia le os arquivos e nao tem por que alterar nada.
+      # Um script de copia com permissao de escrita no acervo e um acidente
+      # esperando um `rm` mal escrito.
+      - object_storage:/var/lib/tattoo-studio/objects:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  object_storage:
+  caddy_data:
+  caddy_config:

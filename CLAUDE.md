@@ -20,6 +20,7 @@ documentação é mantida atualizada a cada entrega exatamente para evitar isso.
 | Por que cada decisão foi tomada | `DOCS/08_DECISOES_ARQUITETURA.md` |
 | **Andamento das sprints** | **`DOCS/09_ROADMAP_IMPLEMENTACAO.md`** |
 | Telas, componentes e ordem do frontend | `DOCS/10_ROADMAP_FRONTEND.md` |
+| Como implantar, restaurar e o que conferir quando para | `DOCS/11_RUNBOOK_IMPLANTACAO.md` |
 
 ## 1. O que é o sistema
 

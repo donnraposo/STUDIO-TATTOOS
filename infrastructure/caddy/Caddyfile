@@ -1,0 +1,56 @@
+# Entrada unica do sistema em producao.
+#
+# Interface e API no **mesmo dominio** (secao 3 de 04_ARQUITETURA_TECNICA.md):
+# e isso que dispensa CORS e mantem o cookie de sessao simples. Separando os
+# dois dominios, o cookie precisaria de SameSite=None, que e justamente o que
+# nao se quer num cookie de sessao.
+#
+# O dominio vem do ambiente porque o repositorio nao conhece o do estudio, e
+# escrever um aqui dentro obrigaria a mudar codigo para publicar noutro lugar.
+
+{
+	# Caddy pede o certificado ao Let's Encrypt sozinho, e renova sozinho. O
+	# e-mail e por onde a autoridade avisa de falha de renovacao -- sem ele, o
+	# certificado vence em silencio.
+	email {$ACME_EMAIL}
+}
+
+{$STUDIO_DOMAIN} {
+	encode zstd gzip
+
+	# A API primeiro: o caminho e mais especifico, e deixa-la depois do
+	# arquivo estatico faria o `try_files` responder index.html a uma chamada
+	# de API, que o navegador leria como JSON invalido.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/studio
+
+		# Aplicacao de pagina unica: qualquer endereco que nao seja arquivo cai
+		# no index.html, e o roteador do Vue resolve. Sem isto, recarregar a
+		# pagina em /accounts devolveria 404 -- o servidor procuraria um arquivo
+		# com esse nome.
+		try_files {path} /index.html
+		file_server
+	}
+
+	# Cabecalhos que o navegador honra em qualquer pagina servida daqui.
+	header {
+		# HSTS: um ano, e o navegador recusa http neste dominio mesmo que
+		# alguem digite. Vale depois da primeira visita por https.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# O Caddy anuncia a propria versao por padrao; nao ha razao para dizer
+		# a um visitante qual servidor e qual versao esta no ar.
+		-Server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
