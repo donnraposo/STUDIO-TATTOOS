@@ -240,7 +240,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Recurso | Endpoints principais |
 |---|---|
 | Autenticação | `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, `POST /auth/password-reset` |
-| Usuários | `GET/POST /users`, `PUT /users/{id}`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
+| Usuários | `GET/POST /users`, `PUT /users/{id}`, `PUT /users/{id}/password`, `POST /users/{id}/approve`, `/reject`, `/block`, `/unblock`, `PUT /users/{id}/percentage` |
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
@@ -257,6 +257,12 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Auditoria | `GET /audit-logs` |
 | Notificações | `GET /notifications`, `POST /notifications/{id}/read` |
 | Saúde | `GET /health`, `GET /ready` |
+
+**A senha tem rota própria** e não é campo do cadastro: defini-la encerra as
+sessões da conta (RN 2.7), e num `salvar` junto com telefone e e-mail o gestor
+derrubaria alguém sem saber que o faria. A senha nunca volta em resposta e não
+entra na auditoria — a regra proíbe que gestores **visualizem** senhas, e
+definir uma nova não é ver a antiga.
 
 **Não há rota de exclusão de conta**, e é decisão: a conta é referenciada por
 orçamento, agendamento, cliente, pagamento, repasse e auditoria. Apagá-la

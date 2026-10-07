@@ -38,11 +38,11 @@ sessão, cliente HTTP autenticado e biblioteca de componentes exercitada.
 | Painel com o que espera decisão | `HomeView` com a fila das três origens e o contador na casca |
 | Repasses | `PayoutsView` com lista, demonstrativo e confirmação de transferência |
 | Sessões | `SessionList` e `SessionDecisionModal` dentro do detalhe do orçamento |
-| Contas e artistas | `AccountsView` com criação, **edição**, bloqueio e o acordo de percentual (ADR-030) |
+| Contas e artistas | `AccountsView` com criação, **edição**, **senha**, bloqueio e o acordo de percentual (ADR-030) |
 | Pagamentos e sinal | `PaymentsView` com a fila e o histórico; `DepositPanel` dentro do agendamento |
 | Painel do artista | `ArtistPanel` no `HomeView`: o dia, o que espera o estúdio e o último repasse |
 | Faturamento | `RevenueView` com os três indicadores, a comparação entre meses e o detalhamento |
-| 194 testes | Classes puras, sem montar componente |
+| 197 testes | Classes puras, sem montar componente |
 
 **A M7.2 fechou em 06/10/2026**, nas seis etapas. O ciclo se percorre inteiro
 pela interface e cada perfil tem a sua entrada. O que falta do MVP é a M8.
@@ -217,6 +217,7 @@ está no `CLAUDE.md`.
 | `AppModal` | Rolagem própria. Sem ela, num celular deitado o modal passa das duas bordas e o topo fica inalcançável — o primeiro campo some |
 | `AppTextarea` | Mesmo contrato do `AppInput` e mesma pílula, com o raio aberto: numa caixa de várias linhas o canto arredondado dobraria as pontas do texto para dentro |
 | `AppBadgeCount` | **Some quando é zero.** Um contador mostrando "0" ocupa o mesmo espaço e a mesma atenção de um que mostra "3", e ensina o olho a ignorá-lo — o oposto do que ele existe para fazer |
+| `AppCard` | **Altura cheia, corpo que cresce e rodapé que quebra linha.** Numa grade, cartões com conteúdo de tamanhos diferentes paravam em alturas diferentes e as ações de cada um flutuavam numa linha própria; e três botões não cabiam na largura, **transbordando para fora do cartão**, por cima do vizinho. É o tipo de defeito que só aparece quando alguém ganha a terceira ação, meses depois |
 | `AppFileInput` | Esconde o `<input type="file">` — cujo botão nativo nenhum navegador deixa estilizar por completo — atrás de um `AppButton`. Escondido com `opacity`, **não** com `display: none`, que o tiraria do alcance do teclado. Limpa o valor depois de cada escolha, senão escolher o mesmo arquivo duas vezes não dispara evento e parece travamento |
 
 **Uma exceção, declarada:** `BookingBlock` usa `<button>` cru. Não é botão do
@@ -555,7 +556,7 @@ autenticado.
 | Imagens de referência | Quem vê o orçamento | `GET/POST /quotes/{id}/reference-images`, `DELETE .../{image_id}`, `GET .../{image_id}/content` |
 | Sessões | Artista registra; gestor confirma | `GET /quotes/{id}/sessions`, `POST /sessions/{id}/mark-done`, `/confirm-payment` |
 | Repasses | Artista vê os próprios; gestor vê todos | `GET /payouts`, `POST /payouts/close`, `GET /payouts/{id}`, `/confirm-paid` |
-| Contas e artistas | **Só gestor** | `GET/POST /users`, `PUT /users/{id}`, `POST /users/{id}/block`, `/unblock`, `PUT /users/{id}/percentage` |
+| Contas e artistas | **Só gestor** | `GET/POST /users`, `PUT /users/{id}`, `PUT /users/{id}/password`, `POST /users/{id}/block`, `/unblock`, `PUT /users/{id}/percentage` |
 | Faturamento | **Só gestor** | `GET /revenue`, `GET /revenue/monthly` |
 | Pagamentos | **Só gestor** | `GET /payments` (filtro `status`), `GET /bookings/{id}/payments`, `POST /payments`, `/confirm`, `/refuse`, `/refund` |
 

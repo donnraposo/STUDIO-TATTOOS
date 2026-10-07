@@ -8,6 +8,7 @@ from app.modules.identity.application.create_account import CreateAccount
 from app.modules.identity.application.end_session import EndSession
 from app.modules.identity.application.list_accounts import ListAccounts
 from app.modules.identity.application.resolve_session import ResolveSession
+from app.modules.identity.application.set_account_password import SetAccountPassword
 from app.modules.identity.application.set_artist_percentage import SetArtistPercentage
 from app.modules.identity.application.unblock_account import UnblockAccount
 from app.modules.identity.application.update_account import UpdateAccount
@@ -110,6 +111,15 @@ class IdentityFactory:
         return UpdateAccount(
             users=self.users(session),
             history=self.status_history(session),
+            policy=self._policy,
+            audit=self.audit(session),
+        )
+
+    def set_account_password(self, session: Session) -> SetAccountPassword:
+        return SetAccountPassword(
+            users=self.users(session),
+            sessions=self.sessions(session),
+            hasher=self._hasher,
             policy=self._policy,
             audit=self.audit(session),
         )

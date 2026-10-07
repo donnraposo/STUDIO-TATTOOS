@@ -65,7 +65,7 @@ const reach = new AccountManagementReach();
             <dd>{{ account.phone }}</dd>
           </div>
           <div v-if="display.canSetShare(account)">
-            <dt>Share</dt>
+            <dt>Artist share</dt>
             <dd class="share">
               {{ display.share(account) }}
             </dd>
@@ -109,9 +109,12 @@ const reach = new AccountManagementReach();
 </template>
 
 <style scoped>
+/* Cartao largo: este e o unico que leva tres acoes -- corrigir, acordo de
+   percentual e bloqueio -- e no cartao estreito elas quebram linha, deixando a
+   ultima sozinha e a lista com cara de desalinhada. */
 .list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(var(--track-card-min), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(var(--track-card-wide), 1fr));
   gap: var(--space-4);
   margin: var(--space-0);
   padding: var(--space-0);

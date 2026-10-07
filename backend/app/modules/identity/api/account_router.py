@@ -8,6 +8,7 @@ from app.modules.identity.api.artist_percentage_request import ArtistPercentageR
 from app.modules.identity.api.block_account_request import BlockAccountRequest
 from app.modules.identity.api.create_account_request import CreateAccountRequest
 from app.modules.identity.api.session_authenticator import SessionAuthenticator
+from app.modules.identity.api.set_password_request import SetPasswordRequest
 from app.modules.identity.api.update_account_request import UpdateAccountRequest
 
 
@@ -36,6 +37,12 @@ class AccountRouter:
         router.add_api_route(
             "/{account_id}",
             self.update_account,
+            methods=["PUT"],
+            response_model=AccountResponse,
+        )
+        router.add_api_route(
+            "/{account_id}/password",
+            self.set_password,
             methods=["PUT"],
             response_model=AccountResponse,
         )
@@ -90,6 +97,21 @@ class AccountRouter:
                 role=payload.role,
                 acts_as_artist=payload.acts_as_artist,
                 artist_name=payload.artist_name,
+            )
+            return AccountResponse.from_model(account)
+
+    def set_password(
+        self, account_id: uuid.UUID, payload: SetPasswordRequest, request: Request
+    ) -> AccountResponse:
+        """Rota propria e não campo do cadastro: trocar senha encerra as sessões
+        da conta, e no meio de um `salvar` de telefone o gestor derrubaria
+        alguém sem querer."""
+        actor = self._authenticator.require_user(request)
+        self._container.csrf_guard.validate(request)
+
+        with self._container.database.session() as session:
+            account = self._container.identity.set_account_password(session).execute(
+                actor=actor, account_id=account_id, password=payload.password
             )
             return AccountResponse.from_model(account)
 

@@ -191,6 +191,12 @@
   /* Trilhas de grade reutilizaveis, para que largura minima de cartao nao seja
      escolhida de novo a cada tela. */
   --track-card-min: 16rem;
+
+  /* Cartao de lista que carrega tres acoes no rodape. Em 16rem elas nao
+     cabem numa linha e quebram, deixando a ultima sozinha -- tres botoes
+     medem 279px e o rodape oferecia 217px. Token proprio em vez de alargar
+     o cartao de todas as listas, que nao precisam disso. */
+  --track-card-wide: 21rem;
   --track-tile-min: 10rem;
 
   /* Camadas. Existem para que sobreposicao seja decidida uma vez, aqui, e nao

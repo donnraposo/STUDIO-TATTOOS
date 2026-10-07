@@ -75,6 +75,17 @@ async function create(draft: AccountDraft): Promise<void> {
   );
 }
 
+/** Ato separado do `salvar`, de propósito (RN 2.7): definir uma senha encerra
+ * as sessões da conta, e junto com os demais campos o gestor derrubaria alguém
+ * ao corrigir um telefone. O modal continua aberto — quem acabou de dar a senha
+ * nova costuma ter mais o que arrumar ali. */
+async function setPassword(password: string): Promise<void> {
+  const account = editing.value;
+  if (account) {
+    await act(() => accountsApi.setPassword(account.id, password));
+  }
+}
+
 async function save(draft: AccountDraft): Promise<void> {
   const account = editing.value;
   if (account) {
@@ -202,6 +213,7 @@ onMounted(load);
       :busy="busy"
       :failure="failure"
       @submit="save"
+      @set-password="setPassword"
       @close="editing = null"
     />
 

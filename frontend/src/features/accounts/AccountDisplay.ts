@@ -71,6 +71,24 @@ export class AccountDisplay {
     return Number.isFinite(parsed) ? `${Number(parsed.toFixed(2))}%` : AccountDisplay.BY_ORIGIN;
   }
 
+  /** O que sobra para o estúdio, dado o percentual do artista.
+   *
+   * **Existe porque o estúdio pensa pelo outro lado.** Os acordos são ditos
+   * como "30% se o cliente foi trazido pelo tatuador, 50% se foi indicação do
+   * estúdio, 15% em condições especiais" — e esses são os percentuais **da
+   * casa**. O sistema grava o do artista, que é o complemento: 70, 50 e 85.
+   *
+   * Mostrar os dois lados ao mesmo tempo é o que impede o erro que custaria
+   * caro: digitar 30 querendo dizer "a casa fica com 30" e entregar 30% ao
+   * artista. */
+  studioShareOf(percentage: string): string {
+    const parsed = Number(percentage);
+    if (!Number.isFinite(parsed) || percentage.trim() === "") {
+      return "—";
+    }
+    return `${Number((100 - parsed).toFixed(2))}%`;
+  }
+
   /** Só quem tatua tem repasse, e só quem tem repasse tem acordo de percentual.
    *
    * O backend recusa com 422 um percentual em conta que não atende; esconder o

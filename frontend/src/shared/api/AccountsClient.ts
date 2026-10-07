@@ -100,6 +100,20 @@ export class AccountsClient {
     return AccountsClient.toAccount(payload);
   }
 
+  /** Define uma senha nova para a conta (RN 2.7).
+   *
+   * **Rota própria e não campo do cadastro**: trocar senha encerra as sessões
+   * da conta, e no meio de um "salvar" de telefone o gestor derrubaria alguém
+   * sem querer.
+   *
+   * A senha não volta em resposta nenhuma — o que volta é a conta, sem ela. */
+  async setPassword(accountId: string, password: string): Promise<StudioAccount> {
+    const payload = await this.http.put<AccountPayload>(`/users/${accountId}/password`, {
+      password,
+    });
+    return AccountsClient.toAccount(payload);
+  }
+
   /** O motivo é obrigatório (RN 2.5): o bloqueio precisa ficar rastreável. */
   async block(accountId: string, reason: string): Promise<void> {
     await this.http.post(`/users/${accountId}/block`, { reason });

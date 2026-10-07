@@ -85,6 +85,27 @@ describe("AccountDisplay", () => {
     expect(display.share(account({ defaultArtistPercentage: "abc" }))).toBe("By origin");
   });
 
+  /** O estúdio enuncia os acordos pelo lado dele — 30% no cliente trazido pelo
+   * tatuador, 50% na indicação, 15% em condições especiais — e o sistema grava
+   * o do artista. Mostrar os dois é o que impede digitar 30 querendo dizer "a
+   * casa fica com 30" e entregar 30% ao artista. */
+  it("shows the studio side of each of the three usual splits", () => {
+    expect(display.studioShareOf("70.00")).toBe("30%");
+    expect(display.studioShareOf("50.00")).toBe("50%");
+    expect(display.studioShareOf("85.00")).toBe("15%");
+  });
+
+  it("keeps a half percent on the studio side too", () => {
+    expect(display.studioShareOf("67.50")).toBe("32.5%");
+  });
+
+  /** Campo vazio ou texto que não é número não pode virar `NaN%` ao lado do
+   * campo enquanto alguém digita. */
+  it("has nothing to show for the studio when the field is empty or broken", () => {
+    expect(display.studioShareOf("")).toBe("—");
+    expect(display.studioShareOf("abc")).toBe("—");
+  });
+
   /** Só quem tatua tem repasse, e o backend recusa com 422 um percentual em
    * conta que não atende. */
   it("offers the share only where there is a payout to split", () => {

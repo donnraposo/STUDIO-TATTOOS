@@ -18,9 +18,14 @@ import type { StudioAccount } from "@/shared/domain/StudioAccount";
  * iguais divergiriam na primeira mudança de campo, e a diferença entre criar e
  * corrigir uma conta é um campo.
  *
- * **A senha só existe na criação.** Trocar senha encerra as sessões da conta
- * (RN 2.7) e é ato de outra natureza; no meio da edição, o gestor derrubaria
- * alguém ao corrigir um telefone.
+ * **A senha tem campo próprio e botão próprio**, e não entra no "salvar". Ela
+ * encerra as sessões da conta (RN 2.7): junto com os demais campos, o gestor
+ * derrubaria alguém ao corrigir um telefone, sem saber que o faria. Separada,
+ * só acontece quando alguém pede.
+ *
+ * **Nada é exibido.** A RN 2.7 diz que senhas nunca poderão ser visualizadas
+ * por gerentes ou proprietários; o campo nasce vazio e só serve para definir
+ * uma nova.
  *
  * **Os papéis oferecidos chegam prontos**, pela alçada de quem opera: o gerente
  * cria residente e guest, o proprietário cria qualquer um. Na edição o seletor
@@ -60,7 +65,11 @@ const props = defineProps<{
   failure: string | null;
 }>();
 
-const emit = defineEmits<{ submit: [account: AccountDraft]; close: [] }>();
+const emit = defineEmits<{
+  submit: [account: AccountDraft];
+  setPassword: [password: string];
+  close: [];
+}>();
 
 /** O backend exige 12 caracteres. Repetido aqui para que o gestor saiba antes
  * de enviar, e não por um 422. */
@@ -74,6 +83,7 @@ const artistName = ref("");
 const email = ref("");
 const phone = ref("");
 const password = ref("");
+const newPassword = ref("");
 const role = ref<UserRole>("RESIDENT");
 const actsAsArtist = ref(false);
 
@@ -91,6 +101,7 @@ watch(
     email.value = account?.email ?? "";
     phone.value = account?.phone ?? "";
     password.value = "";
+    newPassword.value = "";
     role.value = account?.role ?? props.roles[0] ?? "RESIDENT";
     actsAsArtist.value = account?.actsAsArtist ?? false;
   },
@@ -116,6 +127,21 @@ const tattoos = computed(() =>
 );
 
 const roleLocked = computed(() => !isNew.value && !props.canChangeRole);
+
+const passwordReady = computed(() => newPassword.value.length >= MINIMUM_PASSWORD);
+
+const newPasswordError = computed(() =>
+  newPassword.value !== "" && !passwordReady.value
+    ? `At least ${MINIMUM_PASSWORD} characters.`
+    : null,
+);
+
+function changePassword(): void {
+  if (passwordReady.value) {
+    emit("setPassword", newPassword.value);
+    newPassword.value = "";
+  }
+}
 
 const passwordError = computed(() =>
   password.value !== "" && password.value.length < MINIMUM_PASSWORD
@@ -214,22 +240,43 @@ function submit(): void {
         :error="passwordError"
         :disabled="props.busy"
       />
-      <p
-        v-else
-        class="hint"
-      >
-        The password is not changed here — changing it ends every session of the
-        account.
-      </p>
-
-      <p
-        v-if="props.failure"
-        class="failure"
-        role="alert"
-      >
-        {{ props.failure }}
-      </p>
     </form>
+
+    <section
+      v-if="!isNew"
+      class="password"
+    >
+      <h4>Password</h4>
+      <p class="hint">
+        Setting a new one signs this person out everywhere. Nobody can see the
+        current password — this only replaces it.
+      </p>
+      <AppInput
+        v-model="newPassword"
+        label="New password"
+        type="password"
+        autocomplete="new-password"
+        :error="newPasswordError"
+        :disabled="props.busy"
+      />
+      <div class="password-action">
+        <AppButton
+          tone="ghost"
+          :disabled="!passwordReady || props.busy"
+          @click="changePassword"
+        >
+          Set new password
+        </AppButton>
+      </div>
+    </section>
+
+    <p
+      v-if="props.failure"
+      class="failure"
+      role="alert"
+    >
+      {{ props.failure }}
+    </p>
 
     <template #actions>
       <AppButton
@@ -260,6 +307,26 @@ function submit(): void {
 .hint {
   color: var(--color-muted);
   font-size: var(--text-label-3);
+}
+
+/* A senha fica em bloco proprio, separada por uma linha: e um ato de outra
+   natureza, e misturada aos campos do cadastro pareceria mais um deles. */
+.password {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: var(--border-thin);
+}
+
+h4 {
+  margin: var(--space-0);
+  font-size: var(--text-label-1);
+}
+
+.password-action {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .failure {
