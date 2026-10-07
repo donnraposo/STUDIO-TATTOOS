@@ -23,6 +23,12 @@ export interface Booking {
   startsAt: string;
   endsAt: string;
   status: BookingStatus;
+  /** O trabalho orçado que este horário atende (migração 0011).
+   *
+   * Nulo é caso legítimo: o guest não acessa orçamentos (RN-ORC-001) e
+   * agenda para clientes próprios sem nenhum. Não se confunde com a sessão,
+   * que só existe depois da aprovação do orçamento. */
+  quoteId: string | null;
   requestedAt: string;
   rejectionReason: string | null;
   rejectionNote: string | null;

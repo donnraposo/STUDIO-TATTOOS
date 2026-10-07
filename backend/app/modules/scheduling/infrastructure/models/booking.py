@@ -40,6 +40,15 @@ class Booking(OrmBase):
     )
     period: Mapped[object] = mapped_column(TSTZRANGE, nullable=False)
     status: Mapped[BookingStatus] = mapped_column(String(16), nullable=False, index=True)
+    #: O trabalho orcado que este horario atende (RN-ORC-002).
+    #:
+    #: Nulo e caso legitimo: o guest nao acessa orcamentos (RN-ORC-001) e agenda
+    #: para clientes proprios sem nenhum. Nao se confunde com `session_id`, que
+    #: so existe depois da aprovacao -- este diz de qual trabalho o horario e
+    #: desde o pedido, e e o que permite aprovar o orcamento de dentro dele.
+    quote_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("quote.id"), nullable=True, index=True
+    )
     session_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("tattoo_session.id"), nullable=True, index=True
     )

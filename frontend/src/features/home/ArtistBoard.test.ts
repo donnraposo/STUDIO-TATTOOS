@@ -19,6 +19,7 @@ function booking(fields: Partial<Booking> = {}): Booking {
     startsAt: "2026-10-06T10:00:00Z",
     endsAt: "2026-10-06T12:00:00Z",
     status: "APPROVED",
+    quoteId: null,
     requestedAt: "2026-10-05T09:00:00Z",
     rejectionReason: null,
     rejectionNote: null,

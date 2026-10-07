@@ -23,6 +23,7 @@ function booking(overrides: Partial<Booking> = {}): Booking {
     startsAt: "2026-10-06T10:00:00+01:00",
     endsAt: "2026-10-06T12:00:00+01:00",
     status: "REQUESTED",
+    quoteId: null,
     requestedAt: "2026-10-01T09:00:00+01:00",
     rejectionReason: null,
     rejectionNote: null,
@@ -151,7 +152,62 @@ describe("PendingWorkAssembler", () => {
       clientNames: NAMES,
     });
 
-    expect(items[0]?.query).toEqual({ day: "2026-11-20" });
+    expect(items[0]?.query?.day).toBe("2026-11-20");
+  });
+
+  /** Chegar ao dia certo ainda deixava o gestor procurando o bloco na grade, e
+   * esta area existe para acabar com a procura. */
+  it("carries the booking itself, not only its day", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ id: "b7" })],
+      payments: [],
+      quotes: [],
+      clientNames: NAMES,
+    });
+
+    expect(items[0]?.query?.booking).toBe("b7");
+  });
+
+  /** **Um pedido, um item.** Desde 07/10/2026 o orcamento nasce junto do
+   * agendamento. Como duas linhas, o gestor decidiria uma e continuaria vendo a
+   * outra, sem saber se faltava algo. */
+  it("folds the quote into the booking it belongs to", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ id: "b8", quoteId: "q1" })],
+      payments: [],
+      quotes: [quote({ id: "q1" })],
+      clientNames: NAMES,
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]?.kind).toBe("BOOKING");
+  });
+
+  /** O orcamento que nao pertence a horario nenhum continua com linha propria:
+   * alguem precisa decidi-lo. */
+  it("keeps a quote that belongs to no booking", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ id: "b9", quoteId: null })],
+      payments: [],
+      quotes: [quote({ id: "solta" })],
+      clientNames: NAMES,
+    });
+
+    expect(items.map((item) => item.kind).sort()).toEqual(["BOOKING", "QUOTE"]);
+  });
+
+  /** A decisao do gestor depende do valor: sem ele, a fila dizia so quem e
+   * quando, e cada pedido tinha de ser aberto para saber se era uma sessao de
+   * oitenta euros ou um projeto de mil. */
+  it("shows what is being tattooed and for how much", () => {
+    const items = assembler.assemble({
+      bookings: [booking({ id: "b10", quoteId: "q2" })],
+      payments: [],
+      quotes: [quote({ id: "q2" })],
+      clientNames: NAMES,
+    });
+
+    expect(items[0]?.detail).toContain("€");
   });
 
   /** **Mudou na M7.2.3, e o teste antigo guardava um desvio.** Até então o

@@ -244,7 +244,7 @@ Prefixo `/api/v1`, mesmo domínio do frontend.
 | Cadastro público | `POST /registrations` (autocadastro de artista) |
 | Clientes | `GET/POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/merge` |
 | Macas | `GET/POST /benches`, `POST /schedule-exceptions` |
-| Agenda | `GET /bookings` (filtros `starts_at`/`ends_at` e `status`), `POST /bookings`, `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
+| Agenda | `GET /bookings` (filtros `starts_at`/`ends_at` e `status`), `POST /bookings` (aceita `quote_id`), `POST /bookings/{id}/approve`, `/reject`, `/reschedule`, `/cancel` |
 | Orçamentos | `GET /quotes` (filtro `status`), `POST /quotes`, `GET/PUT /quotes/{id}`, `POST /quotes/{id}/approve`, `/reject` |
 | Imagens de referência | `GET/POST /quotes/{id}/reference-images`, `DELETE /quotes/{id}/reference-images/{image_id}`, `GET /quotes/{id}/reference-images/{image_id}/content` |
 | Sessões | `GET /quotes/{id}/sessions`, `POST /quotes/{id}/sessions/adjust`, `POST /sessions/{id}/mark-done`, `POST /sessions/{id}/confirm-payment` |

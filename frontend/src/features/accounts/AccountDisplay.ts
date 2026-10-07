@@ -1,6 +1,7 @@
 import type { BadgeTone } from "@/shared/components/StatusBadge.vue";
 import type { UserRole } from "@/shared/domain/AuthenticatedUser";
 import type { AccountStatus, StudioAccount } from "@/shared/domain/StudioAccount";
+import { StudioSplit } from "@/shared/domain/StudioSplit";
 
 export interface AccountLook {
   label: string;
@@ -26,6 +27,10 @@ export interface AccountLook {
  *
  * Classe pura: não conhece API, sessão nem Vue. */
 export class AccountDisplay {
+  /** A conta dos dois lados mora num lugar só: esta tela, o formulário de
+   * agendamento e o painel do trabalho fazem a mesma pergunta. */
+  private static readonly SPLIT = new StudioSplit();
+
   private static readonly ROLE: Record<UserRole, string> = {
     OWNER: "Owner",
     MANAGER: "Manager",
@@ -82,11 +87,7 @@ export class AccountDisplay {
    * caro: digitar 30 querendo dizer "a casa fica com 30" e entregar 30% ao
    * artista. */
   studioShareOf(percentage: string): string {
-    const parsed = Number(percentage);
-    if (!Number.isFinite(parsed) || percentage.trim() === "") {
-      return "—";
-    }
-    return `${Number((100 - parsed).toFixed(2))}%`;
+    return AccountDisplay.SPLIT.studioShareOf(percentage);
   }
 
   /** Só quem tatua tem repasse, e só quem tem repasse tem acordo de percentual.

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import { BookingPlacement, type Placement } from "@/features/scheduling/BookingPlacement";
 import DepositPanel from "@/features/payments/components/DepositPanel.vue";
+import BookingWorkPanel from "@/features/quotes/components/BookingWorkPanel.vue";
 import RefusePaymentModal from "@/features/payments/components/RefusePaymentModal.vue";
 import RegisterPaymentModal, {
   type PaymentDraft,
@@ -31,6 +32,7 @@ import type {
 } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
 import type { Payment } from "@/shared/domain/Payment";
+import type { Quote } from "@/shared/domain/Quote";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 import { StudioClock } from "@/shared/format/StudioClock";
 import { useSession } from "@/shared/session/useSession";
@@ -83,7 +85,7 @@ function readDay(value: unknown): string | null {
   return typeof value === "string" && DAY_PATTERN.test(value) ? value : null;
 }
 
-const { scheduling, clients: clientsApi, accounts, payments: paymentsApi } = useApi();
+const { scheduling, clients: clientsApi, accounts, payments: paymentsApi, quotes } = useApi();
 const { session, permissions } = useSession();
 const route = useRoute();
 const router = useRouter();
@@ -112,6 +114,9 @@ const decisionFailure = ref<string | null>(null);
  * e carregar os pagamentos de todos seria dezenas de requisições para desenhar
  * uma grade que não os exibe. */
 const bookingPayments = ref<Payment[]>([]);
+/** O trabalho orçado do horário aberto. Nulo quando não há — o guest não
+ * acessa orçamentos (RN-ORC-001). */
+const bookingWork = ref<Quote | null>(null);
 const registering = ref(false);
 const refusing = ref<Payment | null>(null);
 
@@ -244,6 +249,12 @@ const canDecide = computed(() =>
   session.user.value ? permissions.canDecide(session.user.value) : false,
 );
 
+/** RN-ORC-001: o guest não acessa orçamentos, e os campos da tatuagem somem
+ * para ele. A garantia continua sendo do backend, que recusaria com 403. */
+const canQuote = computed(() =>
+  session.user.value ? permissions.canSeeQuotes(session.user.value) : false,
+);
+
 /** O agendamento que já ocupava o horário, quando ele está na tela.
  *
  * Pode não estar: o conflito pode ser com a agenda de outro artista, que este
@@ -300,18 +311,54 @@ async function decide(action: () => Promise<unknown>): Promise<void> {
   }
 }
 
+/** Cria o trabalho e o horário, nessa ordem.
+ *
+ * **O orçamento vem primeiro.** Se ele falhar, não sobra horário marcado para
+ * um trabalho que não existe; se o horário falhasse depois, sobraria um
+ * orçamento pendente — que o gestor vê e decide, e é o resíduo mais barato dos
+ * dois.
+ *
+ * **"Sessão N de M" entra na descrição**, por decisão do responsável: é ela que
+ * diz onde aquele atendimento cai dentro do trabalho maior, e aparece em toda
+ * tela que mostra o orçamento sem precisar de campo novo no banco. */
 async function create(draft: BookingDraft): Promise<void> {
   const offsetMinutes = offsetAt(new Date(`${day.value}T00:00:00Z`));
-  await decide(() =>
-    scheduling.create({
+  const startsAt = withOffset(day.value, draft.startTime, offsetMinutes);
+  const endsAt = withOffset(day.value, draft.endTime, offsetMinutes);
+
+  await decide(async () => {
+    let quoteId: string | null = null;
+
+    if (draft.work) {
+      const work = draft.work;
+      const created = await quotes.create(
+        draft.clientId,
+        {
+          origin: work.origin,
+          description: `Session ${work.sessionNumber} of ${work.plannedSessions} · ${work.description}`,
+          bodyRegion: work.bodyRegion,
+          sizeEstimate: work.sizeEstimate,
+          totalValue: work.totalValue,
+          plannedSessions: work.plannedSessions,
+          plannedValuePerSession: work.valuePerSession,
+          estimatedDurationMinutes: work.minutesPerSession,
+          notes: work.notes,
+        },
+        draft.artistId,
+      );
+      quoteId = created.id;
+    }
+
+    return scheduling.create({
       clientId: draft.clientId,
       benchId: draft.benchId,
-      startsAt: withOffset(day.value, draft.startTime, offsetMinutes),
-      endsAt: withOffset(day.value, draft.endTime, offsetMinutes),
+      startsAt,
+      endsAt,
       artistId: draft.artistId,
       approveImmediately: draft.approveImmediately,
-    }),
-  );
+      quoteId,
+    });
+  });
 }
 
 /** Os pagamentos seguem o agendamento aberto. Fechado o modal, a lista é
@@ -319,10 +366,55 @@ async function create(draft: BookingDraft): Promise<void> {
  * instante ao abrir o próximo. */
 watch(selected, async (booking) => {
   bookingPayments.value = [];
-  if (booking && canDecide.value) {
+  bookingWork.value = null;
+  if (!booking) {
+    return;
+  }
+  if (canDecide.value) {
     await loadBookingPayments(booking.id);
   }
+  if (booking.quoteId) {
+    await loadBookingWork(booking.quoteId);
+  }
 });
+
+async function loadBookingWork(quoteId: string): Promise<void> {
+  try {
+    bookingWork.value = await quotes.find(quoteId);
+  } catch {
+    bookingWork.value = null;
+  }
+}
+
+/** Aprovar e recusar o **trabalho**, que é decisão diferente de aprovar o
+ * horário (RN-ORC-002 e RN-AGE-005). O modal continua aberto: quem acabou de
+ * aprovar o valor costuma aprovar o horário em seguida. */
+async function approveWork(percentage: string | null): Promise<void> {
+  const work = bookingWork.value;
+  if (work) {
+    await onWork(() => quotes.approve(work.id, percentage));
+  }
+}
+
+async function rejectWork(reason: string, note: string | null): Promise<void> {
+  const work = bookingWork.value;
+  if (work) {
+    await onWork(() => quotes.reject(work.id, reason as never, note));
+  }
+}
+
+async function onWork(action: () => Promise<Quote>): Promise<void> {
+  deciding.value = true;
+  decisionFailure.value = null;
+  try {
+    bookingWork.value = await action();
+  } catch (error) {
+    decisionFailure.value =
+      error instanceof ApiError ? error.message : "Could not reach the studio system.";
+  } finally {
+    deciding.value = false;
+  }
+}
 
 async function loadBookingPayments(bookingId: string): Promise<void> {
   try {
@@ -471,9 +563,29 @@ watch(
  * Um `?day=ontem` cai no dia de hoje, e sem isto a barra continuaria exibindo
  * `ontem` sobre uma agenda que é de hoje — o endereço passaria a mentir sobre o
  * que está na tela, e copiá-lo levaria outra pessoa ao mesmo engano. */
-onMounted(() => {
-  void load();
+/** Abre o agendamento que o endereço pedir.
+ *
+ * O painel do gestor manda `?booking=<id>` junto do dia. Sem isto ele chegava
+ * ao dia certo e ainda precisava achar o bloco na grade — e esta área existe
+ * justamente para acabar com a procura.
+ *
+ * Roda **depois** de carregar: o agendamento só pode ser aberto quando a lista
+ * do dia existe. */
+function openFromAddress(): void {
+  const wanted = route.query.booking;
+  if (typeof wanted !== "string") {
+    return;
+  }
+  const found = (state.data.value?.bookings ?? []).find((booking) => booking.id === wanted);
+  if (found) {
+    selected.value = found;
+  }
+}
+
+onMounted(async () => {
+  await load();
   rememberDay(day.value);
+  openFromAddress();
 });
 </script>
 
@@ -529,6 +641,7 @@ onMounted(() => {
       :benches="state.data.value.benches"
       :artists="state.data.value.artists"
       :can-decide="canDecide"
+      :can-quote="canQuote"
       :busy="deciding"
       :failure="decisionFailure"
       @submit="create"
@@ -551,6 +664,17 @@ onMounted(() => {
       @reschedule="reschedule"
       @close="selected = null"
     >
+      <template #work>
+        <BookingWorkPanel
+          v-if="bookingWork"
+          :quote="bookingWork"
+          :can-decide="canDecide"
+          :busy="deciding"
+          @approve="approveWork"
+          @reject="rejectWork"
+        />
+      </template>
+
       <template #deposit>
         <DepositPanel
           v-if="canDecide"

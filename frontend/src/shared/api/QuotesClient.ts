@@ -62,6 +62,15 @@ export class QuotesClient {
     return payload.map(QuotesClient.toQuote);
   }
 
+  /** Um orçamento pelo identificador.
+   *
+   * Existe para o agendamento mostrar o trabalho que ele atende: desde
+   * 07/10/2026 os dois nascem juntos, e quem abre o horário decide o orçamento
+   * ali (RN-ORC-002). */
+  async find(quoteId: string): Promise<Quote> {
+    return QuotesClient.toQuote(await this.http.get<QuotePayload>(`/quotes/${quoteId}`));
+  }
+
   async create(clientId: string, fields: QuoteFields, artistId: string | null): Promise<Quote> {
     return QuotesClient.toQuote(
       await this.http.post<QuotePayload>("/quotes", {

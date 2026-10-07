@@ -37,24 +37,62 @@ export class PendingWorkAssembler {
     quotes: Quote[];
     clientNames: Record<string, string>;
   }): PendingWorkItem[] {
+    const workByQuote = Object.fromEntries(sources.quotes.map((quote) => [quote.id, quote]));
+
+    /** **Um pedido, um item.** Desde 07/10/2026 o orçamento nasce junto do
+     * agendamento, e os dois chegariam à fila como duas linhas para a mesma
+     * solicitação — o gestor decidiria uma e continuaria vendo a outra, sem
+     * saber se faltava algo. O orçamento que pertence a um horário da fila é
+     * dobrado dentro dele; o que não pertence a nenhum continua com linha
+     * própria. */
+    const folded = new Set(
+      sources.bookings.map((booking) => booking.quoteId).filter((id): id is string => id !== null),
+    );
+
     return [
-      ...sources.bookings.map((booking) => this.fromBooking(booking, sources.clientNames)),
+      ...sources.bookings.map((booking) =>
+        this.fromBooking(
+          booking,
+          sources.clientNames,
+          booking.quoteId ? workByQuote[booking.quoteId] : undefined,
+        ),
+      ),
       ...sources.payments.map((payment) => this.fromPayment(payment, sources.clientNames)),
-      ...sources.quotes.map((quote) => this.fromQuote(quote, sources.clientNames)),
+      ...sources.quotes
+        .filter((quote) => !folded.has(quote.id))
+        .map((quote) => this.fromQuote(quote, sources.clientNames)),
     ].sort((first, second) => first.since.localeCompare(second.since));
   }
 
-  private fromBooking(booking: Booking, names: Record<string, string>): PendingWorkItem {
+  /** O horário pedido e, quando há, **o que será tatuado e por quanto**.
+   *
+   * Sem o trabalho, a fila dizia apenas quem e quando — e o gestor precisava
+   * abrir cada pedido para descobrir se era uma sessão de €80 ou um projeto de
+   * €1.000. A decisão que ele toma depende do valor, e ele agora o vê antes de
+   * clicar.
+   *
+   * O item leva o identificador do agendamento no endereço: abrir no dia certo
+   * ainda deixava o gestor procurando o bloco na grade, e esta área existe para
+   * acabar com a procura. */
+  private fromBooking(
+    booking: Booking,
+    names: Record<string, string>,
+    work?: Quote,
+  ): PendingWorkItem {
+    const when = `${this.clock.date(booking.startsAt)} · ${this.clock.time(
+      booking.startsAt,
+    )}–${this.clock.time(booking.endsAt)}`;
+
     return {
       id: booking.id,
       kind: "BOOKING",
       title: names[booking.clientId] ?? "Client",
-      detail: `${this.clock.date(booking.startsAt)} · ${this.clock.time(
-        booking.startsAt,
-      )}–${this.clock.time(booking.endsAt)}`,
+      detail: work
+        ? `${when} · ${this.money.amount(work.totalValue)} · ${work.description}`
+        : when,
       since: booking.requestedAt,
       route: "schedule",
-      query: { day: this.clock.dayKey(booking.startsAt) },
+      query: { day: this.clock.dayKey(booking.startsAt), booking: booking.id },
     };
   }
 

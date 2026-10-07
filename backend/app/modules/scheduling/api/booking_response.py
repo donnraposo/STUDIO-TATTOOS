@@ -19,6 +19,9 @@ class BookingResponse(BaseModel):
     starts_at: datetime
     ends_at: datetime
     status: str
+    #: O trabalho orcado que este horario atende, quando ha um. Nulo no
+    #: agendamento de guest, que nao acessa orcamentos (RN-ORC-001).
+    quote_id: uuid.UUID | None
     requested_at: datetime
     rejection_reason: str | None
     rejection_note: str | None
@@ -33,6 +36,7 @@ class BookingResponse(BaseModel):
             starts_at=booking.period.lower,
             ends_at=booking.period.upper,
             status=str(booking.status),
+            quote_id=booking.quote_id,
             requested_at=booking.requested_at,
             rejection_reason=booking.rejection_reason,
             rejection_note=booking.rejection_note,

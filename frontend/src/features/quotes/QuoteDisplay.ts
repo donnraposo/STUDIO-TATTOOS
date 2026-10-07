@@ -1,4 +1,5 @@
 import type { BadgeTone } from "@/shared/components/StatusBadge.vue";
+import { StudioSplit } from "@/shared/domain/StudioSplit";
 import type { QuoteOrigin, QuoteStatus } from "@/shared/domain/Quote";
 
 export interface StatusLook {
@@ -27,16 +28,10 @@ export class QuoteDisplay {
     STUDIO_REFERRAL: "Studio referral",
   };
 
-  /** Percentual padrão de cada origem (RN-REP-001 e RN-REP-002).
-   *
-   * **É informação, não decisão.** Serve para o gestor saber o que será
-   * congelado antes de aprovar. Quem congela é o backend, e o número que vale
-   * depois disso é o que vem na resposta — nunca este. Se os dois divergirem, a
-   * tela está errada e o repasse continua certo. */
-  private static readonly STANDARD_PERCENTAGE: Record<QuoteOrigin, string> = {
-    ARTIST_OWN: "70",
-    STUDIO_REFERRAL: "50",
-  };
+  /** A divisão mora no `StudioSplit`, e não aqui: ela é a mesma no formulário
+   * de agendamento, no acordo por artista e nesta tela, e três cópias
+   * divergiriam na primeira renegociação. */
+  private static readonly SPLIT = new StudioSplit();
 
   status(status: QuoteStatus): StatusLook {
     return QuoteDisplay.STATUS[status];
@@ -47,7 +42,7 @@ export class QuoteDisplay {
   }
 
   standardPercentage(origin: QuoteOrigin): string {
-    return QuoteDisplay.STANDARD_PERCENTAGE[origin];
+    return QuoteDisplay.SPLIT.artistShareFor(origin);
   }
 
   /** As origens na ordem em que o formulário as oferece. */

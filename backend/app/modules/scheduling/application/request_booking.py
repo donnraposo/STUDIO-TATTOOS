@@ -55,6 +55,7 @@ class RequestBooking:
         ends_at: datetime,
         artist_id: uuid.UUID | None = None,
         approve_immediately: bool = False,
+        quote_id: uuid.UUID | None = None,
     ) -> Booking:
         if not self._policy.can_request(actor):
             raise PermissionDeniedError("You cannot create bookings.")
@@ -75,6 +76,10 @@ class RequestBooking:
             bench_id=bench_id,
             period=self._bookings.build_period(starts_at, ends_at),
             status=status,
+            # O trabalho orcado que este horario atende. Nulo quando nao ha
+            # orcamento: o guest nao acessa o modulo (RN-ORC-001) e agenda para
+            # clientes proprios sem nenhum.
+            quote_id=quote_id,
             decided_at=datetime.now(UTC) if status == BookingStatus.APPROVED else None,
             decided_by=actor.id if status == BookingStatus.APPROVED else None,
         )

@@ -121,14 +121,15 @@ function back(): void {
       Requested {{ props.requestedAt }}
     </p>
 
-    <!-- O sinal entra por `slot` e não por `props`: este componente decide
-         sobre o horário e não precisa saber que pagamento existe. Quem monta o
-         painel é a tela, que é quem fala com a API. Só no modo de leitura — no
-         meio de uma recusa ou de um remarcar, ele seria ruído. -->
-    <slot
-      v-if="mode === 'view'"
-      name="deposit"
-    />
+    <!-- O trabalho orçado e o sinal entram por `slot` e não por `props`: este
+         componente decide sobre o horário e não precisa saber o que é um
+         orçamento nem um pagamento. Quem monta os painéis é a tela, que é quem
+         fala com a API. Só no modo de leitura — no meio de uma recusa ou de um
+         remarcar, eles seriam ruído. -->
+    <template v-if="mode === 'view'">
+      <slot name="work" />
+      <slot name="deposit" />
+    </template>
 
     <p
       v-if="consequence"

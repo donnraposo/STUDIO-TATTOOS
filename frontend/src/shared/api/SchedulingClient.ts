@@ -23,6 +23,7 @@ interface BookingPayload {
   starts_at: string;
   ends_at: string;
   status: string;
+  quote_id: string | null;
   requested_at: string;
   rejection_reason: string | null;
   rejection_note: string | null;
@@ -80,6 +81,9 @@ export class SchedulingClient {
     endsAt: string;
     artistId: string | null;
     approveImmediately: boolean;
+    /** O trabalho orçado que este horário atende. Nulo no agendamento de guest,
+     * que não acessa orçamentos (RN-ORC-001). */
+    quoteId?: string | null;
   }): Promise<Booking> {
     return SchedulingClient.toBooking(
       await this.http.post<BookingPayload>("/bookings", {
@@ -89,6 +93,7 @@ export class SchedulingClient {
         ends_at: booking.endsAt,
         artist_id: booking.artistId,
         approve_immediately: booking.approveImmediately,
+        quote_id: booking.quoteId ?? null,
       }),
     );
   }
@@ -174,6 +179,7 @@ export class SchedulingClient {
       startsAt: payload.starts_at,
       endsAt: payload.ends_at,
       status: payload.status as BookingStatus,
+      quoteId: payload.quote_id,
       requestedAt: payload.requested_at,
       rejectionReason: payload.rejection_reason,
       rejectionNote: payload.rejection_note,
