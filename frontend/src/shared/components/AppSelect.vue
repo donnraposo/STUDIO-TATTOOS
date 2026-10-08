@@ -17,7 +17,12 @@ import AppField from "@/shared/components/AppField.vue";
  * precisam ser indistinguíveis em altura e tratamento.
  *
  * As opções entram como dados, e não como `slot` de `<option>`: assim o
- * componente controla a marcação e nenhuma tela reinventa o estado vazio. */
+ * componente controla a marcação e nenhuma tela reinventa o estado vazio.
+ *
+ * A seta é da casca `select-shell`, declarada uma vez em `base.css` junto do
+ * `control`. Este arquivo não guarda estilo nenhum: quem abrir lista depois —
+ * combobox, multi-seleção — veste as mesmas duas classes em vez de copiar a
+ * receita. */
 const props = withDefaults(
   defineProps<{
     modelValue: string;
@@ -41,31 +46,33 @@ defineEmits<{ "update:modelValue": [value: string] }>();
     :required="props.required"
   >
     <template #default="{ fieldId, describedBy }">
-      <select
-        :id="fieldId"
-        class="control"
-        :value="props.modelValue"
-        :disabled="props.disabled"
-        :required="props.required"
-        :aria-invalid="Boolean(props.error)"
-        :aria-describedby="describedBy"
-        @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
-      >
-        <option
-          v-if="props.placeholder"
-          value=""
-          disabled
+      <span class="select-shell">
+        <select
+          :id="fieldId"
+          class="control"
+          :value="props.modelValue"
+          :disabled="props.disabled"
+          :required="props.required"
+          :aria-invalid="Boolean(props.error)"
+          :aria-describedby="describedBy"
+          @change="$emit('update:modelValue', ($event.target as HTMLSelectElement).value)"
         >
-          {{ props.placeholder }}
-        </option>
-        <option
-          v-for="option in props.options"
-          :key="option.value"
-          :value="option.value"
-        >
-          {{ option.label }}
-        </option>
-      </select>
+          <option
+            v-if="props.placeholder"
+            value=""
+            disabled
+          >
+            {{ props.placeholder }}
+          </option>
+          <option
+            v-for="option in props.options"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </span>
     </template>
   </AppField>
 </template>

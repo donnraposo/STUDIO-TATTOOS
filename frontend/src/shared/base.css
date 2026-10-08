@@ -57,7 +57,7 @@ a {
    lugar de estilo global previsto no projeto. */
 .control {
   min-height: var(--touch-target);
-  padding: var(--space-2) var(--space-5);
+  padding: var(--control-padding-y) var(--control-padding-x);
   border: var(--border-thin);
   border-color: transparent;
   border-radius: var(--radius-round);
@@ -76,6 +76,64 @@ a {
 
 .control[aria-invalid="true"] {
   border-color: var(--color-danger);
+}
+
+/* Receita unica do dropdown. Vale para o seletor de hoje e para o que abrir
+   lista amanha -- combobox, multi-selecao --, e fica aqui pelo mesmo motivo que
+   o `.control`: duas copias da mesma seta divergem no primeiro ajuste.
+
+   A seta e do projeto, nunca a do navegador. A nativa e desenhada colada na
+   borda interna direita, a uns quatro pixels, que e justamente onde a pilula
+   comeca a curvar -- enquanto o texto do outro lado respira o recuo inteiro. Os
+   dois lados nunca se alinham. E o desenho muda com o sistema: chevron no
+   Windows, par de setas no macOS, triangulo no Linux.
+
+   A casca existe porque <select> e elemento substituido: nenhum navegador
+   desenha ::before ou ::after dentro dele. */
+.select-shell {
+  position: relative;
+  display: block;
+}
+
+.select-shell::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  /* O mesmo recuo em que o texto comeca do outro lado, vindo do mesmo token. A
+     seta e o rotulo dividem uma margem so, e e isso que alinha o campo. */
+  right: var(--control-padding-x);
+  width: var(--icon-chevron-width);
+  height: var(--icon-size);
+  transform: translateY(-50%);
+  background: var(--color-muted);
+  mask-image: var(--icon-chevron-down);
+  mask-position: center;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  /* Clicar na seta precisa abrir a lista. Sem isto ela vira um buraco morto no
+     meio do alvo de toque, bem onde todo mundo clica. */
+  pointer-events: none;
+}
+
+/* O estado desabilitado ja esta no controle; a casca o le em vez de receber uma
+   classe repetindo o que o `disabled` diz. Sem esta regra a seta ficaria em cor
+   cheia sobre um campo apagado -- ela mora fora dele e nao herda a opacidade. */
+.select-shell:has(.control:disabled)::after {
+  opacity: var(--opacity-disabled);
+}
+
+/* Escrito com a casca na frente, e nao so `.control`, para vencer a regra acima
+   por especificidade: o respiro da direita precisa sobrescrever o da pilula, e
+   com peso igual o ajuste sumiria sem erro nenhum. */
+.select-shell .control {
+  /* Desliga a seta nativa. Sem isto a nossa fica ao lado dela. */
+  appearance: none;
+  display: block;
+  width: 100%;
+  /* Reserva o espaco da seta: sem isto uma opcao longa passa por baixo dela. */
+  padding-right: calc(
+    var(--control-padding-x) + var(--icon-chevron-width) + var(--control-icon-gap)
+  );
 }
 
 button {

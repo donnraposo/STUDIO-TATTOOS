@@ -214,8 +214,10 @@ está no `CLAUDE.md`.
 | `AppButton` | **Todos os tons carregam a mesma borda**, transparente quando não deve aparecer. Sem isso o tom com borda fica mais alto que o sem borda, e dois botões lado a lado nunca se alinham |
 | `AppField` | Rótulo, marca de obrigatório e mensagem de erro, uma vez só. `AppInput` e `AppSelect` repetiam os três |
 | `.control` em `base.css` | A pílula: altura, respiro, borda, raio e preenchimento. Campo de texto e seletor precisam ser **indistinguíveis em altura**, e três cópias divergiriam no primeiro ajuste |
+| `.select-shell` em `base.css` | A casca e a seta do dropdown, ao lado da pílula e pelo mesmo motivo. Nenhum componente de seletor guarda estilo próprio — ver o padrão de dropdown abaixo |
 | `AppModal` | Rolagem própria. Sem ela, num celular deitado o modal passa das duas bordas e o topo fica inalcançável — o primeiro campo some |
 | `AppTextarea` | Mesmo contrato do `AppInput` e mesma pílula, com o raio aberto: numa caixa de várias linhas o canto arredondado dobraria as pontas do texto para dentro |
+| `AppSelect` | **A seta é do projeto, nunca a do navegador** — ver o padrão de dropdown abaixo. E as opções entram como dados, não como `slot` de `<option>`: assim nenhuma tela reinventa o estado vazio |
 | `AppBadgeCount` | **Some quando é zero.** Um contador mostrando "0" ocupa o mesmo espaço e a mesma atenção de um que mostra "3", e ensina o olho a ignorá-lo — o oposto do que ele existe para fazer |
 | `AppCard` | **Altura cheia, corpo que cresce e rodapé que quebra linha.** Numa grade, cartões com conteúdo de tamanhos diferentes paravam em alturas diferentes e as ações de cada um flutuavam numa linha própria; e três botões não cabiam na largura, **transbordando para fora do cartão**, por cima do vizinho. É o tipo de defeito que só aparece quando alguém ganha a terceira ação, meses depois |
 | `AppFileInput` | Esconde o `<input type="file">` — cujo botão nativo nenhum navegador deixa estilizar por completo — atrás de um `AppButton`. Escondido com `opacity`, **não** com `display: none`, que o tiraria do alcance do teclado. Limpa o valor depois de cada escolha, senão escolher o mesmo arquivo duas vezes não dispara evento e parece travamento |
@@ -224,6 +226,46 @@ está no `CLAUDE.md`.
 sistema, é superfície posicionada na grade, com largura vinda de `grid-column` e
 tons ditados pelo estado do agendamento. Forçá-lo no `AppButton` significaria
 sobrescrever tudo o que o `AppButton` padroniza.
+
+### O padrão de dropdown
+
+A receita é **uma só, em `base.css`**, nas classes `.select-shell` e `.control` —
+ao lado da pílula, e pelo mesmo motivo que a pílula está lá. `AppSelect` não
+guarda estilo nenhum: veste as duas classes. **Todo seletor que vier depois** —
+combobox, multi-seleção, qualquer superfície que abra uma lista — veste as mesmas
+classes em vez de copiar a receita.
+
+**A seta é do projeto, nunca a do navegador.** A nativa é desenhada colada na
+borda interna direita, a uns quatro pixels, que é justamente onde a pílula de
+`--radius-round` começa a curvar — enquanto o texto do outro lado respira o recuo
+inteiro. Os dois lados nunca se alinham, e foi assim que o defeito apareceu. Pior:
+o desenho muda com o sistema — chevron no Windows, par de setas no macOS,
+triângulo no Linux. O campo nunca é o mesmo duas vezes.
+
+A receita, cinco pontos:
+
+| Ponto | Por quê |
+|---|---|
+| `appearance: none` no controle | Sem isso a seta do projeto aparece **ao lado** da nativa |
+| Casca `<span class="select-shell">` com a seta em `::after` | `<select>` é elemento substituído: nenhum navegador desenha `::before` ou `::after` dentro dele |
+| Seta em `right: var(--control-padding-x)` | **O mesmo token de onde o texto começa do outro lado.** Seta e rótulo dividem uma margem só, e é isso que alinha o campo. O token existe justamente para que o valor não seja escrito duas vezes: com a medida da escala repetida, mudar o respiro do campo desalinharia a seta em silêncio |
+| Caixa centrada por `translateY(-50%)`, com o chevron (`--icon-chevron-down`) **justo ao próprio quadro** | Centragem exata, e o recuo pedido é o recuo que se vê. Com folga dentro do desenho a seta parece mais afastada da borda do que o texto do outro lado — foi assim que a primeira correção ficou 24,5px contra 20px. Seta feita de `border` rotacionada 45° tem o problema equivalente na vertical: não fica centrada no próprio box e exige um empurrão escolhido no olho, literal visual escondido em componente |
+| `pointer-events: none` na seta | Clicar na seta precisa abrir a lista. Sem isso ela vira um buraco morto no meio do alvo de toque, bem onde todo mundo clica |
+
+Mais duas consequências que são fáceis de esquecer: o controle **reserva** o
+espaço da seta no `padding-right` — `--control-padding-x + --icon-chevron-width +
+--control-icon-gap`, nenhum número à parte —, senão uma opção longa passa por
+baixo dela; e a seta **desbota junto** com o campo desabilitado, porque mora fora
+dele e não herda a opacidade.
+
+**O estado desabilitado não é repetido.** A casca o lê do próprio controle
+(`.select-shell:has(.control:disabled)`), em vez de receber uma classe dizendo de
+novo o que o `disabled` já diz. Duas fontes para o mesmo estado é uma delas
+esperando para discordar da outra.
+
+A seta entra como **máscara**, não como imagem de fundo: a cor vem de token
+(`--color-muted`), em vez de nascer cozida dentro do SVG — que é exatamente o
+valor visual que o `tokens.css` existe para impedir.
 
 ## 4.2.2 Responsividade
 
