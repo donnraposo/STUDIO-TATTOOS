@@ -1,0 +1,51 @@
+# O que nunca entra no contexto de build.
+#
+# **Isto existe por um defeito concreto.** Sem este arquivo, `COPY frontend/ ./`
+# levava o `node_modules` do host -- compilado para Windows -- por cima do que
+# a imagem tinha acabado de instalar para Linux, e o `esbuild` abortava o build
+# de producao com um erro que nao fala de arquitetura nenhuma.
+#
+# Em desenvolvimento o defeito nao aparecia: o compose monta um volume nomeado
+# por cima de `/app/node_modules`, escondendo o que a copia trouxe. O erro
+# esperava a primeira imagem de producao.
+#
+# A segunda razao e segredo: tudo que esta no contexto pode acabar numa camada
+# da imagem, e uma camada e legivel por quem tiver a imagem.
+
+# Dependencias: cada imagem instala as proprias, para a plataforma dela.
+**/node_modules
+**/.venv
+**/__pycache__
+**/*.pyc
+
+# Segredos e ambiente local. Producao le o `.env` do servidor, montado pelo
+# compose -- nunca assado na imagem.
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Historico e metadados do repositorio: pesam e nao servem a nenhuma imagem.
+.git
+.gitignore
+.github
+
+# Artefatos de build e de teste.
+**/dist
+**/.next
+**/coverage
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/htmlcov
+
+# Documentacao e instrucoes: nao sobem para dentro de container nenhum.
+DOCS
+CLAUDE.md
+README.md
+
+# Editor e sistema operacional.
+.vscode
+.idea
+**/.DS_Store
+**/Thumbs.db

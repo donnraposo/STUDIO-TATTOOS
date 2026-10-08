@@ -12,7 +12,10 @@ seis etapas.
 (07/10/2026) — o controle mensal que o estudio mantinha em planilha, pedido pelo
 responsavel durante a M7.2.
 
-**Próxima:** a M8 — implantação mínima.
+**Próxima:** a M8 — implantação mínima. Os artefatos estão prontos e ensaiados
+(`compose.production.yaml`, Caddy, cópia cifrada e runbook); falta o que só
+acontece com servidor: subir no VPS, apontar o domínio e homologar com
+proprietário e gerente.
 
 > **O fio condutor do MVP fechou em 02/10/2026.** `login → cliente → agendar →
 > sinal €50 → sessão feita e paga → repasse de sexta`: o último elo entrou com a
@@ -155,7 +158,7 @@ Nada foi descartado. Tudo que saiu do MVP está preservado na Fase 2.
 | M6 | Repasses e fechamento semanal | Backend | ✅ Concluída em 02/10/2026 |
 | **M7.2** | Restante da interface do MVP | Frontend | ✅ **Concluída em 06/10/2026**, nas seis etapas |
 | **M9** | Faturamento do estúdio | Ambas | ✅ **Concluída em 07/10/2026** |
-| M8 | Implantação mínima | Infra | Não iniciada |
+| M8 | Implantação mínima | Infra | ⚠️ **Artefatos prontos e ensaiados em 07/10/2026.** Falta subir no VPS e homologar |
 
 **O detalhamento do frontend está em
 [`10_ROADMAP_FRONTEND.md`](10_ROADMAP_FRONTEND.md):** telas, componentes, ordem das
@@ -1351,6 +1354,95 @@ sessões são encerradas e o histórico fica de pé.
 - Ruff limpo; **291 testes** no backend, sendo 12 novos.
 - ESLint e `vue-tsc` limpos; **194 testes** no frontend, sendo 5 novos.
 - As quatro verificações de convenção sem apontamento.
+
+### Evidência da sprint M8 — Implantação mínima — 07/10/2026
+
+**Os artefatos estão prontos e ensaiados; falta o que só acontece com
+servidor.** A pilha de produção subiu inteira em máquina local, com domínio de
+ensaio, e o ciclo de cópia e restauração foi percorrido de ponta a ponta.
+
+#### As quatro decisões que estavam abertas
+
+| Decisão | Escolha do responsável | Consequência |
+|---|---|---|
+| Armazenamento de arquivos | **Volume local no VPS** | A cópia tem **dois alvos**: banco e diretório. Trocar por S3 depois não alcança caso de uso nenhum — a porta `ObjectStorage` existe para isso (ADR-024) |
+| Rotina de cópia | **Container no compose** | Viaja com a pilha; servidor novo já sobe com cópia funcionando |
+| Destino da cópia | **Provedor compatível com S3** | Balde separado, retenção de 30 dias feita pelo próprio script |
+| Segredos | **`.env.production` no servidor**, 0600 | Suficiente para um VPS com um sistema |
+
+#### Quatro containers, e o que o compose recusa fazer
+
+`caddy`, `api`, `postgres` e `backup`. O container `frontend` **não existe em
+produção**: o Vue é compilado dentro da imagem do Caddy, que já está no ar pelo
+TLS — um domínio só, sem CORS e com o cookie de sessão simples.
+
+| Endurecimento | Por quê |
+|---|---|
+| `postgres` sem `ports` | "Banco acessível publicamente" é um dos riscos declarados da sprint |
+| `api` sem `ports` | Publicar 8000 abriria um caminho sem TLS; o cookie `Secure` não viajaria por ele, e o acesso **pareceria quebrado em vez de proibido** |
+| `.env.production`, e não `.env` | Com o mesmo nome, uma máquina com o arquivo de desenvolvimento subiria produção com `ENVIRONMENT=development` — cookie sem HTTPS e `seed_demo` liberado |
+| Migração na subida da API | Um deploy que esquece a migração sobe aplicação esperando colunas que o banco não tem |
+| `object_storage` só-leitura no backup | Script de cópia com permissão de escrita no acervo é um acidente esperando um `rm` mal escrito |
+
+#### A cifra, e a propriedade que ela compra
+
+A cópia é cifrada com a **chave pública** do `age`. O servidor escreve e **não
+consegue ler o que escreveu** — quem invadir o VPS leva o banco em produção, que
+já é ruim, mas não leva o histórico inteiro de cópias junto.
+
+O ensaio provou isso literalmente: decifrar no próprio servidor devolveu
+`age: error: no identity matched any of the recipients`.
+
+A troca é dura e está escrita no runbook: **sem a chave privada não há
+restauração**, e ela vive fora do servidor.
+
+#### Três defeitos que só a primeira compilação de produção revelaria
+
+**1. Não existia `.dockerignore`.** `COPY frontend/ ./` levava o `node_modules`
+do host — compilado para Windows — por cima do que a imagem instalou para Linux,
+e o `esbuild` abortava. Em desenvolvimento o defeito não aparecia: o compose
+monta um volume nomeado por cima de `/app/node_modules`, escondendo a cópia.
+
+**2. `await` de nível superior no `main.ts`.** O servidor de desenvolvimento
+aceitava; o `npm run build` não — o alvo do bundle cobre navegadores de 2020 em
+diante, e `await` solto só existe a partir de 2021. Encapsulado numa função, em
+vez de subir o alvo: subir cortaria em silêncio os navegadores mais antigos que
+alguém do estúdio possa usar.
+
+**3. `frontend.Dockerfile` tinha um estágio `production` com nginx**, que
+ninguém usava e que contradizia a seção 8. Era um convite ao erro que o próprio
+roadmap adverte — subir um segundo servidor web porque havia um estágio com esse
+nome esperando por isso. Removido; o build de produção mora em
+`caddy.Dockerfile`, junto de quem serve.
+
+#### O ensaio completo
+
+| Passo | Resultado |
+|---|---|
+| As quatro imagens constroem | ✅ |
+| Migração do zero até a `0010` em banco novo | ✅ |
+| Interface, API e rota do SPA pelo mesmo domínio | ✅ 200 nos três |
+| `http://` redireciona para `https://` | ✅ 308 |
+| Cabeçalhos de segurança, `Server` removido | ✅ |
+| Banco inacessível de fora | ✅ |
+| Relógio da cópia anuncia 03:00 no fuso do estúdio | ✅ |
+| `pg_dump` + `tar` dos arquivos + `age` | ✅ |
+| **Servidor não decifra o que cifrou** | ✅ |
+| Decifrar e restaurar em banco temporário | ✅ |
+| **Dado gravado volta íntegro** | ✅ a conta semeada reapareceu |
+| Produção intocada pelo teste | ✅ |
+
+**Não verificado**, por depender de conta real: o envio ao provedor S3 e a poda
+de 30 dias. O script falha ruidosamente se a credencial não servir, e o relógio
+confere as variáveis **na subida**, não às 3 da manhã.
+
+#### O que falta, e não é código
+
+- Subir no VPS, com o domínio apontado antes da primeira subida.
+- Preencher a credencial do provedor e confirmar a primeira cópia real.
+- Homologar com proprietário e gerente, que o objetivo da sprint exige.
+- **RPO e RTO** aguardam confirmação: a proposta é perda máxima de 24 horas e
+  recuperação em até 4. Com cópia diária às 03:00, a perda máxima real é 24h.
 
 ### Evidência da sprint M9 — Faturamento do estúdio — 07/10/2026
 

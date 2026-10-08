@@ -1,0 +1,28 @@
+# Finais de linha dos arquivos que entram em container Linux.
+#
+# **Isto evita um defeito que so aparece depois de um clone.** Esta maquina tem
+# `core.autocrlf = true`: o git converte para CRLF ao escrever no disco. Um
+# `backup.sh` com CRLF copiado para dentro da imagem quebra na primeira linha --
+# o `\r` entra no caminho do interpretador e o container morre com
+# "bad interpreter: /usr/bin/env bash^M", mensagem que nao fala de final de
+# linha nenhum.
+#
+# No `.env`, o estrago e mais silencioso: o `\r` entra no **valor** da variavel.
+# Uma senha de banco com `\r` no fim falha a autenticacao sem que nada no
+# arquivo pareca errado.
+#
+# Os scripts nasceram com LF e funcionaram no ensaio da M8. Sem este arquivo,
+# funcionariam ate o proximo `git checkout` os reescrever.
+
+* text=auto
+
+*.sh            text eol=lf
+*.Dockerfile    text eol=lf
+Dockerfile      text eol=lf
+Caddyfile       text eol=lf
+*.yaml          text eol=lf
+*.yml           text eol=lf
+.env.example    text eol=lf
+.env.production.example text eol=lf
+.dockerignore   text eol=lf
+*.py            text eol=lf
