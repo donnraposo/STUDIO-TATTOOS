@@ -29,6 +29,14 @@ export interface Booking {
    * agenda para clientes próprios sem nenhum. Não se confunde com a sessão,
    * que só existe depois da aprovação do orçamento. */
   quoteId: string | null;
+  /** O sinal informado ao marcar o horário (migração 0012).
+   *
+   * **Texto, como todo dinheiro.** Nulo significa "use o padrão do estúdio":
+   * cada artista cobra o seu, e quem sabe quanto foi é quem recebeu.
+   *
+   * Não é o pagamento — é a expectativa registrada. O que entrou de verdade é
+   * a linha em `payment`, e o gestor corrige a diferença ao registrar. */
+  depositAmount: string | null;
   requestedAt: string;
   rejectionReason: string | null;
   rejectionNote: string | null;

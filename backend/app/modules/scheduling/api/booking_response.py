@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
 from pydantic import BaseModel
 
@@ -22,6 +23,9 @@ class BookingResponse(BaseModel):
     #: O trabalho orcado que este horario atende, quando ha um. Nulo no
     #: agendamento de guest, que nao acessa orcamentos (RN-ORC-001).
     quote_id: uuid.UUID | None
+    #: O sinal informado ao marcar. Nulo usa o padrao do estudio; e o valor que
+    #: chega preenchido no registro do pagamento, onde o gestor pode corrigi-lo.
+    deposit_amount: Decimal | None
     requested_at: datetime
     rejection_reason: str | None
     rejection_note: str | None
@@ -37,6 +41,7 @@ class BookingResponse(BaseModel):
             ends_at=booking.period.upper,
             status=str(booking.status),
             quote_id=booking.quote_id,
+            deposit_amount=booking.deposit_amount,
             requested_at=booking.requested_at,
             rejection_reason=booking.rejection_reason,
             rejection_note=booking.rejection_note,

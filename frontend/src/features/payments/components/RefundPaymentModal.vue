@@ -22,7 +22,7 @@ import { MoneyFormatter } from "@/shared/format/MoneyFormatter";
  * original apenas como sugestão.
  *
  * **O valor pode ser menor que o recebido**, e é o caso comum: quando o
- * atendimento é cancelado ou não comparecido, o estúdio retém €50 e devolve o
+ * atendimento é cancelado ou não comparecido, o estúdio retém o sinal e devolve o
  * restante (RN-PAG-004 e RN-AGE-009). Devolver mais do que entrou é recusado
  * pelo servidor, que soma as devoluções anteriores — conta que esta tela não
  * tem como fazer sozinha.
@@ -125,7 +125,7 @@ function refund(): void {
 
       <p class="hint">
         Return less than the full amount when the studio keeps part of it — a
-        lost booking keeps the €50 deposit.
+        lost booking keeps the deposit.
       </p>
 
       <p

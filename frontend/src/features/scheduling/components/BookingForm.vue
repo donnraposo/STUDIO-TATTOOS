@@ -7,12 +7,14 @@ import AppCheckbox from "@/shared/components/AppCheckbox.vue";
 import AppInput from "@/shared/components/AppInput.vue";
 import AppModal from "@/shared/components/AppModal.vue";
 import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
+import { BookingDeposit } from "@/features/payments/BookingDeposit";
 import AppTextarea from "@/shared/components/AppTextarea.vue";
 import type { Bench } from "@/shared/domain/Booking";
 import type { Client } from "@/shared/domain/Client";
 import type { QuoteOrigin } from "@/shared/domain/Quote";
 import { SessionValues } from "@/shared/domain/SessionValues";
 import { StudioSplit } from "@/shared/domain/StudioSplit";
+import { MoneyFormatter } from "@/shared/format/MoneyFormatter";
 import type { StudioMember } from "@/shared/domain/StudioMember";
 
 /** Nova reserva de maca (RN-AGE-002).
@@ -25,7 +27,7 @@ import type { StudioMember } from "@/shared/domain/StudioMember";
  * **Criar já aprovado vale onde não há sinal a confirmar.** A RN-AGE-005 permite
  * o atalho *"desde que confirmem o sinal"*, e o sinal pertence ao agendamento —
  * que ainda não existe no instante da criação (ADR-027). O caminho corrente é
- * criar, confirmar os €50 e aprovar; a caixa só aparece onde a regra não pede
+ * criar, confirmar o sinal e aprovar; a caixa só aparece onde a regra não pede
  * sinal, que é o cliente próprio do guest (RN-GST-004).
  *
  * A tela **esconde** o atalho em vez de oferecê-lo e levar 403: um botão que o
@@ -66,6 +68,8 @@ export interface BookingWork {
 }
 
 export interface BookingDraft {
+  /** O sinal que o artista diz ter combinado. Vazio usa o padrão do estúdio. */
+  depositAmount: string;
   clientId: string;
   benchId: string;
   startTime: string;
@@ -96,6 +100,7 @@ const artistId = ref("");
 const startTime = ref("10:00");
 const endTime = ref("12:00");
 const approveImmediately = ref(false);
+const depositAmount = ref(BookingDeposit.AMOUNT);
 
 const ORIGIN_OPTIONS: SelectOption[] = [
   { value: "ARTIST_OWN", label: "The artist's own client" },
@@ -138,6 +143,7 @@ const needsDeposit = computed(() => deposits.appliesTo(artistId.value, props.art
  * acordos são enunciados. A conta mora no `StudioSplit`: escrevê-la aqui seria
  * a terceira cópia da mesma regra. */
 const split = new StudioSplit();
+const money = new MoneyFormatter();
 
 const studioShare = computed(() => split.studioShareForOrigin(origin.value as QuoteOrigin));
 const artistShare = computed(() => `${split.artistShareFor(origin.value as QuoteOrigin)}%`);
@@ -209,6 +215,7 @@ function submit(): void {
     endTime: endTime.value,
     artistId: artistId.value === "" ? null : artistId.value,
     approveImmediately: approveImmediately.value,
+    depositAmount: depositAmount.value.trim(),
     work: props.canQuote
       ? {
           origin: origin.value as QuoteOrigin,
@@ -360,6 +367,19 @@ function submit(): void {
         inside the work — "Session {{ sessionNumber }} of {{ plannedSessions }}".
       </p>
 
+      <AppInput
+        v-model="depositAmount"
+        label="Deposit received (€)"
+        type="number"
+        :disabled="props.busy"
+      />
+      <p class="hint">
+        What this client paid as a deposit. Each artist charges their own — the
+        studio default is {{ money.amount(BookingDeposit.AMOUNT) }}. It arrives
+        filled in when the studio registers the payment, and can be corrected
+        there.
+      </p>
+
       <AppTextarea
         v-model="notes"
         label="Notes (optional)"
@@ -379,8 +399,8 @@ function submit(): void {
       v-else-if="props.canDecide"
       class="deposit"
     >
-      The €50 deposit has to be registered and confirmed before this booking can
-      be approved. Create the request first, then confirm the deposit.
+      The deposit has to be registered and confirmed before this booking can be
+      approved. Create the request first, then confirm the deposit.
     </p>
 
     <p

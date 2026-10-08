@@ -9,6 +9,11 @@ import type { Booking } from "@/shared/domain/Booking";
  * diferentes porque significam coisas diferentes na maca: pendente não a
  * bloqueia para outro artista, aprovado bloqueia (RN-AGE-004).
  *
+ * **O nome em destaque é o do artista**, e não o do cliente (decisão de
+ * 08/10/2026). A grade é macas por hora, e a pergunta que ela responde é quem
+ * está ocupando qual maca; o cliente continua na linha de baixo, ao lado do
+ * horário, e os dados dele aparecem ao abrir o agendamento (RN-CLI-004).
+ *
  * Não busca nada e não sabe quem está logado: recebe posição e rótulos prontos.
  *
  * **É o único `<button>` cru do projeto, e a exceção é deliberada.** Ele não é
@@ -32,6 +37,9 @@ const STATUS_CLASS: Record<string, string> = {
 const props = defineProps<{
   booking: Booking;
   placement: Placement;
+  /** Quem vai tatuar. É a pergunta que a grade responde: a maca está ocupada
+   * por quem? O cliente aparece ao abrir o agendamento. */
+  artistName: string;
   clientName: string;
   timeRange: string;
   track: number;
@@ -49,11 +57,11 @@ defineEmits<{ select: [booking: Booking] }>();
       gridColumn: `${props.placement.column} / span ${props.placement.span}`,
       gridRow: `${props.track + 1}`,
     }"
-    :title="`${clientName} · ${timeRange}`"
+    :title="`${artistName} · ${clientName} · ${timeRange}`"
     @click="$emit('select', booking)"
   >
-    <span class="who">{{ clientName }}</span>
-    <span class="when">{{ timeRange }}</span>
+    <span class="who">{{ artistName }}</span>
+    <span class="when">{{ clientName }} · {{ timeRange }}</span>
   </button>
 </template>
 

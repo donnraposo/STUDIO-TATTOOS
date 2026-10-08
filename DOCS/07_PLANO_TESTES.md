@@ -8,7 +8,7 @@
 
 ## 0. Cobertura atual
 
-**299 testes aprovados** no backend, executados em container contra PostgreSQL
+**306 testes aprovados** no backend, executados em container contra PostgreSQL
 real no banco isolado `tattoo_studio_test`. Conferido em 07/10/2026, com a suíte
 inteira num só comando.
 
@@ -19,7 +19,7 @@ inteira num só comando.
 > falha que acusa o inocente, porque o culpado é o acúmulo. `Database.dispose()`
 > existe por isso e o `conftest` o chama no encerramento de cada teste.
 
-**197 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
+**209 testes aprovados** no frontend, em Vitest dentro do container, sobre classes
 puras — sem montar componente e sem dependência nova. O que se testa ali é o que
 tem chance real de estar errado: fuso horário, aritmética de dinheiro, formatação,
 tradução de erro da API, ciclo de sessão e os espelhos de política que decidem o
@@ -56,6 +56,8 @@ que a tela mostra.
 | **Edicao de conta** | Coberta por 12 testes de ponta a ponta (RN 2.6): a gestao corrige o cadastro, **so o proprietario troca o perfil**, o gerente nao promove nem troca residente por guest, o gerente nao edita gestao, o ultimo proprietario ativo nao perde o perfil, artista nao fica sem nome de artista, e-mail ja em uso e recusado, manter o proprio e-mail nao e duplicata, artista nao edita ninguem, e a edicao fica na auditoria com o valor anterior |
 | **Senha definida pela gestao** | Coberta por 8 testes (RN 2.7): a senha nova funciona e a antiga para de valer, as sessoes da conta caem, menos de 12 caracteres e recusado, o gerente redefine artista mas **nao redefine proprietario** -- seria entregar-lhe a conta --, e **a senha nao chega a auditoria**, que e lida justamente por gerentes e proprietarios |
 | **Os dois lados da divisao** | Coberta: o estudio enuncia 30%, 50% e 15% **do lado dele**, e o sistema grava o do artista -- 70%, 50% e 85%. O complemento e calculado e exibido enquanto se digita, para que ninguem digite 30 querendo dizer "a casa fica com 30" |
+| **Sinal variavel por artista** | Coberta (migracao 0012): o valor informado ao marcar volta na resposta, ausencia cai no padrao do estudio, e zero e recusado -- "sem sinal" se diz deixando o campo vazio, nao escrevendo zero |
+| **Valor total e por sessao** | Coberta por 7 testes de classe pura: preencher um preenche o outro, em centavos inteiros e nunca em ponto flutuante, com a divisao **arredondando para baixo** porque a RN-PAG-001 nao deixa a soma das sessoes passar do total aprovado |
 | **Semana de repasse** | Coberta por 9 testes de classe pura: sabado pertence a sexta seguinte, sexta de manha a sexta do mesmo dia, **20h em ponto fecha a semana que termina** e um minuto depois cai na seguinte, 20h de Dublin dando 19h UTC no verao e 20h UTC no inverno, e **a semana que atravessa a virada do horario de verao com 169 horas** — subtrair sete dias em UTC deixaria uma hora de fora |
 | **Divisao do repasse** | Coberta por 5 testes: 70% e 50% de valores redondos, o exemplo da RN-PAG-005, meio centavo arredondando **para cima** e nao pelo padrao bancario do Python, e a diferenca entre arredondar por sessao e arredondar no total |
 | **Ciclo do repasse** | Coberta: fechamento com a parcela de cada sessao, um repasse por artista, **fechar duas vezes devolvendo o mesmo fechamento**, sessao nao quitada fora, sessao de outra semana fora, semana em curso recusada, artista sem fechar, artista vendo so os proprios repasses, artista recusado no demonstrativo do colega, o demonstrativo exibindo o que a RN-REP-007 lista, confirmacao registrando responsavel, segunda confirmacao recusada e artista sem confirmar |

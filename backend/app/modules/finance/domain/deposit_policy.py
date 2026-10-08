@@ -7,9 +7,19 @@ class DepositPolicy:
     """O sinal: quanto vale e quais agendamentos o exigem (RN-PAG-001,
     RN-AGE-005 e RN-GST-004).
 
-    **€50 por agendamento**, e não por trabalho: a RN-PAG-001 diz que cada
+    **Um sinal por agendamento**, e não por trabalho: a RN-PAG-001 diz que cada
     sessão agendada exige o seu próprio sinal. O valor integra o preço da
     tatuagem e não é cobrança adicional (RN-PAG-005).
+
+    **€50 é o padrão, e deixou de ser o valor.** Em 08/10/2026 o responsável
+    informou que cada artista cobra o seu, e o sinal passou a ser dito ao marcar
+    o horário (`booking.deposit_amount`). Este número continua valendo para o
+    agendamento que não informa nenhum.
+
+    O valor nunca foi exigido pelo código: o portão da RN-AGE-005 confere se há
+    sinal **confirmado**, não quanto ele vale, e a retenção da RN-AGE-009 marca
+    o pagamento inteiro como retido, qualquer que seja. A RN-PAG-001 continua
+    como está no documento de regras, e cabe ao responsável atualizá-la.
 
     **A exceção do guest.** A RN-GST-004 diz que o guest recebe diretamente dos
     clientes próprios e que esses valores **não passam pelo estúdio**. Exigir

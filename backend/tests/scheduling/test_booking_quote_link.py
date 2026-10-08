@@ -79,6 +79,7 @@ def _book(
     quote_id: str | None,
     hour: int = 11,
     artist_id: uuid.UUID | None = None,
+    deposit: str | None = None,
 ):
     start = (datetime.now(UTC) + timedelta(days=1)).replace(
         hour=hour, minute=0, second=0, microsecond=0
@@ -95,6 +96,8 @@ def _book(
         body["artist_id"] = str(artist_id)
     if quote_id is not None:
         body["quote_id"] = quote_id
+    if deposit is not None:
+        body["deposit_amount"] = deposit
     return client.post(f"{api_prefix}/bookings", json=body, headers=headers)
 
 
@@ -164,3 +167,53 @@ def test_the_quote_cannot_be_deleted_while_a_booking_points_at_it(
         recusou = True
 
     assert recusou, "o banco deveria recusar apagar um orcamento com horario marcado"
+
+
+def test_the_booking_carries_the_deposit_the_artist_agreed(
+    client: TestClient, session: Session, api_prefix: str
+) -> None:
+    """Migracao 0012. Cada artista cobra o seu sinal, e quem sabe quanto foi e
+    quem recebeu -- por isso o valor e dito ao marcar o horario."""
+    ids = _setup(session)
+    headers = _sign_in(client, api_prefix, "artist@studio.ie")
+
+    response = _book(
+        client, api_prefix, headers, ids, None, hour=16, artist_id=ids["artist"],
+        deposit="80.00",
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["deposit_amount"] == "80.00"
+
+
+def test_a_booking_without_a_stated_deposit_falls_back_to_the_studio_default(
+    client: TestClient, session: Session, api_prefix: str
+) -> None:
+    """Nulo significa "use o padrao do estudio". Quem nao disse nada nao esta
+    dizendo "sem sinal" -- e e o caso de todo agendamento criado antes de
+    08/10/2026."""
+    ids = _setup(session)
+    headers = _sign_in(client, api_prefix, "artist@studio.ie")
+
+    response = _book(
+        client, api_prefix, headers, ids, None, hour=17, artist_id=ids["artist"]
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["deposit_amount"] is None
+
+
+def test_a_deposit_of_zero_is_refused(
+    client: TestClient, session: Session, api_prefix: str
+) -> None:
+    """Sinal zero e "sem sinal", e isso se diz deixando o campo vazio -- nao
+    escrevendo zero nele. O banco recusa pelo mesmo motivo."""
+    ids = _setup(session)
+    headers = _sign_in(client, api_prefix, "artist@studio.ie")
+
+    response = _book(
+        client, api_prefix, headers, ids, None, hour=18, artist_id=ids["artist"],
+        deposit="0",
+    )
+
+    assert response.status_code == 422

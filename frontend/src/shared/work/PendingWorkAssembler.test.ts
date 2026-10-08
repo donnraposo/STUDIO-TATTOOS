@@ -24,6 +24,7 @@ function booking(overrides: Partial<Booking> = {}): Booking {
     endsAt: "2026-10-06T12:00:00+01:00",
     status: "REQUESTED",
     quoteId: null,
+    depositAmount: null,
     requestedAt: "2026-10-01T09:00:00+01:00",
     rejectionReason: null,
     rejectionNote: null,

@@ -22,6 +22,7 @@
 | `payout`, `payout_item` e `payout_adjustment` | `0009` | M6 |
 | `user_account.default_artist_percentage` | `0010` | M7.2.6 |
 | `booking.quote_id` | `0011` | 07/10/2026 |
+| `booking.deposit_amount` | `0012` | 08/10/2026 |
 | Extensões `btree_gist` e `citext` | `0001` | 01 |
 
 As demais tabelas descritas neste documento ainda não foram criadas. As restrições

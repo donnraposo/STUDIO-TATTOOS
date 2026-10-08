@@ -18,6 +18,7 @@ import type { Booking, Bench } from "@/shared/domain/Booking";
 interface PlacedBooking {
   booking: Booking;
   placement: Placement;
+  artistName: string;
   clientName: string;
   timeRange: string;
   track: number;
@@ -89,6 +90,7 @@ function benchName(bench: Bench): string {
             :key="placed.booking.id"
             :booking="placed.booking"
             :placement="placed.placement"
+            :artist-name="placed.artistName"
             :client-name="placed.clientName"
             :time-range="placed.timeRange"
             :track="placed.track"

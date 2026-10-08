@@ -30,7 +30,7 @@ import type {
   Bench,
   RejectionReason,
 } from "@/shared/domain/Booking";
-import type { Client } from "@/shared/domain/Client";
+import type { Client, ClientContact } from "@/shared/domain/Client";
 import type { Payment } from "@/shared/domain/Payment";
 import type { Quote } from "@/shared/domain/Quote";
 import type { StudioMember } from "@/shared/domain/StudioMember";
@@ -58,6 +58,7 @@ const SLOT_MINUTES = 30;
 interface PlacedBooking {
   booking: Booking;
   placement: Placement;
+  artistName: string;
   clientName: string;
   timeRange: string;
   /** Trilha dentro da maca. Solicitações concorrentes ficam em trilhas
@@ -117,6 +118,12 @@ const bookingPayments = ref<Payment[]>([]);
 /** O trabalho orçado do horário aberto. Nulo quando não há — o guest não
  * acessa orçamentos (RN-ORC-001). */
 const bookingWork = ref<Quote | null>(null);
+/** O contato do cliente do horário aberto (RN-CLI-004).
+ *
+ * Buscado à parte e não da lista: a lista traz só os clientes que o artista
+ * cadastrou, e o cliente encaminhado pelo estúdio não está nela — mas a regra
+ * manda mostrar nome, telefone e Instagram dentro do agendamento. */
+const bookingClient = ref<ClientContact | null>(null);
 const registering = ref(false);
 const refusing = ref<Payment | null>(null);
 
@@ -203,6 +210,21 @@ const namesByClient = computed<Record<string, string>>(() =>
   Object.fromEntries((state.data.value?.clients ?? []).map((client) => [client.id, client.name])),
 );
 
+/** O nome de quem tatua, para a grade dizer quem ocupa cada maca.
+ *
+ * O próprio artista entra no mapa pelo usuário da sessão: a lista de contas é
+ * só do gestor, e sem isto o residente veria "Artist" nos próprios horários. */
+const namesByArtist = computed<Record<string, string>>(() => {
+  const named = Object.fromEntries(
+    (state.data.value?.artists ?? []).map((artist) => [artist.id, artist.displayName]),
+  );
+  const current = session.user.value;
+  if (current && !(current.id in named)) {
+    named[current.id] = current.fullName;
+  }
+  return named;
+});
+
 const placedByBench = computed<Record<string, PlacedBooking[]>>(() => {
   const schedule = state.data.value;
   if (!schedule) {
@@ -219,6 +241,7 @@ const placedByBench = computed<Record<string, PlacedBooking[]>>(() => {
     lane.push({
       booking,
       placement,
+      artistName: namesByArtist.value[booking.artistId] ?? "Artist",
       clientName: namesByClient.value[booking.clientId] ?? "Client",
       timeRange: `${clock.time(booking.startsAt)}–${clock.time(booking.endsAt)}`,
     });
@@ -363,6 +386,7 @@ async function create(draft: BookingDraft): Promise<void> {
       artistId: draft.artistId,
       approveImmediately: draft.approveImmediately,
       quoteId,
+      depositAmount: draft.depositAmount === "" ? null : draft.depositAmount,
     });
   });
 }
@@ -373,9 +397,11 @@ async function create(draft: BookingDraft): Promise<void> {
 watch(selected, async (booking) => {
   bookingPayments.value = [];
   bookingWork.value = null;
+  bookingClient.value = null;
   if (!booking) {
     return;
   }
+  await loadBookingClient(booking.clientId);
   if (canDecide.value) {
     await loadBookingPayments(booking.id);
   }
@@ -383,6 +409,14 @@ watch(selected, async (booking) => {
     await loadBookingWork(booking.quoteId);
   }
 });
+
+async function loadBookingClient(clientId: string): Promise<void> {
+  try {
+    bookingClient.value = await clientsApi.find(clientId);
+  } catch {
+    bookingClient.value = null;
+  }
+}
 
 async function loadBookingWork(quoteId: string): Promise<void> {
   try {
@@ -658,6 +692,8 @@ onMounted(async () => {
       v-if="selected"
       :booking="selected"
       :client-name="selectedLabel.clientName"
+      :client-contact="bookingClient"
+      :artist-name="namesByArtist[selected.artistId] ?? 'Artist'"
       :time-range="selectedLabel.timeRange"
       :requested-at="clock.dateTime(selected.requestedAt)"
       :benches="state.data.value?.benches ?? []"
@@ -697,6 +733,7 @@ onMounted(async () => {
     <RegisterPaymentModal
       v-if="registering && selected"
       :subject="`${selectedLabel.clientName} · ${selectedLabel.timeRange}`"
+      :expected-deposit="selected.depositAmount"
       :busy="deciding"
       :failure="decisionFailure"
       @submit="registerPayment"

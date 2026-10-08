@@ -52,13 +52,24 @@ describe("BookingConsequence", () => {
     expect(consequences.describe("reject").toLowerCase()).toContain("return");
   });
 
-  /** RN-AGE-009: o estúdio fica com os €50 mesmo com aviso de 24 horas. Omitir
+  /** RN-AGE-009: o estúdio fica com o sinal mesmo com aviso de 24 horas. Omitir
    * isso faria o gestor cancelar achando que devolve. */
   it("warns that cancelling keeps the deposit even with notice", () => {
-    const text = consequences.describe("cancel");
+    const text = consequences.describe("cancel").toLowerCase();
 
-    expect(text).toContain("€50");
-    expect(text.toLowerCase()).toContain("24 hours");
+    expect(text).toContain("keeps the deposit");
+    expect(text).toContain("24 hours");
+  });
+
+  /** **Deixou de dizer um valor em 08/10/2026.** Cada artista cobra o seu
+   * sinal, e prometer cinquenta euros a quem combinou oitenta erra justamente
+   * onde dói: no que o cliente recebe de volta. */
+  it("names no fixed amount, because the deposit varies by artist", () => {
+    const decisions: BookingDecisionKind[] = ["approve", "cancel", "noShow", "reschedule"];
+
+    for (const decision of decisions) {
+      expect(consequences.describe(decision)).not.toContain("€50");
+    }
   });
 
   /** O não comparecimento tira também o repasse do artista, e é o que o

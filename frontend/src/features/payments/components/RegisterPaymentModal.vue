@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { BookingDeposit } from "@/features/payments/BookingDeposit";
 import AppButton from "@/shared/components/AppButton.vue";
@@ -12,10 +12,14 @@ import { MoneyFormatter } from "@/shared/format/MoneyFormatter";
 
 /** Lançamento de um recebimento informado (RN-PAG-002 e RN-PAG-006).
  *
- * **O valor do sinal não é digitado.** A RN-PAG-001 diz €50 por agendamento, e
- * um campo aberto convidaria a digitar outro valor — que o estúdio depois
- * descobriria no fechamento de sexta. O campo só aparece no pagamento integral
- * antecipado (RN-PAG-004), que é livre por definição.
+ * **O valor do sinal chega preenchido e é editável.** Ele vem do que o artista
+ * informou ao marcar o horário — cada um cobra o seu —, e quem registra pode
+ * corrigi-lo: entre o combinado e o que entrou de verdade há a vida real, e é
+ * o gestor quem vê o comprovante.
+ *
+ * Preenchido e não em branco porque o caminho comum é confirmar o que foi
+ * combinado; um campo vazio obrigaria a redigitar o mesmo número toda vez. Sem
+ * nada informado, cai no padrão do estúdio.
  *
  * **Nasce aguardando confirmação, nunca confirmado.** Informar e confirmar são
  * atos diferentes: o comprovante chega, o gestor confere, e só então confirma.
@@ -32,6 +36,8 @@ export interface PaymentDraft {
 
 const props = defineProps<{
   subject: string;
+  /** O sinal informado ao marcar o horário. Nulo cai no padrão do estúdio. */
+  expectedDeposit: string | null;
   busy: boolean;
   failure: string | null;
 }>();
@@ -51,16 +57,30 @@ const METHOD_OPTIONS: SelectOption[] = [
 
 const money = new MoneyFormatter();
 
+/** O sinal combinado para este horário, ou o padrão do estúdio quando quem
+ * marcou não informou nenhum. Num lugar só: a inicialização e a troca de tipo
+ * fazem a mesma pergunta, e duas cópias divergiriam no primeiro ajuste. */
+function suggestedDeposit(): string {
+  return props.expectedDeposit ?? BookingDeposit.AMOUNT;
+}
+
 const kind = ref<string>("DEPOSIT");
-const amount = ref("");
+const amount = ref(suggestedDeposit());
 const method = ref<string>("BANK_TRANSFER");
 const note = ref("");
 
 const isDeposit = computed(() => kind.value === "DEPOSIT");
 
-const value = computed(() => (isDeposit.value ? BookingDeposit.AMOUNT : amount.value.trim()));
+const value = computed(() => amount.value.trim());
 
 const ready = computed(() => value.value !== "" && Number(value.value) > 0);
+
+/** Trocar o tipo troca o valor sugerido: o sinal tem um combinado, o pagamento
+ * integral antecipado não tem nenhum. Sem isto, escolher "integral" deixaria o
+ * valor do sinal no campo, e alguém registraria a tatuagem inteira por €50. */
+watch(kind, (chosen) => {
+  amount.value = chosen === "DEPOSIT" ? suggestedDeposit() : "";
+});
 
 function submit(): void {
   if (ready.value) {
@@ -95,21 +115,20 @@ function submit(): void {
         :disabled="props.busy"
       />
 
-      <p
-        v-if="isDeposit"
-        class="fixed"
-      >
-        <span>Amount</span>
-        <strong>{{ money.amount(BookingDeposit.AMOUNT) }}</strong>
-      </p>
       <AppInput
-        v-else
         v-model="amount"
-        label="Amount"
+        label="Amount (€)"
         type="number"
         required
         :disabled="props.busy"
       />
+      <p
+        v-if="isDeposit && props.expectedDeposit"
+        class="hint"
+      >
+        The artist recorded {{ money.amount(props.expectedDeposit) }} for this
+        booking. Change it if what arrived was different.
+      </p>
 
       <AppSelect
         v-model="method"
@@ -171,25 +190,9 @@ function submit(): void {
   gap: var(--space-4);
 }
 
-/* O sinal tem valor fixo, e por isso aparece como fato e não como campo: um
-   campo aberto convida a digitar outro valor. */
-.fixed {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-}
-
-.fixed span {
+.hint {
   color: var(--color-muted);
   font-size: var(--text-label-3);
-}
-
-.fixed strong {
-  font-weight: var(--weight-medium);
 }
 
 .notice {

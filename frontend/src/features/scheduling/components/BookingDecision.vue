@@ -12,6 +12,7 @@ import AppModal from "@/shared/components/AppModal.vue";
 import AppSelect, { type SelectOption } from "@/shared/components/AppSelect.vue";
 import StatusBadge from "@/shared/components/StatusBadge.vue";
 import type { Booking, Bench, RejectionReason } from "@/shared/domain/Booking";
+import type { ClientContact } from "@/shared/domain/Client";
 
 /** Decisão sobre um agendamento: aprovar, recusar, cancelar, marcar não
  * comparecimento ou remarcar.
@@ -44,6 +45,13 @@ const REJECTION_REASONS: SelectOption[] = [
 const props = defineProps<{
   booking: Booking;
   clientName: string;
+  /** Contato do cliente deste agendamento (RN-CLI-004).
+   *
+   * A regra diz que o artista a quem o estúdio encaminha um cliente vê **nome,
+   * telefone e Instagram dentro do próprio agendamento** — é exatamente aqui.
+   * Nulo enquanto carrega, ou quando o servidor não devolveu o cadastro. */
+  clientContact: ClientContact | null;
+  artistName: string;
   timeRange: string;
   requestedAt: string;
   benches: Bench[];
@@ -118,8 +126,25 @@ function back(): void {
     </div>
 
     <p class="requested">
-      Requested {{ props.requestedAt }}
+      {{ props.artistName }} · requested {{ props.requestedAt }}
     </p>
+
+    <!-- RN-CLI-004: nome, telefone e Instagram dentro do proprio agendamento.
+         E o que permite ao artista saber quem vem sem abrir a ficha do
+         cliente, que pode nem ser dele. -->
+    <dl
+      v-if="props.clientContact"
+      class="contact"
+    >
+      <div>
+        <dt>Phone</dt>
+        <dd>{{ props.clientContact.phone }}</dd>
+      </div>
+      <div v-if="props.clientContact.instagram">
+        <dt>Instagram</dt>
+        <dd>{{ props.clientContact.instagram }}</dd>
+      </div>
+    </dl>
 
     <!-- O trabalho orçado e o sinal entram por `slot` e não por `props`: este
          componente decide sobre o horário e não precisa saber o que é um
@@ -302,6 +327,25 @@ function back(): void {
 
 .when {
   color: var(--color-muted);
+}
+
+/* Contato em duas colunas: sao dois fatos curtos, e empilhados empurrariam o
+   resto do modal para baixo sem necessidade. */
+.contact {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin: var(--space-0);
+}
+
+.contact dt {
+  color: var(--color-muted);
+  font-size: var(--text-label-3);
+}
+
+.contact dd {
+  margin: var(--space-0);
+  overflow-wrap: anywhere;
 }
 
 .requested {

@@ -15,19 +15,24 @@
  * **A frase da aprovação dizia que o sinal não era registrado no sistema**, e
  * deixou de ser verdade na M7.2.3: o painel do sinal fica logo acima dela, no
  * mesmo modal. Um texto que contradiz o que está na tela ao lado é pior do que
- * texto nenhum — ensina a não ler nenhum dos dois. */
+ * texto nenhum — ensina a não ler nenhum dos dois.
+ *
+ * **As frases deixaram de dizer "€50" em 08/10/2026.** Cada artista cobra o seu
+ * sinal, e o valor passou a ser dito ao marcar o horário. Um texto que promete
+ * cinquenta euros a quem combinou oitenta erra justamente onde dói: no que o
+ * cliente recebe de volta. */
 export type BookingDecisionKind = "approve" | "reject" | "cancel" | "noShow" | "reschedule";
 
 export class BookingConsequence {
   private static readonly TEXT: Record<BookingDecisionKind, string> = {
     approve:
-      "The €50 deposit has to be confirmed before the booking can be approved.",
+      "The deposit has to be confirmed before the booking can be approved.",
     reject:
       "The studio returns the deposit when it is the studio that rejects the request.",
     cancel:
-      "The studio keeps the €50 deposit, even when the client gives 24 hours' notice. Anything paid above the deposit is returned.",
+      "The studio keeps the deposit, even when the client gives 24 hours' notice. Anything paid above it is returned.",
     noShow:
-      "The studio keeps the €50 deposit and returns anything paid above it. The artist receives no payout for a session that did not happen.",
+      "The studio keeps the deposit and returns anything paid above it. The artist receives no payout for a session that did not happen.",
     reschedule:
       "With at least 24 hours' notice the deposit moves to the new time. Outside that the client loses it and pays a new deposit; anything above it is returned.",
   };

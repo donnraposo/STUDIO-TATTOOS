@@ -1,6 +1,10 @@
 import type { StudioMember } from "@/shared/domain/StudioMember";
 
-/** Se um horário novo vai exigir sinal de €50 (RN-PAG-001 e RN-GST-004).
+/** Se um horário novo vai exigir sinal (RN-PAG-001 e RN-GST-004).
+ *
+ * **Se, e não quanto.** O valor passou a ser dito ao marcar o horário em
+ * 08/10/2026, porque cada artista cobra o seu; esta classe continua
+ * respondendo só à primeira pergunta.
  *
  * **É aparência, não garantia.** Quem decide é o backend, que recusa a criação
  * já aprovada quando há sinal a confirmar (ADR-027). A tela usa isto para não

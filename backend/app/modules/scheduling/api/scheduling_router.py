@@ -115,6 +115,7 @@ class SchedulingRouter:
                 client_id=payload.client_id,
                 bench_id=payload.bench_id,
                 quote_id=payload.quote_id,
+                deposit_amount=payload.deposit_amount,
                 starts_at=payload.starts_at,
                 ends_at=payload.ends_at,
                 artist_id=payload.artist_id,

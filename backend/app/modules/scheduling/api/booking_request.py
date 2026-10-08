@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class BookingRequest(BaseModel):
@@ -22,3 +23,5 @@ class BookingRequest(BaseModel):
     artist_id: uuid.UUID | None = None
     approve_immediately: bool = False
     quote_id: uuid.UUID | None = None
+    #: O sinal informado por quem marca. Nulo usa o padrao do estudio.
+    deposit_amount: Decimal | None = Field(default=None, gt=0, max_digits=12, decimal_places=2)

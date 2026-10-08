@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime
+from decimal import Decimal
 
 from app.modules.identity.domain.authenticated_user import AuthenticatedUser
 from app.modules.reporting.infrastructure.audit_recorder import AuditRecorder
@@ -56,6 +57,7 @@ class RequestBooking:
         artist_id: uuid.UUID | None = None,
         approve_immediately: bool = False,
         quote_id: uuid.UUID | None = None,
+        deposit_amount: Decimal | None = None,
     ) -> Booking:
         if not self._policy.can_request(actor):
             raise PermissionDeniedError("You cannot create bookings.")
@@ -80,6 +82,9 @@ class RequestBooking:
             # orcamento: o guest nao acessa o modulo (RN-ORC-001) e agenda para
             # clientes proprios sem nenhum.
             quote_id=quote_id,
+            # O sinal que o artista informou. Nulo cai no padrao do estudio:
+            # quem nao disse nada nao esta dizendo "sem sinal".
+            deposit_amount=deposit_amount,
             decided_at=datetime.now(UTC) if status == BookingStatus.APPROVED else None,
             decided_by=actor.id if status == BookingStatus.APPROVED else None,
         )

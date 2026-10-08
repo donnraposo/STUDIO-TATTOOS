@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import TSTZRANGE, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -40,6 +41,17 @@ class Booking(OrmBase):
     )
     period: Mapped[object] = mapped_column(TSTZRANGE, nullable=False)
     status: Mapped[BookingStatus] = mapped_column(String(16), nullable=False, index=True)
+    #: O sinal que o artista informou para este horario (RN-PAG-001).
+    #:
+    #: Nulo significa "use o padrao do estudio". Cada artista cobra o seu, e
+    #: quem sabe quanto foi e quem recebeu -- por isso o valor e dito ao marcar
+    #: o horario, e nao fixado no codigo.
+    #:
+    #: **Nao e o pagamento.** Este campo e a expectativa registrada; o que
+    #: entrou de verdade e a linha em `payment`, com o valor que o gestor
+    #: confirmou. Os dois podem divergir, e o gestor corrige ao registrar.
+    deposit_amount: Mapped[Decimal | None] = mapped_column(Numeric(12, 2), nullable=True)
+
     #: O trabalho orcado que este horario atende (RN-ORC-002).
     #:
     #: Nulo e caso legitimo: o guest nao acessa orcamentos (RN-ORC-001) e agenda
